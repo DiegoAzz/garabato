@@ -398,11 +398,17 @@ export function createStickman(isSinger = false, initialColor = null, customConf
 
     triggerPushupsReaction(user = 'Espectador', duration = 5800) {
       this.gesture = 'pushups';
-      showBubbleText(`🏋️ ¡1... 2... 3... NO PUEDO MÁS @${user}!`, '#f59e0b', duration);
+      const cleanU = String(user || 'amigo').replace(/@/g, '');
+      showBubbleText(`🏋️ ¡1... 2... 3... NO PUEDO MÁS ${cleanU}!`, '#f59e0b', duration);
       setTimeout(() => {
         this.gesture = 'none';
         group.rotation.x = 0;
         group.rotation.z = 0;
+        torsoGroup.rotation.x = 0;
+        legL.hipJoint.rotation.x = 0;
+        legL.kneeJoint.rotation.x = 0;
+        legR.hipJoint.rotation.x = 0;
+        legR.kneeJoint.rotation.x = 0;
         hips.position.y = this.baseY;
       }, duration);
     },
@@ -575,14 +581,31 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         headGroup.rotation.x = -0.2;
         return;
       } else if (this.gesture === 'pushups') {
-        // Ejercicio en el suelo
-        group.rotation.x = 1.35;
-        const pushPhase = (Math.sin(time * 6) + 1) * 0.5;
-        hips.position.y = this.baseY - 0.55 + pushPhase * 0.28;
-        armL.shoulder.rotation.x = -1.2;
-        armL.elbow.rotation.x = (1.0 - pushPhase) * 1.4;
-        armR.shoulder.rotation.x = -1.2;
-        armR.elbow.rotation.x = (1.0 - pushPhase) * 1.4;
+        // Ejercicio cómico en tarima: sentadillas intensas y bombeo fitness (100% visible sin hundirse en el suelo)
+        group.rotation.x = 0;
+        group.rotation.z = 0;
+
+        const pushPhase = (Math.sin(time * 7.5) + 1) * 0.5; // 0 a 1 rápido y rítmico
+        const squatDepth = (1.0 - pushPhase) * 0.28;
+
+        hips.position.y = this.baseY - squatDepth;
+        torsoGroup.rotation.x = 0.15 + (1.0 - pushPhase) * 0.2;
+
+        // Flexión de piernas tipo sentadilla olímpica
+        legL.hipJoint.rotation.x = -0.55 * (1.0 - pushPhase);
+        legL.kneeJoint.rotation.x = 1.1 * (1.0 - pushPhase);
+        legR.hipJoint.rotation.x = -0.55 * (1.0 - pushPhase);
+        legR.kneeJoint.rotation.x = 1.1 * (1.0 - pushPhase);
+
+        // Bombeo de brazos y bíceps con esfuerzo cómplice
+        armL.shoulder.rotation.x = -0.6 - pushPhase * 1.1;
+        armL.shoulder.rotation.z = -0.3;
+        armL.elbow.rotation.x = (1.0 - pushPhase) * 1.5;
+        armR.shoulder.rotation.x = -0.6 - pushPhase * 1.1;
+        armR.shoulder.rotation.z = 0.3;
+        armR.elbow.rotation.x = (1.0 - pushPhase) * 1.5;
+
+        headGroup.rotation.x = (pushPhase - 0.5) * 0.2;
         return;
       } else if (this.gesture === 'freeze') {
         // Estatua congelada
