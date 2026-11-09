@@ -186,7 +186,7 @@ export function initShowApp() {
   function enqueueJoke(joke, user = 'Espectador', isVip = false, gift = null) {
     markActivity();
     const textLen = ((joke.setup || '').length + (joke.punch || '').length);
-    const dynamicDuration = Math.max(55000, textLen * 180 + 15000);
+    const dynamicDuration = Math.min(Math.max(16000, textLen * 130 + 10000), 28000);
 
     eventQueue.enqueue({
       isVip,
@@ -305,8 +305,12 @@ export function initShowApp() {
         singer.animController.resetToIdle();
 
         const specPos = audience.getSpectatorPosition(user);
-        audience.highlightSpectator(user, 5000);
-        cameraDirector.focusOnEvent(specPos, 4000);
+        if (specPos) audience.highlightSpectator(user, 4000);
+        if (act === 'BAILAR' || act === 'DANCE' || act === 'CANTAR' || act === 'SING') {
+          cameraDirector.lockShot('PRIMERA_PLANA', actionDuration);
+        } else {
+          cameraDirector.lockShot('SINGER', actionDuration);
+        }
 
         stage.setLedData({
           songTitle: `🎭 ${title.toUpperCase()}`,
@@ -332,6 +336,7 @@ export function initShowApp() {
           });
           setTimeout(() => {
             hideSubtitles();
+            cameraDirector.unlockShot();
             singer.animController.resetToIdle();
             done();
           }, 4800);
@@ -474,6 +479,7 @@ export function initShowApp() {
           });
           setTimeout(() => {
             hideSubtitles();
+            cameraDirector.unlockShot();
             singer.animController.resetToIdle();
             done();
           }, 4600);
@@ -485,6 +491,7 @@ export function initShowApp() {
           });
           setTimeout(() => {
             hideSubtitles();
+            cameraDirector.unlockShot();
             singer.animController.resetToIdle();
             done();
           }, 5000);
@@ -496,6 +503,7 @@ export function initShowApp() {
 
           setTimeout(() => {
             hideSubtitles();
+            cameraDirector.unlockShot();
             singer.animController.resetToIdle();
             audioEngine.speakActorLine(`¡Uff, ya me descongelé! ¡Casi me da hipotermia ${cleanU}!`, {
               pitch: 1.15,
@@ -524,6 +532,7 @@ export function initShowApp() {
           });
           setTimeout(() => {
             hideSubtitles();
+            cameraDirector.unlockShot();
             singer.animController.resetToIdle();
             done();
           }, 4000);
@@ -1117,32 +1126,36 @@ export function initShowApp() {
   function animate() {
     requestAnimationFrame(animate);
 
-    const delta = Math.min(clock.getDelta(), 0.08);
-    const time = clock.getElapsedTime();
+    try {
+      const delta = Math.min(clock.getDelta(), 0.08);
+      const time = clock.getElapsedTime();
 
-    // Niveles de audio reactivos
-    const audioLevels = audioEngine.update();
+      // Niveles de audio reactivos
+      const audioLevels = audioEngine.update();
 
-    // Sincronización de boca del comediante con la voz
-    const mouthAmount = audioEngine.isSpeaking ? audioEngine.vocalAmplitude : 0;
-    singer.animController.setMouthOpen(mouthAmount);
+      // Sincronización de boca del comediante con la voz
+      const mouthAmount = audioEngine.isSpeaking ? audioEngine.vocalAmplitude : 0;
+      singer.animController.setMouthOpen(mouthAmount);
 
-    // Actualizar comediante, escenario, público
-    singer.animController.update(time, delta, audioLevels);
-    stage.update(time, delta, audioLevels);
-    audience.update(time, delta, audioLevels);
+      // Actualizar comediante, escenario, público
+      singer.animController.update(time, delta, audioLevels);
+      stage.update(time, delta, audioLevels);
+      audience.update(time, delta, audioLevels);
 
-    // Actualizar tomates y cámara
-    tomatoRain.update(delta);
-    cameraDirector.update(delta);
+      // Actualizar tomates y cámara
+      tomatoRain.update(delta);
+      cameraDirector.update(delta);
 
-    // Risómetro en HUD (Throttled para evitar layout reflow innecesario)
-    if (energyFill && Math.abs(lastRenderedEnergy - audience.collectiveEnergy) > 1.2) {
-      lastRenderedEnergy = audience.collectiveEnergy;
-      energyFill.style.width = `${Math.round(lastRenderedEnergy)}%`;
+      // Risómetro en HUD (Throttled para evitar layout reflow innecesario)
+      if (energyFill && Math.abs(lastRenderedEnergy - audience.collectiveEnergy) > 1.2) {
+        lastRenderedEnergy = audience.collectiveEnergy;
+        energyFill.style.width = `${Math.round(lastRenderedEnergy)}%`;
+      }
+
+      renderer.render(scene, camera);
+    } catch (err) {
+      console.error('[Render Loop Error]:', err);
     }
-
-    renderer.render(scene, camera);
   }
 
   animate();

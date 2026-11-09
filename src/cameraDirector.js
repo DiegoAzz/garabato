@@ -123,6 +123,8 @@ export class CameraDirector {
   }
 
   lockShot(name, durationMs = 10000) {
+    this.isEventFocus = false;
+    this.eventFocusShot = null;
     this.setShot(name);
     this.lockedUntil = Date.now() + durationMs;
   }

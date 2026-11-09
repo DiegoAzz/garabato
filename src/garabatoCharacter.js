@@ -169,22 +169,36 @@ export function createStickman(isSinger = false, initialColor = null, customConf
     headGroup.add(speechBubbleSprite);
   }
 
-  function showBubbleText(text, bgColor = '#ef4444', durationMs = 1800) {
+  function showBubbleText(text, bgColor = '#ef4444', durationMs = 2500) {
     if (!speechBubbleSprite || !bubbleCtx) return;
     bubbleCtx.clearRect(0, 0, 256, 96);
     bubbleCtx.fillStyle = bgColor;
     bubbleCtx.beginPath();
-    bubbleCtx.roundRect(8, 8, 240, 80, 18);
+    bubbleCtx.roundRect(6, 6, 244, 84, 16);
     bubbleCtx.fill();
     bubbleCtx.strokeStyle = '#ffffff';
     bubbleCtx.lineWidth = 3.5;
     bubbleCtx.stroke();
 
     bubbleCtx.fillStyle = '#ffffff';
-    bubbleCtx.font = 'bold 24px sans-serif';
+    const clean = String(text || '').trim();
+    let fontSize = 20;
+    if (clean.length > 28) fontSize = 14;
+    else if (clean.length > 18) fontSize = 17;
+    bubbleCtx.font = `bold ${fontSize}px sans-serif`;
     bubbleCtx.textAlign = 'center';
     bubbleCtx.textBaseline = 'middle';
-    bubbleCtx.fillText(text, 128, 48);
+
+    if (clean.length > 22 && clean.includes(' ')) {
+      const words = clean.split(' ');
+      const mid = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, mid).join(' ');
+      const line2 = words.slice(mid).join(' ');
+      bubbleCtx.fillText(line1, 128, 34);
+      bubbleCtx.fillText(line2, 128, 62);
+    } else {
+      bubbleCtx.fillText(clean, 128, 48);
+    }
 
     bubbleTex.needsUpdate = true;
     speechBubbleSprite.visible = true;
@@ -301,7 +315,7 @@ export function createStickman(isSinger = false, initialColor = null, customConf
     shoe.castShadow = true;
     knee.add(shoe);
 
-    return { hipJoint, knee, shoe };
+    return { hipJoint, knee, kneeJoint: knee, shoe };
   }
 
   const legL = createLeg(true);
@@ -421,8 +435,10 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       headGroup.rotation.set(0, 0, 0);
       legL.hipJoint.rotation.set(0, 0, 0);
       legR.hipJoint.rotation.set(0, 0, 0);
-      legL.kneeJoint.rotation.set(0, 0, 0);
-      legR.kneeJoint.rotation.set(0, 0, 0);
+      if (legL.knee) legL.knee.rotation.set(0, 0, 0);
+      if (legR.knee) legR.knee.rotation.set(0, 0, 0);
+      if (legL.kneeJoint) legL.kneeJoint.rotation.set(0, 0, 0);
+      if (legR.kneeJoint) legR.kneeJoint.rotation.set(0, 0, 0);
       armL.shoulder.rotation.set(-0.35, 0, -0.3);
       armL.elbow.rotation.set(-0.25, 0, 0);
       if (isSinger) {
@@ -431,6 +447,10 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       } else {
         armR.shoulder.rotation.set(-0.35, 0, 0.3);
         armR.elbow.rotation.set(-0.25, 0, 0);
+      }
+      if (speechBubbleSprite) {
+        speechBubbleSprite.visible = false;
+        clearTimeout(speechBubbleSprite._timer);
       }
     },
 
