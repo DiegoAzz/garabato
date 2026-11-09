@@ -676,6 +676,23 @@ export class AudioEngine {
       // Referencia fuerte permanente para evitar que el Garbage Collector destruya la voz
       this.activeUtterances.add(utterance);
 
+      let chunkFinished = false;
+      let watchdogTimer = null;
+
+      const advanceNext = () => {
+        if (chunkFinished) return;
+        chunkFinished = true;
+        clearTimeout(watchdogTimer);
+        this.activeUtterances.delete(utterance);
+        setTimeout(playNext, 100);
+      };
+
+      // Watchdog de seguridad estricto: Si Chrome suspende la síntesis en background o no dispara onend, avanza
+      const maxChunkTimeMs = Math.max(6500, chunkText.length * 110);
+      watchdogTimer = setTimeout(() => {
+        advanceNext();
+      }, maxChunkTimeMs);
+
       utterance.onstart = () => {
         this.isSpeaking = true;
         this.vocalAmplitude = 0.85;
@@ -687,15 +704,12 @@ export class AudioEngine {
       };
 
       utterance.onend = () => {
-        this.activeUtterances.delete(utterance);
-        // Pausa natural entre frases
-        setTimeout(playNext, 120);
+        advanceNext();
       };
 
       utterance.onerror = (err) => {
         console.warn('[AudioEngine] Warning en chunk utterance:', err);
-        this.activeUtterances.delete(utterance);
-        setTimeout(playNext, 100);
+        advanceNext();
       };
 
       window.speechSynthesis.speak(utterance);

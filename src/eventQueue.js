@@ -28,20 +28,28 @@ export class EventQueue {
    */
   enqueue(eventDef) {
     const isVip = Boolean(eventDef.isVip || eventDef.gift || eventDef.priority === 'VIP');
+    const isAction = eventDef.type === 'ACTION' || Boolean(eventDef.isAction);
     
-    // Margen de seguridad amplio: garantiza que NUNCA un chiste se corte a mitad de camino por tiempo límite
-    const textLen = ((eventDef.setup || '').length + (eventDef.punch || '').length);
-    const minSafeDuration = Math.max(50000, textLen * 180 + 15000);
-    const safeDuration = Math.max(eventDef.duration || 0, minSafeDuration);
+    // Margen de seguridad calibrado:
+    // - Las órdenes/acciones (bailar, cantar, congelado) duran 5 a 12 seg, fallback en 14s máx.
+    // - Los chistes de comedia calculan tiempo según la longitud de su texto.
+    let safeDuration;
+    if (isAction) {
+      safeDuration = Math.min(Math.max(eventDef.duration || 10000, 6000) + 2500, 16000);
+    } else {
+      const textLen = ((eventDef.setup || '').length + (eventDef.punch || '').length);
+      safeDuration = Math.max(eventDef.duration || 0, textLen * 180 + 16000);
+    }
 
     const event = {
       id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-      type: eventDef.type || 'CHISTE',
+      type: eventDef.type || (isAction ? 'ACTION' : 'CHISTE'),
       user: eventDef.user || 'Espectador',
       gift: eventDef.gift || null,
       title: eventDef.title || 'Chiste de Stand-Up',
       icon: eventDef.icon || (isVip ? '👑' : '🎙️'),
       isVip,
+      isAction,
       setup: eventDef.setup || '',
       punch: eventDef.punch || '',
       duration: safeDuration,

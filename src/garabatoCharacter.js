@@ -413,19 +413,19 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       }, duration);
     },
 
-    triggerFreezeReaction(duration = 5000) {
+    triggerFreezeReaction(duration = 4500) {
       this.gesture = 'freeze';
+      this.freezeUntil = Date.now() + duration;
       showBubbleText('🥶 ¡MODO ESTATUA ACTIVADO!', '#06b6d4', duration);
       setTimeout(() => {
-        if (this.gesture === 'freeze') {
-          this.resetToIdle();
-        }
+        this.resetToIdle();
       }, duration);
     },
 
     resetToIdle() {
       this.gesture = 'none';
       this.danceMove = 'none';
+      this.freezeUntil = 0;
       group.rotation.set(0, 0, 0);
       hips.position.set(0, this.baseY, 0);
       hips.rotation.set(0, 0, 0);
@@ -634,7 +634,11 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         headGroup.rotation.x = (pushPhase - 0.5) * 0.2;
         return;
       } else if (this.gesture === 'freeze') {
-        // Estatua congelada
+        // Estatua congelada (con auto-recuperación estricta por tiempo en cada frame)
+        if (this.freezeUntil && Date.now() >= this.freezeUntil) {
+          this.resetToIdle();
+          return;
+        }
         armL.shoulder.rotation.x = -1.8;
         armL.shoulder.rotation.z = -0.6;
         armR.shoulder.rotation.x = -0.8;

@@ -75,6 +75,19 @@ export function initShowApp() {
   const queueStatusText = document.getElementById('queue-status-text');
   const queueCountsBadge = document.getElementById('queue-counts-badge');
 
+  if (comedyQueueStatus) {
+    comedyQueueStatus.style.cursor = 'pointer';
+    comedyQueueStatus.title = 'Haz clic para saltar o desbloquear la cola';
+    comedyQueueStatus.addEventListener('click', (e) => {
+      e.stopPropagation();
+      audioEngine.stopSpeech();
+      singer.animController.resetToIdle();
+      hideSubtitles();
+      cameraDirector.unlockShot();
+      eventQueue.completeCurrent();
+    });
+  }
+
   // Control de Actividad y Anti-Inactividad TikTok
   let lastActivityTime = Date.now();
   function markActivity() {
@@ -269,9 +282,11 @@ export function initShowApp() {
       icon = '🍅';
     }
 
-    const actionDuration = (act === 'BAILAR' || act === 'DANCE' || act === 'CANTAR' || act === 'SING') ? 30000 : 20000;
+    const actionDuration = (act === 'BAILAR' || act === 'DANCE') ? 10000 : (act === 'CANTAR' || act === 'SING') ? 11500 : 6000;
 
     eventQueue.enqueue({
+      type: 'ACTION',
+      isAction: true,
       isVip,
       user,
       gift,
@@ -281,9 +296,11 @@ export function initShowApp() {
       duration: actionDuration,
       execute: (evt, done) => {
         unlockAudio();
+        singer.animController.resetToIdle();
+
         const specPos = audience.getSpectatorPosition(user);
-        audience.highlightSpectator(user, 6000);
-        cameraDirector.focusOnEvent(specPos, 4500);
+        audience.highlightSpectator(user, 5000);
+        cameraDirector.focusOnEvent(specPos, 4000);
 
         stage.setLedData({
           songTitle: `🎭 ${title.toUpperCase()}`,
@@ -301,52 +318,49 @@ export function initShowApp() {
         }
 
         if (act === 'LLORAR' || act === 'CRY') {
-          singer.animController.triggerCryReaction(cleanU, 5000);
+          singer.animController.triggerCryReaction(cleanU, 4500);
           audioEngine.playCryingDrama(4.0);
           audioEngine.speakActorLine(`¡Buaaa! ¡Por qué me haces llorar ${cleanU}?!`, {
             pitch: 1.35,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '😭', false)
-          }, () => {
-            setTimeout(() => {
-              hideSubtitles();
-              done();
-            }, 1200);
           });
+          setTimeout(() => {
+            hideSubtitles();
+            singer.animController.resetToIdle();
+            done();
+          }, 4800);
         } else if (act === 'BAILAR' || act === 'DANCE') {
-          // Cámara en primera plana frontal enfocando todo el cuerpo y tarima sin perder ningún detalle
-          cameraDirector.lockShot('PRIMERA_PLANA', 11500);
+          // Cámara en primera plana frontal enfocando cuerpo completo y tarima sin perder detalle
+          cameraDirector.lockShot('PRIMERA_PLANA', 9500);
 
-          // 1. Activar efectos visuales de fiesta extrema y euforia de la audiencia
+          // 1. Iniciar inmediatamente efectos de baile y luces disco (sin esperar a la síntesis de voz)
           singer.animController.triggerDanceFrenzyReaction();
-          stage.triggerExtremeDisco(9.0);
-          audience.triggerFrenzy(9.0);
-          stage.setLedData({ songTitle: '🕺 ¡PISTA DE BAILE!', subtitles: `Baile para @${cleanU}` });
+          stage.triggerExtremeDisco(8.5);
+          audience.triggerFrenzy(8.5);
+          stage.setLedData({ songTitle: `🕺 BAILE DE @${cleanU.toUpperCase()}`, subtitles: '🔥 ¡PASOS PROHIBIDOS! 🔥' });
 
-          // 2. Anuncio del actor con energía y música de baile
+          // Ocultar subtítulos durante el baile para dejar al muñeco y la tarima 100% despejados
+          hideSubtitles();
+
+          // 2. Encender pista bailable 128 BPM y anunciar en paralelo
+          audioEngine.startPartyDanceTrack(8.0);
           audioEngine.speakActorLine(`¡Música maestro! ¡A romper la pista con los pasos prohibidos por orden de ${cleanU}!`, {
             pitch: 1.18,
-            rate: 1.05,
-            onChunk: (chunk) => showSubtitlePhrase(chunk, '💃', false)
-          }, () => {
-            // El usuario especificó: durante el baile el texto no debe tapar al actor.
-            // Ocultamos subtítulo para dejar la tarima y el muñeco 100% despejados y visibles en primer plano
-            hideSubtitles();
-            stage.setLedData({ songTitle: `🕺 BAILE DE @${cleanU.toUpperCase()}`, subtitles: '🔥 ¡PASOS PROHIBIDOS! 🔥' });
-
-            // 3. Encender la pista bailable con bajo y bombo 128 BPM
-            audioEngine.startPartyDanceTrack(8.0, () => {
-              // 4. Cierre triunfal con aplausos y ovación
-              showSubtitlePhrase(`👏 ¡Uff, qué sabrosura! ¡Gracias por el baile ${cleanU}!`, '🎉', true);
-              audioEngine.speakActorLine(`¡Uff, qué sabrosura de música! ¡Gracias por ponerme a bailar ${cleanU}!`, { pitch: 1.1 }, () => {
-                setTimeout(() => {
-                  hideSubtitles();
-                  cameraDirector.unlockShot();
-                  singer.animController.resetToIdle();
-                  done();
-                }, 1000);
-              });
-            });
+            rate: 1.05
           });
+
+          // 3. Temporizador estricto e independiente para finalizar el baile limpiamente sin bloqueos
+          setTimeout(() => {
+            audioEngine.playCrowdApplause(4.0);
+            showSubtitlePhrase(`👏 ¡Uff, qué sabrosura! ¡Gracias por el baile ${cleanU}!`, '🎉', true);
+            audioEngine.speakActorLine(`¡Uff, qué sabrosura de música! ¡Gracias por ponerme a bailar ${cleanU}!`, { pitch: 1.1 });
+            setTimeout(() => {
+              hideSubtitles();
+              cameraDirector.unlockShot();
+              singer.animController.resetToIdle();
+              done();
+            }, 1400);
+          }, 8200);
         } else if (act === 'CANTAR' || act === 'SING') {
           // Cámara en primera plana frontal enfocando micrófono y cantante en detalle
           cameraDirector.lockShot('PRIMERA_PLANA', 13500);
@@ -419,20 +433,22 @@ export function initShowApp() {
           stage.setLedData({ songTitle: `🎤 ${song.genre}`, subtitles: `Canta para @${cleanU}` });
           showSubtitlePhrase(`${song.genre}: ${song.intro}`, '🎤', false);
 
-          singer.animController.danceMove = 'standup';
+          singer.animController.danceMove = 'salsa';
           audience.triggerFrenzy(7.0);
 
-          // Iniciar acompañamiento musical con acordes y ritmo
-          audioEngine.startSingingAccompaniment(9.5);
+          // Iniciar acompañamiento musical inmediato
+          audioEngine.startSingingAccompaniment(9.0);
 
-          // El comediante canta la canción completa con entonación cómica
           const songText = `${song.intro}. ${song.lyrics}. ${song.outro}`;
           audioEngine.speakActorLine(songText, {
             pitch: 1.25,
-            rate: 0.98,
+            rate: 1.02,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '🎤', true)
-          }, () => {
-            audioEngine.playCrowdApplause(4.5);
+          });
+
+          // Conclusión garantizada a los 9.2 segundos (independiente de bloqueos de audio)
+          setTimeout(() => {
+            audioEngine.playCrowdApplause(4.0);
             audioEngine.playCheer();
             showSubtitlePhrase(`👏 ¡Ovación del público para ${cleanU}!`, '⭐', true);
             setTimeout(() => {
@@ -440,51 +456,51 @@ export function initShowApp() {
               cameraDirector.unlockShot();
               singer.animController.resetToIdle();
               done();
-            }, 1800);
-          });
+            }, 1400);
+          }, 9200);
         } else if (act === 'RABIA' || act === 'RAGE') {
-          singer.animController.triggerRageReaction(cleanU, 4800);
+          singer.animController.triggerRageReaction(cleanU, 4500);
           audioEngine.playTantrumRage(3.5);
           audioEngine.speakActorLine(`¡Ya me cansé! ¡El actor de la tarima soy yo ${cleanU}!`, {
             pitch: 0.9,
             rate: 1.2,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '😡', false)
-          }, () => {
-            setTimeout(() => {
-              hideSubtitles();
-              singer.animController.resetToIdle();
-              done();
-            }, 1200);
           });
+          setTimeout(() => {
+            hideSubtitles();
+            singer.animController.resetToIdle();
+            done();
+          }, 4600);
         } else if (act === 'FLEXIONES' || act === 'PUSHUPS') {
-          singer.animController.triggerPushupsReaction(cleanU, 5800);
+          singer.animController.triggerPushupsReaction(cleanU, 5000);
           audioEngine.speakActorLine(`Uno... dos... ¡no doy más ${cleanU}!`, {
             pitch: 1.05,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '🏋️', false)
-          }, () => {
-            setTimeout(() => {
-              hideSubtitles();
-              singer.animController.resetToIdle();
-              done();
-            }, 1500);
           });
+          setTimeout(() => {
+            hideSubtitles();
+            singer.animController.resetToIdle();
+            done();
+          }, 5000);
         } else if (act === 'ESTATUA' || act === 'FREEZE') {
-          singer.animController.triggerFreezeReaction(5000);
+          const freezeDuration = 4000;
+          singer.animController.triggerFreezeReaction(freezeDuration);
           audioEngine.playFreezeChime();
           showSubtitlePhrase(`🧊 Modo estatua congelado por ${cleanU}`, '🧊', false);
+
           setTimeout(() => {
             hideSubtitles();
             singer.animController.resetToIdle();
             audioEngine.speakActorLine(`¡Uff, ya me descongelé! ¡Casi me da hipotermia ${cleanU}!`, {
               pitch: 1.15,
               rate: 1.1
-            }, () => {
+            });
+            setTimeout(() => {
               singer.animController.resetToIdle();
               done();
-            });
-          }, 5200);
+            }, 1400);
+          }, freezeDuration);
         } else if (act === 'TOMATE' || act === 'TOMATO' || act === 'TOMATOES') {
-          // Lluvia de tomates al mandar una Rosa (1 moneda)
           for (let i = 0; i < 6; i++) {
             setTimeout(() => {
               const target = singer.position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.7, 0.4, (Math.random() - 0.5) * 0.4));
@@ -499,14 +515,17 @@ export function initShowApp() {
           audioEngine.speakActorLine(`¡Auch! ¡Qué puntería con esa Rosa de tomates ${cleanU}!`, {
             pitch: 1.25,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '🍅', false)
-          }, () => {
-            setTimeout(() => {
-              hideSubtitles();
-              done();
-            }, 1500);
           });
+          setTimeout(() => {
+            hideSubtitles();
+            singer.animController.resetToIdle();
+            done();
+          }, 4000);
         } else {
-          setTimeout(done, 3000);
+          setTimeout(() => {
+            singer.animController.resetToIdle();
+            done();
+          }, 2000);
         }
       }
     });
@@ -941,17 +960,19 @@ export function initShowApp() {
 
   // Saltar chiste actual desde /admin
   syncBridge.on('SKIP_CURRENT_JOKE', () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    audioEngine.stopSpeech();
+    singer.animController.resetToIdle();
+    hideSubtitles();
+    cameraDirector.unlockShot();
     eventQueue.completeCurrent();
   });
 
   // Vaciar toda la cola
   syncBridge.on('CLEAR_QUEUE', () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    audioEngine.stopSpeech();
+    singer.animController.resetToIdle();
+    hideSubtitles();
+    cameraDirector.unlockShot();
     eventQueue.clear();
   });
 
