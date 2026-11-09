@@ -129,6 +129,7 @@ export class CameraDirector {
 
   unlockShot() {
     this.lockedUntil = 0;
+    this.setShot('WIDE');
   }
 
   setAutoDirector(enabled) {

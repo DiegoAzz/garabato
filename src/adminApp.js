@@ -729,8 +729,30 @@ export function initAdminApp() {
         </div>
       `;
 
-      li.querySelector('.btn-joke-test').addEventListener('click', () => {
+      li.querySelector('.btn-joke-test').addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        const oldText = btn.textContent;
+        btn.textContent = '🔊 Probando...';
+        btn.style.background = '#10b981';
+        setTimeout(() => {
+          btn.textContent = oldText;
+          btn.style.background = '';
+        }, 2200);
+
         syncBridge.send('TEST_IDLE_PHRASE', { phrase });
+
+        // Reproducir también en la pestaña de Admin para verificación auditiva inmediata
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          try {
+            window.speechSynthesis.cancel();
+            const clean = phrase.replace(/@/g, '').trim();
+            const utt = new SpeechSynthesisUtterance(clean);
+            utt.lang = 'es-ES';
+            utt.rate = 1.08;
+            utt.pitch = 1.15;
+            window.speechSynthesis.speak(utt);
+          } catch (err) {}
+        }
       });
 
       li.querySelector('.btn-joke-edit').addEventListener('click', () => {

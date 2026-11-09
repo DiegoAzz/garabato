@@ -268,6 +268,9 @@ export function initShowApp() {
     } else if (act === 'BAILAR' || act === 'DANCE') {
       title = '¡Poner a Bailar al Actor!';
       icon = '💃';
+    } else if (act === 'CANTAR' || act === 'SING') {
+      title = '¡Poner a Cantar al Actor!';
+      icon = '🎤';
     } else if (act === 'RABIA' || act === 'RAGE') {
       title = '¡Rabieta Cómica del Actor!';
       icon = '😡';
@@ -280,6 +283,9 @@ export function initShowApp() {
     } else if (act === 'TOMATE' || act === 'TOMATO' || act === 'TOMATOES') {
       title = '¡Tomatazo al Actor!';
       icon = '🍅';
+    } else if (act === 'CUENTO' || act === 'STORY') {
+      title = '¡Contar un Cuento en Vivo!';
+      icon = '💌';
     }
 
     const actionDuration = (act === 'BAILAR' || act === 'DANCE') ? 10000 : (act === 'CANTAR' || act === 'SING') ? 11500 : 6000;
@@ -521,6 +527,20 @@ export function initShowApp() {
             singer.animController.resetToIdle();
             done();
           }, 4000);
+        } else if (act === 'CUENTO' || act === 'STORY') {
+          cameraDirector.lockShot('PRIMERA_PLANA', 8000);
+          singer.animController.triggerWelcomeReaction(cleanU, 4000);
+          showSubtitlePhrase(`💌 ¡Manda un regalo y cuéntame tu historia por chat @${cleanU}!`, '💌', false);
+          audioEngine.speakActorLine(`¡Atención mi gente! Si mandas cualquier regalo y me escribes tu chiste en el chat o por el interno, ¡lo cuento aquí mismo en la tarima para todo el público!`, {
+            pitch: 1.15,
+            rate: 1.05
+          });
+          setTimeout(() => {
+            hideSubtitles();
+            cameraDirector.unlockShot();
+            singer.animController.resetToIdle();
+            done();
+          }, 6500);
         } else {
           setTimeout(() => {
             singer.animController.resetToIdle();
@@ -1044,7 +1064,7 @@ export function initShowApp() {
   let isIdleCalling = false;
 
   function triggerIdleInvitation(forcedPhrase = null) {
-    if (isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking) return;
+    if (!forcedPhrase && (isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking)) return;
     if (!forcedPhrase && (!idleConfig.enabled || !idleConfig.phrases || idleConfig.phrases.length === 0)) return;
 
     const phrase = forcedPhrase || idleConfig.phrases[Math.floor(Math.random() * idleConfig.phrases.length)];
@@ -1060,14 +1080,14 @@ export function initShowApp() {
       pitch: 1.15,
       rate: 1.08,
       onChunk: (chunk) => showSubtitlePhrase(chunk, '📢', false)
-    }, () => {
-      setTimeout(() => {
-        hideSubtitles();
-        singer.animController.resetToIdle();
-        isIdleCalling = false;
-        lastActivityTime = Date.now();
-      }, 1000);
     });
+
+    setTimeout(() => {
+      hideSubtitles();
+      singer.animController.resetToIdle();
+      isIdleCalling = false;
+      lastActivityTime = Date.now();
+    }, 4200);
   }
 
   // Prueba de frase de inactividad desde Admin

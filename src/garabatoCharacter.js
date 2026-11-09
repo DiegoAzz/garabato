@@ -372,10 +372,7 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       ];
       showBubbleText(lines[Math.floor(Math.random() * lines.length)], '#38bdf8', duration);
       setTimeout(() => {
-        this.gesture = 'none';
-        group.rotation.x = 0;
-        group.rotation.z = 0;
-        headGroup.rotation.x = 0;
+        this.resetToIdle();
       }, duration);
     },
 
@@ -389,10 +386,7 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       ];
       showBubbleText(lines[Math.floor(Math.random() * lines.length)], '#ef4444', duration);
       setTimeout(() => {
-        this.gesture = 'none';
-        group.rotation.x = 0;
-        group.rotation.z = 0;
-        headGroup.rotation.x = 0;
+        this.resetToIdle();
       }, duration);
     },
 
@@ -401,19 +395,11 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       const cleanU = String(user || 'amigo').replace(/@/g, '');
       showBubbleText(`🏋️ ¡1... 2... 3... NO PUEDO MÁS ${cleanU}!`, '#f59e0b', duration);
       setTimeout(() => {
-        this.gesture = 'none';
-        group.rotation.x = 0;
-        group.rotation.z = 0;
-        torsoGroup.rotation.x = 0;
-        legL.hipJoint.rotation.x = 0;
-        legL.kneeJoint.rotation.x = 0;
-        legR.hipJoint.rotation.x = 0;
-        legR.kneeJoint.rotation.x = 0;
-        hips.position.y = this.baseY;
+        this.resetToIdle();
       }, duration);
     },
 
-    triggerFreezeReaction(duration = 4500) {
+    triggerFreezeReaction(duration = 4000) {
       this.gesture = 'freeze';
       this.freezeUntil = Date.now() + duration;
       showBubbleText('🥶 ¡MODO ESTATUA ACTIVADO!', '#06b6d4', duration);
@@ -426,6 +412,7 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       this.gesture = 'none';
       this.danceMove = 'none';
       this.freezeUntil = 0;
+      this.welcomeUntil = 0;
       group.rotation.set(0, 0, 0);
       hips.position.set(0, this.baseY, 0);
       hips.rotation.set(0, 0, 0);
@@ -447,8 +434,9 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       }
     },
 
-    triggerWelcomeReaction(user = 'Espectador', duration = 3800) {
+    triggerWelcomeReaction(user = 'Espectador', duration = 3500) {
       this.gesture = 'welcome';
+      this.welcomeUntil = Date.now() + duration;
       const lines = [
         `👋 ¡Epa @${user}! ¡Pasa que aquí tú eres el que manda!`,
         `👑 ¡Llegó el mero jefe @${user}! ¿Qué me vas a poner a hacer?`,
@@ -459,13 +447,7 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       const selected = lines[Math.floor(Math.random() * lines.length)];
       showBubbleText(selected, '#a855f7', duration);
       setTimeout(() => {
-        if (this.gesture === 'welcome') {
-          this.gesture = 'none';
-          headGroup.rotation.y = 0;
-          headGroup.rotation.z = 0;
-          armL.shoulder.rotation.x = -0.3;
-          armL.shoulder.rotation.z = -0.3;
-        }
+        this.resetToIdle();
       }, duration);
       return selected;
     },
@@ -635,7 +617,8 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         return;
       } else if (this.gesture === 'freeze') {
         // Estatua congelada (con auto-recuperación estricta por tiempo en cada frame)
-        if (this.freezeUntil && Date.now() >= this.freezeUntil) {
+        const now = Date.now();
+        if (!this.freezeUntil || now >= this.freezeUntil) {
           this.resetToIdle();
           return;
         }
@@ -646,7 +629,12 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         headGroup.rotation.y = 0.4;
         return;
       } else if (this.gesture === 'welcome') {
-        // Saludo efusivo con la mano izquierda al nuevo espectador
+        // Saludo efusivo con la mano izquierda al espectador
+        const now = Date.now();
+        if (this.welcomeUntil && now >= this.welcomeUntil) {
+          this.resetToIdle();
+          return;
+        }
         const wave = Math.sin(time * 9);
         armL.shoulder.rotation.x = -1.6 + Math.sin(time * 4) * 0.15;
         armL.shoulder.rotation.z = -0.7 + wave * 0.45;
