@@ -64,6 +64,12 @@ export class EventQueue {
 
     this.notifyQueueChange();
 
+    // Prioridad Absoluta VIP: Si llega un regalo VIP y lo que suena es un chiste gratis, interrumpir para respuesta instantánea
+    if (isVip && this.currentEvent && !this.currentEvent.isVip) {
+      this.completeCurrent();
+      return;
+    }
+
     // Solo procesar de inmediato si NO hay ningún chiste/evento sonando en el escenario
     if (!this.isProcessing && !this.currentEvent) {
       this.processNext();
@@ -138,10 +144,10 @@ export class EventQueue {
 
     this.onEventEnd(finishedEvent);
 
-    // Mantiene isProcessing = true durante los 280ms de transición para que ningún evento se monte encima
+    // Transición ultra rápida (60ms) para que el siguiente regalo entre de inmediato
     setTimeout(() => {
       this.processNext();
-    }, 280);
+    }, 60);
   }
 
   notifyQueueChange() {

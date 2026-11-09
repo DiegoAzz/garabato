@@ -707,7 +707,8 @@ export function initAdminApp() {
   if (btnSaveAsVipJoke) {
     btnSaveAsVipJoke.addEventListener('click', () => {
       const story = (storyTextInput && storyTextInput.value || '').trim();
-      const user = (storyUserInput && storyUserInput.value || '').trim() || 'Espectador';
+      const rawUser = (storyUserInput && storyUserInput.value || '').trim() || 'Espectador';
+      const user = rawUser.replace(/^@+/, '').trim();
       const giftName = (storyGiftSelect && storyGiftSelect.value) || '👑 Corona VIP';
 
       if (!story) {
@@ -730,20 +731,28 @@ export function initAdminApp() {
     btnSendAudienceStory.addEventListener('click', () => {
       const story = (storyTextInput && storyTextInput.value || '').trim();
       if (!story) {
-        alert('Por favor pega o escribe el cuento que te mandó el usuario por interno.');
+        if (storyTextInput) storyTextInput.focus();
         return;
       }
-      const user = (storyUserInput && storyUserInput.value || '').trim() || 'EspectadorVIP';
+      const rawUser = (storyUserInput && storyUserInput.value || '').trim() || 'Espectador';
+      const cleanUser = rawUser.replace(/^@+/, '').trim();
       const gift = (storyGiftSelect && storyGiftSelect.value) || '🌹 Rosa';
 
+      const oldText = btnSendAudienceStory.textContent;
+      btnSendAudienceStory.textContent = `🚀 ¡Cuento de ${cleanUser} en Tarima!`;
+      btnSendAudienceStory.style.background = '#10b981';
+      setTimeout(() => {
+        btnSendAudienceStory.textContent = oldText;
+        btnSendAudienceStory.style.background = '';
+      }, 2500);
+
       syncBridge.send('AUDIENCE_CUSTOM_STORY', {
-        user,
+        user: cleanUser,
         gift,
         story
       });
 
       if (storyTextInput) storyTextInput.value = '';
-      alert(`¡Cuento de @${user} enviado a la tarima con prioridad VIP!`);
     });
   }
 

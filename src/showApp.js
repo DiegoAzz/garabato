@@ -90,8 +90,22 @@ export function initShowApp() {
 
   // Control de Actividad y Anti-Inactividad TikTok
   let lastActivityTime = Date.now();
+  let isIdleCalling = false;
+  let idleTimeoutTimer = null;
+
+  function cancelIdleInvitation() {
+    clearTimeout(idleTimeoutTimer);
+    if (isIdleCalling) {
+      isIdleCalling = false;
+      audioEngine.stopSpeech();
+      hideSubtitles();
+      singer.animController.resetToIdle();
+    }
+  }
+
   function markActivity() {
     lastActivityTime = Date.now();
+    cancelIdleInvitation();
   }
 
   // Subtítulos dinámicos compactos frase a frase (debajo del personaje)
@@ -811,17 +825,20 @@ export function initShowApp() {
   // Cuentos enviados por espectadores por interno / chat tras mandar regalo
   syncBridge.on('AUDIENCE_CUSTOM_STORY', (data) => {
     if (!data || !data.story) return;
-    const user = data.user || 'EspectadorVIP';
-    const gift = data.gift || 'Regalo';
+    const cleanUser = String(data.user || 'un amigo').replace(/^@+/, '').trim();
+    const cleanGift = String(data.gift || 'Regalo Especial').replace(/^@+/, '').trim();
+
+    cancelIdleInvitation();
+
     const customJoke = {
       id: 'audience_story_' + Date.now(),
-      title: `Cuento de @${user}`,
-      setup: `¡Atención mi gente! @${user} nos envió ${gift} y por el interno nos mandó este cuento... ¡A ver qué tal le sale al compadre! Escuchen esto: ${data.story}`,
-      punch: `¡Jajaja! ¿Qué opinan del cuento de @${user}? ¡Un aplauso para este comediante del público!`,
-      giftName: gift,
+      title: `Cuento de ${cleanUser}`,
+      setup: `¡Atención mi gente! ${cleanUser} nos mandó ${cleanGift} y por el interno nos dejó su historia... ¡Escuchen esto! ${data.story}`,
+      punch: `¡Jajaja! ¡Tremendo cuento el que nos mandó ${cleanUser}! ¡Un aplauso bien fuerte del público para ${cleanUser}!`,
+      giftName: cleanGift,
       isAudienceStory: true
     };
-    enqueueJoke(customJoke, user, true, gift);
+    enqueueJoke(customJoke, cleanUser, true, cleanGift);
   });
 
   // Disparo manual desde Admin ("▶ Probar")
@@ -1070,8 +1087,6 @@ export function initShowApp() {
     idleConfig = { ...idleConfig, ...newCfg };
   });
 
-  let isIdleCalling = false;
-
   function triggerIdleInvitation(forcedPhrase = null) {
     if (!forcedPhrase && (isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking)) return;
     if (!forcedPhrase && (!idleConfig.enabled || !idleConfig.phrases || idleConfig.phrases.length === 0)) return;
@@ -1082,7 +1097,6 @@ export function initShowApp() {
     isIdleCalling = true;
     lastActivityTime = Date.now();
 
-    singer.animController.triggerWelcomeReaction('Público', 3500);
     showSubtitlePhrase(phrase, '📢', false);
 
     audioEngine.speakActorLine(phrase, {
@@ -1091,12 +1105,13 @@ export function initShowApp() {
       onChunk: (chunk) => showSubtitlePhrase(chunk, '📢', false)
     });
 
-    setTimeout(() => {
+    clearTimeout(idleTimeoutTimer);
+    idleTimeoutTimer = setTimeout(() => {
       hideSubtitles();
       singer.animController.resetToIdle();
       isIdleCalling = false;
       lastActivityTime = Date.now();
-    }, 4200);
+    }, 4000);
   }
 
   // Sincronización en tiempo real de voz y tono desde Admin

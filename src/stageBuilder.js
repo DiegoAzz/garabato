@@ -36,192 +36,39 @@ export function buildDiscoStage(scene) {
   stageGroup.add(rimMesh);
 
   // ==========================================
-  // 2. PANTALLA LED DE FONDO (CANVAS DINÁMICO)
+  // 2. FONDO ELEGANTE DE TEATRO STAND-UP (Cero parpadeos ni pantallas molestas)
   // ==========================================
-  const ledCanvas = document.createElement('canvas');
-  ledCanvas.width = 1024;
-  ledCanvas.height = 512;
-  const ledCtx = ledCanvas.getContext('2d');
-
-  const ledTexture = new THREE.CanvasTexture(ledCanvas);
-  ledTexture.colorSpace = THREE.SRGBColorSpace;
-
-  const screenGeo = new THREE.PlaneGeometry(9.6, 4.8);
-  const screenMat = new THREE.MeshBasicMaterial({
-    map: ledTexture,
-    side: THREE.FrontSide
+  const backWallGeo = new THREE.BoxGeometry(16, 9, 0.4);
+  const backWallMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0f1d,
+    roughness: 0.9,
+    metalness: 0.1
   });
-  const screenMesh = new THREE.Mesh(screenGeo, screenMat);
-  screenMesh.position.set(0, 3.8, -5.9);
-  stageGroup.add(screenMesh);
+  const backWallMesh = new THREE.Mesh(backWallGeo, backWallMat);
+  backWallMesh.position.set(0, 4.5, -6.0);
+  stageGroup.add(backWallMesh);
 
-  // Marco de la pantalla
-  const frameGeo = new THREE.BoxGeometry(10.0, 5.2, 0.2);
-  const frameMat = new THREE.MeshLambertMaterial({ color: 0x030712 });
-  const frameMesh = new THREE.Mesh(frameGeo, frameMat);
-  frameMesh.position.set(0, 3.8, -6.0);
-  stageGroup.add(frameMesh);
+  // Paneles acústicos decorativos oscuros y elegantes (sin texto que parpadee)
+  for (let i = -6; i <= 6; i += 2.4) {
+    const panelGeo = new THREE.BoxGeometry(1.6, 7.5, 0.1);
+    const panelMat = new THREE.MeshStandardMaterial({
+      color: 0x060913,
+      roughness: 0.95
+    });
+    const panel = new THREE.Mesh(panelGeo, panelMat);
+    panel.position.set(i, 4.2, -5.8);
+    stageGroup.add(panel);
+  }
 
   let ledData = {
     singerName: 'EL GARABATO',
-    personality: '👑 EL PÚBLICO ES EL QUE MANDA 🎭',
-    songTitle: 'GARABATO COMEDY CLUB 3D',
+    personality: 'COMEDY CLUB',
+    songTitle: '',
     subtitles: ''
   };
 
-  // Partículas bokeh doradas/neón que flotan suavemente en la pantalla LED
-  const bgParticles = [];
-  for (let i = 0; i < 38; i++) {
-    bgParticles.push({
-      x: Math.random() * 1024,
-      y: Math.random() * 512,
-      r: 1.8 + Math.random() * 3.5,
-      speedY: 0.2 + Math.random() * 0.55,
-      alpha: 0.18 + Math.random() * 0.45,
-      hue: Math.random() < 0.65 ? 45 : 190 // 65% dorado cálido, 35% cyan neón
-    });
-  }
-
-  function drawFluidWave(ctx, baseY, amplitude, phase, fillColor, frequency) {
-    ctx.beginPath();
-    ctx.moveTo(0, 512);
-    ctx.lineTo(0, baseY);
-    for (let x = 0; x <= 1024; x += 24) {
-      const y = baseY + Math.sin(x * frequency + phase) * amplitude + Math.cos(x * frequency * 0.5 + phase * 0.7) * (amplitude * 0.35);
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(1024, 512);
-    ctx.closePath();
-    ctx.fillStyle = fillColor;
-    ctx.fill();
-  }
-
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
-    const words = text.split(' ');
-    let line = '';
-    const lines = [];
-
-    for (let n = 0; n < words.length; n++) {
-      const testLine = line + words[n] + ' ';
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && n > 0) {
-        lines.push(line);
-        line = words[n] + ' ';
-        if (lines.length >= maxLines - 1) break;
-      } else {
-        line = testLine;
-      }
-    }
-    lines.push(line);
-
-    const totalH = lines.length * lineHeight;
-    const startY = y - totalH / 2 + lineHeight / 2;
-    for (let k = 0; k < lines.length; k++) {
-      ctx.fillText(lines[k].trim(), x, startY + k * lineHeight);
-    }
-  }
-
-  let lastLedTime = 0;
-  function updateLedScreen(time, audioLevels = { bass: 0, mid: 0 }) {
-    // Optimización: limitar actualización de textura 2D a 30 FPS para no saturar el bus GPU
-    if (time - lastLedTime < 0.033) return;
-    lastLedTime = time;
-
-    // 1. Fondo elegante de Comedy Club: Azul medianoche a negro profundo (Cero parpadeo ni espavileo)
-    const bgGrad = ledCtx.createRadialGradient(512, 190, 80, 512, 256, 580);
-    bgGrad.addColorStop(0, '#131b2e');
-    bgGrad.addColorStop(0.55, '#0a0d17');
-    bgGrad.addColorStop(1, '#020306');
-    ledCtx.fillStyle = bgGrad;
-    ledCtx.fillRect(0, 0, 1024, 512);
-
-    // 2. Partículas doradas / destellos flotantes suaves
-    for (let p of bgParticles) {
-      p.y -= p.speedY;
-      p.x += Math.sin(time * 0.8 + p.y * 0.02) * 0.25;
-      if (p.y < 0) {
-        p.y = 512;
-        p.x = Math.random() * 1024;
-      }
-      ledCtx.fillStyle = `hsla(${p.hue}, 90%, 65%, ${p.alpha * (0.8 + Math.sin(time * 2.5 + p.x) * 0.2)})`;
-      ledCtx.beginPath();
-      ledCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ledCtx.fill();
-    }
-
-    // 3. Ondas de audio fluidas y estéticas en la parte inferior (estilo Siri / Spotify Waves)
-    const waveY = 430;
-    const waveAmp = 18 + (audioLevels.bass || 0) * 36;
-    drawFluidWave(ledCtx, waveY + 16, waveAmp * 0.75, time * 1.5, 'rgba(139, 92, 246, 0.25)', 0.007);
-    drawFluidWave(ledCtx, waveY + 8, waveAmp * 0.9, time * 2.0 + 2, 'rgba(236, 72, 153, 0.30)', 0.009);
-    drawFluidWave(ledCtx, waveY, waveAmp, time * 2.5 + 4, 'rgba(6, 182, 212, 0.38)', 0.011);
-
-    // 4. Cartel de Neón de Broadway / Stand-Up Comedy ("EL GARABATO")
-    const neonPulse = 18 + Math.sin(time * 2.4) * 5; // Respiración suave y elegante
-
-    // Insignia superior
-    ledCtx.textAlign = 'center';
-    ledCtx.font = '800 20px -apple-system, sans-serif';
-    ledCtx.fillStyle = '#facc15';
-    ledCtx.shadowColor = '#facc15';
-    ledCtx.shadowBlur = 10;
-    ledCtx.fillText('★ GARABATO COMEDY CLUB • EN VIVO ★', 512, 65);
-
-    // Nombre del comediante con tubo de neón
-    const displayName = (ledData.singerName || 'EL GARABATO').toUpperCase();
-    ledCtx.font = '900 66px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ledCtx.shadowColor = '#ec4899';
-    ledCtx.shadowBlur = neonPulse;
-    ledCtx.fillStyle = '#ffffff';
-    ledCtx.fillText(displayName, 512, 138);
-
-    // Contorno suave de neón cian
-    ledCtx.shadowColor = '#00f0ff';
-    ledCtx.shadowBlur = neonPulse * 0.6;
-    ledCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ledCtx.lineWidth = 1.5;
-    ledCtx.strokeText(displayName, 512, 138);
-
-    // Tag inferior con el lema del show
-    ledCtx.shadowBlur = 0;
-    ledCtx.fillStyle = '#38bdf8';
-    ledCtx.font = '700 22px monospace';
-    const tagText = (ledData.personality && !ledData.personality.includes('Rockero'))
-      ? `[ ${ledData.personality} ]`
-      : '👑 ¡EL PÚBLICO ES EL QUE MANDA! 🎭';
-    ledCtx.fillText(tagText, 512, 184);
-
-    // 5. Subtítulos y Chiste Actual en Tarjeta Glassmorphism Limpia
-    const activeText = ledData.subtitles || (ledData.songTitle !== '¡LA DISCO EXPLOTA!' ? ledData.songTitle : '');
-    if (activeText) {
-      const cardW = 760;
-      const cardH = 88;
-      const cardX = (1024 - cardW) / 2;
-      const cardY = 224;
-
-      ledCtx.fillStyle = 'rgba(10, 15, 30, 0.82)';
-      ledCtx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-      ledCtx.lineWidth = 1.5;
-
-      // Tarjeta redondeada
-      if (ledCtx.roundRect) {
-        ledCtx.beginPath();
-        ledCtx.roundRect(cardX, cardY, cardW, cardH, 14);
-        ledCtx.fill();
-        ledCtx.stroke();
-      } else {
-        ledCtx.fillRect(cardX, cardY, cardW, cardH);
-      }
-
-      ledCtx.fillStyle = '#fde047';
-      ledCtx.font = '800 27px -apple-system, BlinkMacSystemFont, sans-serif';
-      ledCtx.shadowColor = 'rgba(253, 224, 71, 0.4)';
-      ledCtx.shadowBlur = 8;
-      wrapText(ledCtx, activeText, 512, cardY + cardH / 2, cardW - 50, 34, 2);
-      ledCtx.shadowBlur = 0;
-    }
-
-    ledTexture.needsUpdate = true;
+  function updateLedScreen() {
+    // Pantalla de texto eliminada a petición del usuario (fondo 100% limpio y sin parpadeos)
   }
 
   // ==========================================
