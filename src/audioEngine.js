@@ -360,6 +360,121 @@ export class AudioEngine {
     });
   }
 
+  /**
+   * Pista de baile para la orden ¡A BAILAR!
+   * Enciende el ritmo disco fiestero y bailable de 128 BPM con bajo y bombo durante X segundos
+   */
+  startPartyDanceTrack(durationSeconds = 8.0, onComplete = null) {
+    this.initContext();
+    const wasLounge = this.bgMusicPlaying;
+    if (wasLounge) this.stopComedyLoungeMusic();
+
+    this.bpm = 128;
+    this.startDiscoBeat();
+
+    setTimeout(() => {
+      this.stopDiscoBeat();
+      this.playCheer();
+      this.playCrowdApplause(4.0);
+      if (wasLounge) {
+        setTimeout(() => this.startComedyLoungeMusic(this.bgMusicPreset), 800);
+      }
+      if (onComplete) onComplete();
+    }, durationSeconds * 1000);
+  }
+
+  /**
+   * Acompañamiento musical armónico para la orden ¡A CANTAR!
+   * Genera acordes melódicos rítmicos de piano y percusión ligera mientras el actor canta
+   */
+  startSingingAccompaniment(durationSeconds = 9.0, onComplete = null) {
+    this.initContext();
+    if (!this.ctx) {
+      if (onComplete) onComplete();
+      return () => {};
+    }
+
+    const wasLounge = this.bgMusicPlaying;
+    if (wasLounge) this.stopComedyLoungeMusic();
+
+    let step = 0;
+    // Progresión melódica clásica pegajosa: C -> G -> Am -> F
+    const chords = [
+      [261.63, 329.63, 392.00, 523.25], // C
+      [196.00, 246.94, 293.66, 392.00], // G
+      [220.00, 261.63, 329.63, 440.00], // Am
+      [174.61, 220.00, 261.63, 349.23]  // F
+    ];
+
+    const timer = setInterval(() => {
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const chordIdx = Math.floor(step / 4) % chords.length;
+      const chord = chords[chordIdx];
+
+      // Acordes melódicos alegres
+      chord.forEach((freq) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.musicGain);
+
+        osc.start(now);
+        osc.stop(now + 0.38);
+      });
+
+      // Ritmo de bombo y shaker
+      if (step % 2 === 0) {
+        const kickOsc = this.ctx.createOscillator();
+        const kickGain = this.ctx.createGain();
+        kickOsc.frequency.setValueAtTime(130, now);
+        kickOsc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+        kickGain.gain.setValueAtTime(0.35, now);
+        kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        kickOsc.connect(kickGain);
+        kickGain.connect(this.musicGain);
+        kickOsc.start(now);
+        kickOsc.stop(now + 0.14);
+      } else {
+        this.playNoiseHat(now, 0.08, 0.22);
+      }
+
+      step++;
+    }, 280);
+
+    const stopFn = () => {
+      clearInterval(timer);
+      if (this.ctx) {
+        const now = this.ctx.currentTime;
+        [261.63, 329.63, 392.00, 523.25].forEach(f => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+          osc.connect(gain);
+          gain.connect(this.musicGain);
+          osc.start(now);
+          osc.stop(now + 1.2);
+        });
+      }
+      if (wasLounge) {
+        setTimeout(() => this.startComedyLoungeMusic(this.bgMusicPreset), 600);
+      }
+      if (onComplete) onComplete();
+    };
+
+    setTimeout(stopFn, durationSeconds * 1000);
+    return stopFn;
+  }
+
   // ==========================================
   // MODO A: VOZ CÓMICA (Web Speech API + Chrome Fix)
   // ==========================================

@@ -300,36 +300,120 @@ export function initShowApp() {
             }, 1200);
           });
         } else if (act === 'BAILAR' || act === 'DANCE') {
+          // 1. Activar efectos visuales de fiesta extrema y euforia de la audiencia
           singer.animController.triggerDanceFrenzyReaction();
-          stage.triggerExtremeDisco(6.0);
-          audioEngine.playCheer();
-          audioEngine.speakActorLine(`¡A bailar se ha dicho por orden de ${cleanU}! ¡Suelten los pasos prohibidos!`, {
-            pitch: 1.15,
+          stage.triggerExtremeDisco(9.0);
+          audience.triggerFrenzy(9.0);
+          showSubtitlePhrase(`💃 ¡A BAILAR! Pasos prohibidos ordenados por ${cleanU}`, '💃', false);
+
+          // 2. Anuncio del actor con energía y música de baile
+          audioEngine.speakActorLine(`¡Música maestro! ¡A romper la pista con los pasos prohibidos por orden de ${cleanU}!`, {
+            pitch: 1.18,
+            rate: 1.05,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '💃', false)
           }, () => {
-            setTimeout(() => {
-              hideSubtitles();
-              done();
-            }, 1200);
+            // 3. Encender la pista bailable con bajo y bombo 128 BPM
+            showSubtitlePhrase(`🔥 ¡BAILE DESCONTROLADO DE ${cleanU.toUpperCase()}! 🔥`, '🎶', true);
+            audioEngine.startPartyDanceTrack(8.0, () => {
+              // 4. Cierre triunfal con aplausos y ovación
+              showSubtitlePhrase(`👏 ¡Uff, qué sabrosura! ¡Gracias por el baile ${cleanU}!`, '🎉', true);
+              audioEngine.speakActorLine(`¡Uff, qué sabrosura de música! ¡Gracias por ponerme a bailar ${cleanU}!`, { pitch: 1.1 }, () => {
+                setTimeout(() => {
+                  hideSubtitles();
+                  done();
+                }, 1000);
+              });
+            });
           });
         } else if (act === 'CANTAR' || act === 'SING') {
-          singer.animController.triggerDanceFrenzyReaction();
-          audioEngine.playCheer();
-          const lyrics = [
-            `¡La la laaaa! ¡Por orden de ${cleanU} me pongo a cantar a todo pulmón! ¡Qué chorro de voz tengo!`,
-            `¡O sole mío! ¡Miren qué entonación ${cleanU}, merezco un Grammy de TikTok! Música maestro!`
+          // Catálogo de canciones al azar con estilos musicales acordes
+          const songsCatalog = [
+            {
+              genre: '🤠 RANCHERA DE DESPECHO',
+              intro: `¡Con sentimiento por orden de ${cleanU}!`,
+              lyrics: `¡Y volver, volver, volveeeer! ¡A comer empanadas con ají bien picante! ¡Nos dejaron sin plata pero con dignidad ${cleanU}! ¡Ajúa!`,
+              outro: `¡Viva la ranchera y viva ${cleanU}!`
+            },
+            {
+              genre: '🔥 REGUETÓN DE TIKTOK',
+              intro: `¡Dímelo DJ, suelta el beat para ${cleanU}!`,
+              lyrics: `¡Tra tra tra! ¡Báilalo hasta abajo ${cleanU}! ¡No tengo un Ferrari pero tengo este piquete en el live! ¡Báilalo que esto se prende!`,
+              outro: `¡Qué flow tan criminal, gracias ${cleanU}!`
+            },
+            {
+              genre: '🎭 ÓPERA DRAMÁTICA ABSURDA',
+              intro: `¡Mi do de pecho para ${cleanU}!`,
+              lyrics: `¡Fiiiiígaro! ¡Fígaro, Fígaro, Fígaroooo! ¡O sole mío, devuélveme el pasaje del metro! ¡Qué voz tan celestial tengo ${cleanU}!`,
+              outro: `¡Grazie, grazie, el tenor de TikTok!`
+            },
+            {
+              genre: '💔 DESPECHO DE CANTINA',
+              intro: `¡Mesero, sírvame otra gaseosa por culpa de ${cleanU}!`,
+              lyrics: `¡Me dejó en visto con dos chulos azules! ¡Y ahora le canto con el alma rota en la tarima! ¡Salud por los que amamos y no nos pagan!`,
+              outro: `¡Ay dolor, qué despecho tan sabroso!`
+            },
+            {
+              genre: '🪗 VALLENATO COSTERO',
+              intro: `¡Ay hombe! ¡Con sabor a fiesta para ${cleanU}!`,
+              lyrics: `¡Esta noche yo me voy de parranda con ${cleanU}! ¡Porque la vida es sabrosa y el live está prendido! ¡Con acordeón y alegría en el pecho!`,
+              outro: `¡Eso es compadre, qué viva el vallenato!`
+            },
+            {
+              genre: '🌹 BALADA ROMÁNTICA',
+              intro: `¡Dedicada al amor de mi vida ${cleanU}!`,
+              lyrics: `¡Si nos dejan... nos vamos a vivir a un penthouse! ¡Donde no cobren el arriendo ni los servicios! ¡Te amaré aunque no tengas saldo!`,
+              outro: `¡Qué romanticismo, me hice llorar a mí mismo!`
+            },
+            {
+              genre: '🎺 SALSA BRAVA SABROSA',
+              intro: `¡Vaya! ¡Para todos los rumberos de ${cleanU}!`,
+              lyrics: `¡Periódico de ayer, que nadie más leyó! ¡Saca a tu pareja y dale una vuelta! ¡Que esta salsa brava se baila en una sola baldosa!`,
+              outro: `¡Azúuuucar! ¡Qué swing tan bravo!`
+            },
+            {
+              genre: '🕺 POP OCHENTERO FIESTERO',
+              intro: `¡Estilo retro para ${cleanU}!`,
+              lyrics: `¡A quién le importa lo que yo haga! ¡A quién le importa lo que yo diga! ¡Yo soy el actor de la tarima y aquí me quedo ${cleanU}!`,
+              outro: `¡Qué temazo de los ochenta!`
+            },
+            {
+              genre: '🌴 CUMBIA TROPICAL',
+              intro: `¡Sabor tropical pedido por ${cleanU}!`,
+              lyrics: `¡Oye mujer, qué buena que está la noche! ¡Baila la cumbia pegadita al taburete! ¡Con una cerveza y un tamal bien caliente!`,
+              outro: `¡Que viva la fiesta y la cumbia sabrosa!`
+            },
+            {
+              genre: '🎸 ROCK AND ROLL CÓMICO',
+              intro: `¡Uno, dos, tres, cuatro, rock ${cleanU}!`,
+              lyrics: `¡El rock del reloj me tiene electrizado! ¡Mueve la cintura como Elvis en la tarima! ¡Guitarrazo limpio para todo el público!`,
+              outro: `¡Yeah baby! ¡El rock and roll nunca muere!`
+            }
           ];
-          const chosenLyric = lyrics[Math.floor(Math.random() * lyrics.length)];
-          audioEngine.speakActorLine(chosenLyric, {
+
+          const song = songsCatalog[Math.floor(Math.random() * songsCatalog.length)];
+          stage.setLedData({ songTitle: `🎤 ${song.genre}`, subtitles: `Canta para @${cleanU}` });
+          showSubtitlePhrase(`${song.genre}: ${song.intro}`, '🎤', false);
+
+          singer.animController.danceMove = 'standup';
+          audience.triggerFrenzy(7.0);
+
+          // Iniciar acompañamiento musical con acordes y ritmo
+          audioEngine.startSingingAccompaniment(9.5);
+
+          // El comediante canta la canción completa con entonación cómica
+          const songText = `${song.intro}. ${song.lyrics}. ${song.outro}`;
+          audioEngine.speakActorLine(songText, {
             pitch: 1.25,
             rate: 0.98,
-            onChunk: (chunk) => showSubtitlePhrase(chunk, '🎤', false)
+            onChunk: (chunk) => showSubtitlePhrase(chunk, '🎤', true)
           }, () => {
-            audioEngine.playCrowdApplause(3.5);
+            audioEngine.playCrowdApplause(4.5);
+            audioEngine.playCheer();
+            showSubtitlePhrase(`👏 ¡Ovación del público para ${cleanU}!`, '⭐', true);
             setTimeout(() => {
               hideSubtitles();
               done();
-            }, 1200);
+            }, 1800);
           });
         } else if (act === 'RABIA' || act === 'RAGE') {
           singer.animController.triggerRageReaction(cleanU, 4800);
