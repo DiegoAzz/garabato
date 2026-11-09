@@ -165,6 +165,9 @@ export function initShowApp() {
   // EJECUCIÓN PROFESIONAL DE UN CHISTE
   // ==========================================
   function enqueueJoke(joke, user = 'Espectador', isVip = false, gift = null) {
+    const textLen = ((joke.setup || '').length + (joke.punch || '').length);
+    const dynamicDuration = Math.max(55000, textLen * 180 + 15000);
+
     eventQueue.enqueue({
       isVip,
       user,
@@ -173,7 +176,7 @@ export function initShowApp() {
       icon: isVip ? '👑' : '🎙️',
       setup: joke.setup,
       punch: joke.punch,
-      duration: 15000, // Tiempo límite de resguardo
+      duration: dynamicDuration,
       execute: (evt, done) => {
         unlockAudio();
 
@@ -258,6 +261,8 @@ export function initShowApp() {
       icon = '🍅';
     }
 
+    const actionDuration = (act === 'BAILAR' || act === 'DANCE' || act === 'CANTAR' || act === 'SING') ? 30000 : 20000;
+
     eventQueue.enqueue({
       isVip,
       user,
@@ -265,7 +270,7 @@ export function initShowApp() {
       title,
       icon,
       setup: `${user} ordenó: ¡${title}!`,
-      duration: 7500,
+      duration: actionDuration,
       execute: (evt, done) => {
         unlockAudio();
         const specPos = audience.getSpectatorPosition(user);

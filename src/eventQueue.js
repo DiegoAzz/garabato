@@ -28,6 +28,12 @@ export class EventQueue {
    */
   enqueue(eventDef) {
     const isVip = Boolean(eventDef.isVip || eventDef.gift || eventDef.priority === 'VIP');
+    
+    // Margen de seguridad amplio: garantiza que NUNCA un chiste se corte a mitad de camino por tiempo límite
+    const textLen = ((eventDef.setup || '').length + (eventDef.punch || '').length);
+    const minSafeDuration = Math.max(50000, textLen * 180 + 15000);
+    const safeDuration = Math.max(eventDef.duration || 0, minSafeDuration);
+
     const event = {
       id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
       type: eventDef.type || 'CHISTE',
@@ -38,8 +44,7 @@ export class EventQueue {
       isVip,
       setup: eventDef.setup || '',
       punch: eventDef.punch || '',
-      // Tiempo límite dinámico: garantiza que cuentos largos de muchos caracteres nunca sean interrumpidos
-      duration: eventDef.duration || Math.max(22000, ((eventDef.setup || '').length + (eventDef.punch || '').length) * 110),
+      duration: safeDuration,
       execute: eventDef.execute || (() => {})
     };
 
@@ -51,26 +56,29 @@ export class EventQueue {
 
     this.notifyQueueChange();
 
+    // Solo procesar de inmediato si NO hay ningún chiste/evento sonando en el escenario
     if (!this.isProcessing && !this.currentEvent) {
       this.processNext();
     }
   }
 
   /**
-   * Procesa el siguiente evento respetando la prioridad VIP
+   * Procesa el siguiente evento respetando rigurosamente:
+   * 1. Prioridad VIP sobre Gratis (los regalos siempre van primero).
+   * 2. Secuencialidad absoluta (un evento a la vez, esperando conclusión total del anterior).
    */
   processNext() {
     clearTimeout(this.fallbackTimer);
 
-    // Prioridad 1: Cola VIP (Regalos de TikTok)
+    // Prioridad 1: Cola VIP (Regalos de TikTok / Cuentos VIP)
     if (this.vipQueue.length > 0) {
       this.currentEvent = this.vipQueue.shift();
     }
-    // Prioridad 2: Cola Normal (Chistes gratis por Taps)
+    // Prioridad 2: Cola Normal (Chistes gratis por Taps) SOLO SI NO HAY REGALOS VIP PENDIENTES
     else if (this.normalQueue.length > 0) {
       this.currentEvent = this.normalQueue.shift();
     }
-    // Cola vacía
+    // Cola totalmente vacía
     else {
       this.currentEvent = null;
       this.isProcessing = false;
@@ -85,8 +93,12 @@ export class EventQueue {
     try {
       this.onEventStart(this.currentEvent, this.getTotalPendingCount());
 
-      // Se le pasa una función callback 'done' al evento para que avise exactamente cuando termine
+      // Callback con candado de ejecución única para evitar carreras
+      let isDoneCalled = false;
       const doneCallback = () => {
+        if (isDoneCalled) return;
+        isDoneCalled = true;
+        clearTimeout(this.fallbackTimer);
         this.completeCurrent();
       };
 
@@ -99,15 +111,15 @@ export class EventQueue {
       return;
     }
 
-    // Fallback de seguridad: si por alguna razón la voz o audio no avisa, pasar al siguiente tras 'duration' ms
+    // Fallback de seguridad generoso (50+ seg) por si falla la síntesis de voz en el navegador
     this.fallbackTimer = setTimeout(() => {
-      console.warn('[EventQueue] Fallback timeout alcanzado para:', this.currentEvent?.title);
+      console.warn('[EventQueue] Fallback timeout alcanzado (evento demorado):', this.currentEvent?.title);
       this.completeCurrent();
     }, this.currentEvent.duration);
   }
 
   /**
-   * Finaliza el evento actual limpiamente y avanza al siguiente
+   * Finaliza el evento actual limpiamente y avanza al siguiente tras pausa natural
    */
   completeCurrent() {
     if (!this.currentEvent) return;
@@ -118,10 +130,10 @@ export class EventQueue {
 
     this.onEventEnd(finishedEvent);
 
-    // Transición rápida de 200ms entre eventos para máxima respuesta en TikTok Live
+    // Mantiene isProcessing = true durante los 280ms de transición para que ningún evento se monte encima
     setTimeout(() => {
       this.processNext();
-    }, 200);
+    }, 280);
   }
 
   notifyQueueChange() {
@@ -137,6 +149,10 @@ export class EventQueue {
 
   getTotalPendingCount() {
     return this.vipQueue.length + this.normalQueue.length;
+  }
+
+  get isBusy() {
+    return Boolean(this.isProcessing || this.currentEvent !== null);
   }
 
   getCurrentEvent() {
