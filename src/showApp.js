@@ -830,6 +830,10 @@ export function initShowApp() {
 
     cancelIdleInvitation();
 
+    if (audience && cleanUser) {
+      audience.addViewer(cleanUser);
+    }
+
     const customJoke = {
       id: 'audience_story_' + Date.now(),
       title: `Cuento de ${cleanUser}`,
@@ -937,9 +941,14 @@ export function initShowApp() {
     const rawUser = String(user || 'amigo');
     const cleanUser = rawUser.replace(/^@+/, '').trim();
 
-    // 1. Mostrar toast visual inmediatamente con @ en pantalla
+    // 1. Sumar físicamente el nuevo espectador 3D al público frente a la tarima con su nombre flotante
+    if (audience && cleanUser) {
+      audience.addViewer(cleanUser);
+    }
+
+    // 2. Mostrar toast visual inmediatamente con el nombre en pantalla
     if (welcomeToastEl && welcomeUserEl) {
-      welcomeUserEl.textContent = `@${cleanUser}`;
+      welcomeUserEl.textContent = cleanUser;
       welcomeToastEl.classList.remove('hidden');
       clearTimeout(welcomeToastEl._hideTimer);
       welcomeToastEl._hideTimer = setTimeout(() => {
@@ -947,7 +956,7 @@ export function initShowApp() {
       }, 4200);
     }
 
-    // 2. Si el actor no está ocupado y pasaron al menos 8 segundos, saludar con voz cómica (sin pronunciar arroba)
+    // 3. Si el actor no está ocupado y pasaron al menos 8 segundos, saludar con voz cómica (sin pronunciar arroba)
     const now = Date.now();
     const isActorBusy = eventQueue.isBusy || audioEngine.isSpeaking;
     if (!isActorBusy && (now - lastSpokenWelcomeTime > 8000)) {
