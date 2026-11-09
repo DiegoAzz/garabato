@@ -29,9 +29,10 @@ export function initShowApp() {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Optimización de rendimiento para TikTok LIVE: cap de pixelRatio para 60 FPS estables sin sobrecalentar GPU
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
 
@@ -860,14 +861,15 @@ export function initShowApp() {
   syncBridge.send('SHOW_READY', { timestamp: Date.now() });
 
   // ==========================================
-  // BUCLE DE ANIMACIÓN 60 FPS
+  // BUCLE DE ANIMACIÓN 60 FPS ULTRA-OPTIMIZADO
   // ==========================================
   const clock = new THREE.Clock();
+  let lastRenderedEnergy = -1;
 
   function animate() {
     requestAnimationFrame(animate);
 
-    const delta = Math.min(clock.getDelta(), 0.1);
+    const delta = Math.min(clock.getDelta(), 0.08);
     const time = clock.getElapsedTime();
 
     // Niveles de audio reactivos
@@ -886,9 +888,10 @@ export function initShowApp() {
     tomatoRain.update(delta);
     cameraDirector.update(delta);
 
-    // Risómetro en HUD
-    if (energyFill) {
-      energyFill.style.width = `${audience.collectiveEnergy}%`;
+    // Risómetro en HUD (Throttled para evitar layout reflow innecesario)
+    if (energyFill && Math.abs(lastRenderedEnergy - audience.collectiveEnergy) > 1.2) {
+      lastRenderedEnergy = audience.collectiveEnergy;
+      energyFill.style.width = `${Math.round(lastRenderedEnergy)}%`;
     }
 
     renderer.render(scene, camera);
@@ -911,7 +914,8 @@ export function initShowApp() {
     camera.updateProjectionMatrix();
 
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const maxDpr = isVertical ? 1.25 : 1.5;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxDpr));
   }
 
   window.addEventListener('resize', onResize);

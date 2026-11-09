@@ -121,7 +121,12 @@ export function buildDiscoStage(scene) {
     }
   }
 
+  let lastLedTime = 0;
   function updateLedScreen(time, audioLevels = { bass: 0, mid: 0 }) {
+    // Optimización: limitar actualización de textura 2D a 30 FPS para no saturar el bus GPU
+    if (time - lastLedTime < 0.033) return;
+    lastLedTime = time;
+
     // 1. Fondo elegante de Comedy Club: Azul medianoche a negro profundo (Cero parpadeo ni espavileo)
     const bgGrad = ledCtx.createRadialGradient(512, 190, 80, 512, 256, 580);
     bgGrad.addColorStop(0, '#131b2e');

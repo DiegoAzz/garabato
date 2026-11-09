@@ -38,7 +38,8 @@ export class EventQueue {
       isVip,
       setup: eventDef.setup || '',
       punch: eventDef.punch || '',
-      duration: eventDef.duration || 12000, // Tiempo límite de seguridad por si falla speech
+      // Tiempo límite dinámico: garantiza que cuentos largos de muchos caracteres nunca sean interrumpidos
+      duration: eventDef.duration || Math.max(22000, ((eventDef.setup || '').length + (eventDef.punch || '').length) * 110),
       execute: eventDef.execute || (() => {})
     };
 
@@ -117,10 +118,10 @@ export class EventQueue {
 
     this.onEventEnd(finishedEvent);
 
-    // Pequeño respiro de 500ms entre eventos para dar fluidez visual
+    // Transición rápida de 200ms entre eventos para máxima respuesta en TikTok Live
     setTimeout(() => {
       this.processNext();
-    }, 450);
+    }, 200);
   }
 
   notifyQueueChange() {
