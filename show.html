@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+  <title>GARABATO COMEDY CLUB 3D — STAND-UP TIKTOK LIVE</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="show-page">
+  <div id="canvas-container"></div>
+
+  <div id="show-hud">
+    <!-- Header Superior -->
+    <header class="show-header">
+      <div class="concert-badge">
+        <span class="pulse-dot"></span>
+        <span class="live-tag">EN VIVO</span>
+        <span id="singer-nametag" class="singer-tag">EL COMEDIANTE</span>
+      </div>
+
+      <!-- Monitor de Cola Central -->
+      <div id="comedy-queue-status" class="queue-status-chip">
+        <span class="queue-dot"></span>
+        <span id="queue-status-text">🎙️ Comedy Club</span>
+        <span id="queue-counts-badge" class="queue-mini-badge hidden">0 cola</span>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-toggle-bgm" class="btn-hud" title="Música de Fondo Suave (Stand-Up Lounge)">🎵 Música</button>
+        <button id="btn-toggle-vertical" class="btn-hud" title="Alternar Formato TikTok 9:16">📱 9:16</button>
+        <a href="./admin.html" target="_blank" class="btn-hud admin-link">🎛️ Admin</a>
+      </div>
+    </header>
+
+    <div class="energy-bar-container">
+      <div class="energy-label">RISÓMETRO DEL PÚBLICO</div>
+      <div class="energy-track">
+        <div id="energy-fill" class="energy-fill" style="width: 50%;"></div>
+      </div>
+    </div>
+
+    <!-- COLUMNA IZQUIERDA: CHISTES VIP (DESBLOQUEADOS POR REGALO) -->
+    <aside id="jokes-vip-guide" class="jokes-side-panel vip-side">
+      <div class="jokes-panel-header vip-header">
+        <span class="panel-badge">👑 VIP</span>
+        <span class="panel-title">POR REGALO</span>
+      </div>
+      <div id="jokes-vip-list" class="jokes-scroll-list">
+        <!-- Renderizado dinámicamente desde JokeManager -->
+      </div>
+    </aside>
+
+    <!-- COLUMNA DERECHA: CHISTES GRATIS (DESBLOQUEADOS POR TAPS) -->
+    <aside id="jokes-free-guide" class="jokes-side-panel free-side">
+      <div class="jokes-panel-header free-header">
+        <span class="panel-badge">🆓 GRATIS</span>
+        <span class="panel-title">POR TAPS</span>
+      </div>
+      <div id="jokes-free-list" class="jokes-scroll-list">
+        <!-- Renderizado dinámicamente desde JokeManager -->
+      </div>
+    </aside>
+
+    <!-- Notificación Superior de Eventos y Cola (No tapa al comediante) -->
+    <div id="milestone-celebration" class="milestone-splash-overlay hidden">
+      <div class="milestone-splash-card">
+        <span id="milestone-celebration-icon" class="splash-icon">🎙️</span>
+        <div class="splash-texts">
+          <span id="milestone-celebration-badge" class="splash-badge">¡CHISTE EN VIVO!</span>
+          <h2 id="milestone-celebration-name" class="splash-name">EL PEZ EN EL CINE</h2>
+        </div>
+        <span id="milestone-queue-badge" class="splash-queue-badge hidden">+1 en cola</span>
+      </div>
+    </div>
+
+    <!-- Banner de Regalo TikTok recibido -->
+    <div id="gift-shoutout" class="gift-banner hidden">
+      <span class="gift-icon">🎁</span>
+      <span class="gift-text">¡<strong id="gift-user">Espectador</strong> envió <strong id="gift-item">Rosa</strong>!</span>
+    </div>
+
+    <!-- Toast Flotante de Bienvenida Cómica a Nuevos Espectadores -->
+    <div id="welcome-toast" class="welcome-toast-pill hidden">
+      <span class="welcome-icon">👋</span>
+      <span class="welcome-text">¡Bienvenido <strong id="welcome-user">@Usuario</strong>! 👑 <em>¡Tú mandas en la tarima!</em></span>
+    </div>
+
+    <!-- Letrero / Subtítulos del Chiste Actual -->
+    <div id="live-subtitles" class="subtitles-banner hidden">
+      ¡Bienvenidos a Garabato Comedy Club 3D!
+    </div>
+
+    <!-- Botón para Desbloquear Audio del Navegador -->
+    <button id="btn-unlock-audio" class="btn-audio-unlock">
+      🔊 ACTIVAR AUDIO (Haz clic en cualquier parte de la pantalla)
+    </button>
+  </div>
+
+  <script type="module">
+    import { initShowApp } from './src/showApp.js';
+    window.addEventListener('DOMContentLoaded', initShowApp);
+  </script>
+</body>
+</html>

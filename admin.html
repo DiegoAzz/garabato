@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GARABATO COMEDY CLUB 3D — Panel de Control Administrativo</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="admin-page">
+  <div class="admin-container">
+    <!-- Encabezado del Panel -->
+    <header class="admin-header">
+      <div class="admin-title-box">
+        <h1>GARABATO COMEDY <span class="highlight">3D</span></h1>
+        <span class="admin-sub">PANEL DE CONTROL DE STAND-UP EN VIVO</span>
+      </div>
+      <div class="admin-header-right">
+        <span id="status-show-connection" class="status-badge">● Esperando /show</span>
+        <a href="./show.html" target="_blank" class="btn-open-show">🖥️ Abrir /show en otra ventana</a>
+      </div>
+    </header>
+
+    <main class="admin-grid">
+      <!-- COLUMNA 1: COMEDIANTE & ESCENARIO -->
+      <section class="admin-card">
+        <h2 class="card-title">🎙️ Comediante Stand-Up</h2>
+        <div class="form-group">
+          <label for="singer-name">Nombre del Comediante</label>
+          <input type="text" id="singer-name" value="EL GARABATO" placeholder="Ej: Garabatox, El Tío Franco, etc." />
+          <span class="input-hint">Se sincroniza al instante en la pantalla LED del club</span>
+        </div>
+
+        <div class="form-group">
+          <label for="singer-personality">Estilo Humorístico</label>
+          <select id="singer-personality">
+            <option value="Comediante Stand-Up Pro">⚡ Stand-Up Profesional y Rápido</option>
+            <option value="Humor Negro Absurdo">🕶️ Humor Ácido y Absurdo</option>
+            <option value="Comedia Blanca y Familiar">🧁 Chistes Blancos y Familiares</option>
+            <option value="Sarcástico y Cínico">😏 Sarcástico y Cínico</option>
+            <option value="Exagerado Teatral">🎭 Exagerado y Expresivo</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="singer-color">Color del Personaje</label>
+            <input type="color" id="singer-color" value="#ffffff" />
+          </div>
+          <div class="form-group flex-2">
+            <label for="singer-dance">Postura en Escenario</label>
+            <select id="singer-dance">
+              <option value="standup">🎙️ Con Micrófono en Mano</option>
+              <option value="wave">👋 Saludando al Público</option>
+              <option value="robot">🤖 Paso Robótico</option>
+              <option value="jump">🦘 Celebración Eufórica</option>
+              <option value="salsa">💃 Baile Triunfal</option>
+            </select>
+          </div>
+        </div>
+
+        <h2 class="card-title mt-4">🎥 Cámaras del Club</h2>
+        <div class="button-group">
+          <button class="btn-camera active" data-shot="AUTO">🎬 Automático</button>
+          <button class="btn-camera" data-shot="SINGER">🎙️ Comediante</button>
+          <button class="btn-camera" data-shot="CROWD">👥 Público Riendo</button>
+          <button class="btn-camera" data-shot="WIDE">🏟️ Vista General</button>
+          <button class="btn-camera" data-shot="SIDE">🎧 Ángulo Lateral</button>
+        </div>
+
+        <h2 class="card-title mt-4">🎭 Órdenes al Actor (El Público Manda)</h2>
+        <div class="soundboard-grid">
+          <button id="btn-act-cry" class="btn-soundboard highlight-blue">
+            😭 Ponerlo a Llorar (Drama)
+          </button>
+          <button id="btn-act-dance" class="btn-soundboard highlight-gold">
+            💃 Ponerlo a Bailar Loco
+          </button>
+          <button id="btn-act-rage" class="btn-soundboard highlight-red">
+            😡 Rabieta Cómica (Pataleta)
+          </button>
+          <button id="btn-act-pushups" class="btn-soundboard">
+            🏋️ Hacer Flexiones (Castigo)
+          </button>
+          <button id="btn-act-freeze" class="btn-soundboard">
+            🥶 Modo Estatua (Congelado)
+          </button>
+          <button id="btn-sound-tomato" class="btn-soundboard">
+            🍅 Lanzar Tomate a Tarima
+          </button>
+        </div>
+
+        <h2 class="card-title mt-4">🔊 Soundboard de Comedia</h2>
+        <div class="soundboard-grid">
+          <button id="btn-sound-rimshot" class="btn-soundboard">
+            🥁 Ba-dum-tss! (Remate)
+          </button>
+          <button id="btn-sound-laughs" class="btn-soundboard">
+            😂 Risas Enlatadas (Sitcom)
+          </button>
+          <button id="btn-sound-applause" class="btn-soundboard highlight-gold">
+            👏 Aplausos 5 Segundos
+          </button>
+          <button id="btn-sound-boo" class="btn-soundboard">
+            📢 Buuuu (Abucheo Cómico)
+          </button>
+          <button id="btn-sound-confetti" class="btn-soundboard">
+            🎉 Confeti de Victoria
+          </button>
+        </div>
+
+        <h2 class="card-title mt-4">🎶 Música de Fondo (Stand-Up & Cuentos)</h2>
+        <p class="card-desc">Ambiente suave, agradable y acorde para acompañar los chistes sin saturar.</p>
+        <div class="form-group">
+          <label for="bgm-preset-select">Estilo Musical de Fondo</label>
+          <select id="bgm-preset-select">
+            <option value="lounge" selected>🎷 Stand-Up Lounge (Jazz Suave & Escobillas)</option>
+            <option value="bossa">☕ Bossa Café (Guitarra Nylon Acústica & Chill)</option>
+            <option value="piano">🎭 Monólogo Íntimo (Pianito Suave Solo)</option>
+            <option value="off">🔇 Silenciar Música de Fondo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="label-with-counter">
+            <label for="bgm-volume-slider">Volumen de Fondo</label>
+            <span id="bgm-volume-label" class="counter">28% (Suave)</span>
+          </div>
+          <input type="range" id="bgm-volume-slider" min="0" max="100" value="28" />
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="bgm-ducking-check" checked />
+            <span>Auto-Ducking: Bajar música automáticamente cuando hable el actor</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- COLUMNA 2: GESTOR DE CHISTES (VIP & GRATIS) -->
+      <section class="admin-card">
+        <div class="card-header-row">
+          <h2 class="card-title">📝 Creador & Gestor de Chistes</h2>
+          <button type="button" id="btn-reset-jokes" class="btn-action-small">🔄 Cargar Predeterminados</button>
+        </div>
+        <p class="card-desc">Configura los chistes que aparecerán en la lista izquierda (VIP por Regalo) y derecha (Gratis por Taps) en el show.</p>
+
+        <!-- Formulario para agregar / editar chistes -->
+        <form id="joke-form" class="joke-editor-form">
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="joke-title">Título Corto del Chiste</label>
+              <input type="text" id="joke-title" placeholder="Ej: Jaimito en la Escuela" required />
+            </div>
+            <div class="form-group flex-1">
+              <label for="joke-category">Tipo de Desbloqueo</label>
+              <select id="joke-category">
+                <option value="VIP_GIFT">👑 VIP por Regalo</option>
+                <option value="FREE_TAPS">🆓 Gratis por Taps</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Selector Condicional: Si es VIP, elegir Regalo de TikTok -->
+          <div id="group-joke-gift" class="form-group">
+            <div class="label-with-counter">
+              <label for="joke-gift-select">Regalo de TikTok que lo Desbloquea</label>
+              <span id="gifts-total-count" class="counter">40 regalos disponibles</span>
+            </div>
+            <!-- Buscador en tiempo real de regalos -->
+            <input type="text" id="gift-search-input" placeholder="🔍 Escribe para buscar (ej: Capibara, GG, Dino, Rosa, León...)" class="search-mini-input" />
+            <select id="joke-gift-select">
+              <!-- Opciones cargadas dinámicamente desde TIKTOK_GIFTS -->
+            </select>
+            <div class="custom-gift-toggle-row">
+              <button type="button" id="btn-toggle-custom-gift" class="btn-text-action">➕ ¿Regalo nuevo o no listado? Escribir personalizado</button>
+            </div>
+            <div id="group-custom-gift" class="form-group hidden">
+              <input type="text" id="custom-gift-input" placeholder="Nombre exacto del regalo en TikTok (ej: 🍕 Pizza, 🕶️ Gafas)" />
+            </div>
+            <span class="input-hint">Cuando un espectador mande este regalo en tu LIVE, el comediante contará este chiste con máxima prioridad.</span>
+          </div>
+
+          <!-- Selector Condicional: Si es Gratis, elegir meta de Taps -->
+          <div id="group-joke-taps" class="form-group hidden">
+            <label for="joke-taps-input">Taps / Likes Requeridos</label>
+            <input type="number" id="joke-taps-input" min="5" max="1000" step="5" value="30" />
+            <span class="input-hint">Meta de toques en pantalla de los espectadores para disparar el chiste.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="joke-setup">Planteamiento / Pregunta del Chiste</label>
+            <textarea id="joke-setup" rows="2" placeholder="¿Qué le dice un pez a otro pez en el cine?" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="joke-punch">Remate / Punchline (Viene con Ba-dum-tss y Aplausos)</label>
+            <textarea id="joke-punch" rows="2" placeholder="¡Nada, nada, concéntrate en la película!" required></textarea>
+          </div>
+
+          <div class="form-actions-row">
+            <button type="submit" id="btn-save-joke" class="btn-save-primary">➕ Guardar en la Lista</button>
+            <button type="button" id="btn-cancel-edit" class="btn-secondary hidden">Cancelar Edición</button>
+          </div>
+        </form>
+
+        <!-- Listas de Chistes Registrados -->
+        <div class="jokes-admin-lists mt-4">
+          <div class="subtabs-header">
+            <button type="button" class="subtab-btn active" data-tab="tab-vip">👑 Chistes VIP (<span id="vip-count-badge">0</span>)</button>
+            <button type="button" class="subtab-btn" data-tab="tab-free">🆓 Chistes Gratis (<span id="free-count-badge">0</span>)</button>
+          </div>
+
+          <div id="tab-vip" class="subtab-content active">
+            <ul id="admin-vip-jokes-list" class="admin-jokes-list">
+              <!-- Rellenado por adminApp.js -->
+            </ul>
+          </div>
+
+          <div id="tab-free" class="subtab-content">
+            <ul id="admin-free-jokes-list" class="admin-jokes-list">
+              <!-- Rellenado por adminApp.js -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- COLUMNA 3: MONITOR DE COLA & SIMULADOR TIKTOK -->
+      <section class="admin-card">
+        <h2 class="card-title">🚥 Monitor de Cola en Vivo</h2>
+        <p class="card-desc">Los chistes de regalo van a la cola VIP (prioridad alta). Los gratis suenan cuando la cola VIP está despejada.</p>
+
+        <!-- Tarjeta de Chiste Sonando Ahora Mismo -->
+        <div class="now-playing-card">
+          <div class="now-playing-tag">🎙️ EN ESCENARIO AHORA</div>
+          <div id="admin-active-joke-title" class="active-title">Ningún chiste en reproducción</div>
+          <div id="admin-active-joke-meta" class="active-meta">El comediante está esperando a la audiencia...</div>
+          <button id="btn-skip-current-joke" class="btn-action-small mt-2" disabled>⏭️ Saltar Chiste Actual</button>
+        </div>
+
+        <!-- Estado de las Colas -->
+        <div class="queues-summary mt-3">
+          <div class="queue-col vip-col">
+            <div class="queue-col-header">
+              <span>👑 Cola VIP (Regalos)</span>
+              <span id="queue-vip-badge" class="counter">0</span>
+            </div>
+            <ul id="queue-vip-items" class="queue-preview-list">
+              <li class="empty-hint">Sin regalos en cola</li>
+            </ul>
+          </div>
+
+          <div class="queue-col free-col">
+            <div class="queue-col-header">
+              <span>🆓 Cola Gratis (Taps)</span>
+              <span id="queue-free-badge" class="counter">0</span>
+            </div>
+            <ul id="queue-free-items" class="queue-preview-list">
+              <li class="empty-hint">Sin chistes gratis en cola</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2 class="card-title mt-4">🧪 Simulador de Eventos TikTok</h2>
+        <div class="simulator-box">
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="sim-user">Nombre Espectador</label>
+              <input type="text" id="sim-user" value="ComedianteFan" />
+            </div>
+            <div class="form-group flex-2">
+              <label for="sim-gift-select">Regalo a Simular</label>
+              <select id="sim-gift-select">
+                <!-- Rellenado con TIKTOK_GIFTS -->
+              </select>
+            </div>
+          </div>
+
+          <div class="sim-buttons-grid">
+            <button id="btn-sim-join" class="btn-sim-gift" style="background: linear-gradient(135deg, #7c3aed, #4f46e5); grid-column: span 2;">
+              👋 Simular Nuevo Espectador (Saludar con Humor)
+            </button>
+            <button id="btn-sim-gift" class="btn-sim-gift">
+              🎁 Simular Regalo Elegido
+            </button>
+            <button id="btn-sim-taps" class="btn-sim-taps">
+              👆 Simular +15 Taps
+            </button>
+            <button id="btn-sim-tomato" class="btn-sim-tomato">
+              🍅 Simular Tomatazo
+            </button>
+            <button id="btn-sim-clear-queue" class="btn-sim-clear">
+              🧹 Vaciar Toda la Cola
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./src/adminApp.js"></script>
+</body>
+</html>
