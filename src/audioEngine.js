@@ -34,6 +34,8 @@ export class AudioEngine {
     this.vocalAmplitude = 0;
     this.speechUtterance = null;
     this.speechVoices = [];
+    this.activeUtterances = new Set();
+    this.keepAliveInterval = null;
 
     // Frecuencias analizadas para reactividad visual
     this.audioLevels = {
@@ -388,7 +390,170 @@ export class AudioEngine {
     }
   }
 
+  /**
+   * Keep-Alive para Chrome/Edge: Previene que SpeechSynthesis se pause
+   * o se congele automáticamente después de 15 segundos en cuentos largos.
+   */
+  startSpeechKeepAlive() {
+    this.stopSpeechKeepAlive();
+    this.keepAliveInterval = setInterval(() => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        } else {
+          this.stopSpeechKeepAlive();
+        }
+      }
+    }, 4500);
+  }
+
+  stopSpeechKeepAlive() {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
+  }
+
+  /**
+   * Divide cuentos largos en fragmentos naturales por oraciones o comas (máx 130 caracteres)
+   * para que el motor de voz del navegador NUNCA se corte a mitad de camino.
+   */
+  splitTextIntoChunks(text, maxChunkLen = 130) {
+    if (!text) return [];
+    // Limpieza profunda: sin arrobas, espacios normalizados
+    const clean = String(text)
+      .replace(/@/g, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (clean.length <= maxChunkLen) {
+      return [clean];
+    }
+
+    // Dividir por signos de puntuación de oraciones (. ? ! ; \n)
+    const sentenceDelim = /([.?!;\n]+)/g;
+    const parts = clean.split(sentenceDelim);
+    const rawSentences = [];
+    for (let i = 0; i < parts.length; i += 2) {
+      const sentence = ((parts[i] || '') + (parts[i + 1] || '')).trim();
+      if (sentence) rawSentences.push(sentence);
+    }
+
+    const chunks = [];
+    let currentChunk = '';
+
+    for (const sentence of rawSentences) {
+      const candidate = currentChunk ? `${currentChunk} ${sentence}` : sentence;
+      if (candidate.length <= maxChunkLen) {
+        currentChunk = candidate;
+      } else {
+        if (currentChunk) {
+          chunks.push(currentChunk);
+          currentChunk = '';
+        }
+
+        // Si una sola oración excede maxChunkLen, subdividir por comas o palabras
+        if (sentence.length > maxChunkLen) {
+          const subParts = sentence.split(/([,:]+)/g);
+          let subSentence = '';
+          for (let s = 0; s < subParts.length; s += 2) {
+            const piece = ((subParts[s] || '') + (subParts[s + 1] || '')).trim();
+            if (!piece) continue;
+            const subCandidate = subSentence ? `${subSentence} ${piece}` : piece;
+            if (subCandidate.length <= maxChunkLen) {
+              subSentence = subCandidate;
+            } else {
+              if (subSentence) chunks.push(subSentence);
+              subSentence = piece;
+            }
+          }
+          if (subSentence) currentChunk = subSentence;
+        } else {
+          currentChunk = sentence;
+        }
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks.length > 0 ? chunks : [clean];
+  }
+
+  /**
+   * Reproduce secuencialmente una lista de fragmentos de voz garantizando:
+   * 1. Protección contra el Garbage Collector de Chrome (activeUtterances).
+   * 2. Despertador Keep-Alive para que historias largas de minutos enteros no se corten.
+   * 3. Animación facial y modulación fluida.
+   */
+  speakChunksSequence(chunks, options = {}, onChunkStart = null, onComplete = null) {
+    if (!chunks || chunks.length === 0) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    let currentIndex = 0;
+    this.startSpeechKeepAlive();
+
+    const playNext = () => {
+      if (currentIndex >= chunks.length) {
+        this.stopSpeechKeepAlive();
+        this.isSpeaking = false;
+        this.vocalAmplitude = 0;
+        if (onComplete) onComplete();
+        return;
+      }
+
+      const chunkText = chunks[currentIndex];
+      currentIndex++;
+
+      const utterance = new SpeechSynthesisUtterance(chunkText);
+      const voice = options.voice || this.getBestSpanishVoice();
+      if (voice) utterance.voice = voice;
+      utterance.pitch = options.pitch || 1.0;
+      utterance.rate = options.rate || 1.02;
+      utterance.lang = (voice && voice.lang) || 'es-ES';
+
+      // Referencia fuerte permanente para evitar que el Garbage Collector destruya la voz
+      this.activeUtterances.add(utterance);
+
+      utterance.onstart = () => {
+        this.isSpeaking = true;
+        this.vocalAmplitude = 0.85;
+        if (onChunkStart) onChunkStart(chunkText, currentIndex - 1, chunks.length);
+      };
+
+      utterance.onboundary = () => {
+        this.vocalAmplitude = 0.85 + Math.random() * 0.15;
+      };
+
+      utterance.onend = () => {
+        this.activeUtterances.delete(utterance);
+        // Pausa natural entre frases
+        setTimeout(playNext, 120);
+      };
+
+      utterance.onerror = (err) => {
+        console.warn('[AudioEngine] Warning en chunk utterance:', err);
+        this.activeUtterances.delete(utterance);
+        setTimeout(playNext, 100);
+      };
+
+      window.speechSynthesis.speak(utterance);
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    };
+
+    playNext();
+  }
+
   stopSpeech() {
+    this.stopSpeechKeepAlive();
+    this.activeUtterances.clear();
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -1170,7 +1335,8 @@ export class AudioEngine {
   }
 
   /**
-   * Cuenta un chiste con cadencia profesional y timing cómico (pausa antes del remate)
+   * Cuenta un chiste con cadencia profesional y timing cómico (pausa antes del remate).
+   * Soporta historias largas sin límite de tiempo (utiliza chunking + keepalive anti-congelamiento).
    */
   speakJokeProfessional(setupText, punchlineText, options = {}, onEndCallback = null) {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -1179,82 +1345,48 @@ export class AudioEngine {
     }
 
     try {
-      window.speechSynthesis.cancel();
+      this.stopSpeech();
 
       const voice = options.voice || this.getBestSpanishVoice();
       const pitch = options.pitch || 1.0; // Tono humano natural profesional
       const rate = options.rate || 1.02;
 
-      // 1. Planteamiento
-      const setupUtterance = new SpeechSynthesisUtterance(setupText);
-      if (voice) setupUtterance.voice = voice;
-      setupUtterance.pitch = pitch;
-      setupUtterance.rate = rate;
-      setupUtterance.lang = (voice && voice.lang) || 'es-ES';
+      // Dividir historias largas en oraciones naturales de máximo 130 caracteres
+      const setupChunks = this.splitTextIntoChunks(setupText, 130);
+      const punchChunks = punchlineText ? this.splitTextIntoChunks(punchlineText, 130) : [];
 
-      this.isSpeaking = true;
-      this.vocalAmplitude = 0.85;
+      const setupOptions = { voice, pitch, rate };
 
-      setupUtterance.onstart = () => {
-        this.isSpeaking = true;
-        this.vocalAmplitude = 0.85;
-      };
-      setupUtterance.onboundary = () => {
-        this.vocalAmplitude = 0.85 + Math.random() * 0.15;
-      };
-
-      setupUtterance.onend = () => {
-        this.isSpeaking = false;
-        this.vocalAmplitude = 0;
-
+      // 1. Narrar todo el planteamiento fragmento a fragmento
+      this.speakChunksSequence(setupChunks, setupOptions, (chunk, idx, total) => {
+        if (options.onSetupChunk) options.onSetupChunk(chunk, idx, total);
+      }, () => {
         // Pausa cómica dramática antes del remate
         setTimeout(() => {
-          if (!punchlineText) {
+          if (punchChunks.length === 0) {
             this.playRimshot();
             this.playSitcomLaughs(3.5);
             if (onEndCallback) onEndCallback();
             return;
           }
 
-          // 2. Remate con énfasis cómico
-          const punchUtterance = new SpeechSynthesisUtterance(punchlineText);
-          if (voice) punchUtterance.voice = voice;
-          punchUtterance.pitch = pitch * 1.04;
-          punchUtterance.rate = rate * 1.06;
-          punchUtterance.lang = (voice && voice.lang) || 'es-ES';
+          // 2. Remate cómico con tono ligeramente más expresivo
+          const punchOptions = {
+            voice,
+            pitch: pitch * 1.04,
+            rate: rate * 1.05
+          };
 
-          punchUtterance.onstart = () => {
-            this.isSpeaking = true;
-            this.vocalAmplitude = 0.95;
-          };
-          punchUtterance.onboundary = () => {
-            this.vocalAmplitude = 0.9 + Math.random() * 0.1;
-          };
-          punchUtterance.onend = () => {
-            this.isSpeaking = false;
-            this.vocalAmplitude = 0;
+          this.speakChunksSequence(punchChunks, punchOptions, (chunk, idx, total) => {
+            if (options.onPunchChunk) options.onPunchChunk(chunk, idx, total);
+          }, () => {
             // ¡Ba-dum-tss! + Risas del público al rematar el chiste
             this.playRimshot();
             this.playSitcomLaughs(3.5);
             if (onEndCallback) onEndCallback();
-          };
-          punchUtterance.onerror = () => {
-            this.isSpeaking = false;
-            this.vocalAmplitude = 0;
-            if (onEndCallback) onEndCallback();
-          };
-
-          window.speechSynthesis.speak(punchUtterance);
+          });
         }, 650);
-      };
-
-      setupUtterance.onerror = () => {
-        this.isSpeaking = false;
-        this.vocalAmplitude = 0;
-        if (onEndCallback) onEndCallback();
-      };
-
-      window.speechSynthesis.speak(setupUtterance);
+      });
     } catch (e) {
       console.warn('[AudioEngine] Error en speakJokeProfessional:', e);
       if (onEndCallback) onEndCallback();
@@ -1358,7 +1490,8 @@ export class AudioEngine {
   }
 
   /**
-   * Voz actoral dramática para peticiones del público
+   * Voz actoral dramática para peticiones del público e historias largas enviadas por chat/interno.
+   * Utiliza división en fragmentos para que oraciones largas no se corten en Chrome.
    */
   speakActorLine(text, options = {}, onEndCallback = null) {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -1367,25 +1500,20 @@ export class AudioEngine {
     }
 
     try {
-      window.speechSynthesis.cancel();
+      this.stopSpeech();
       // Eliminar cualquier símbolo '@' para que la voz nunca pronuncie "arroba"
       const spokenText = String(text || '').replace(/@/g, '').trim();
-      const utterance = new SpeechSynthesisUtterance(spokenText);
-      utterance.voice = options.voice || this.getBestSpanishVoice();
-      utterance.pitch = options.pitch || 1.1;
-      utterance.rate = options.rate || 1.05;
-
-      utterance.onstart = () => { this.isSpeaking = true; };
-      utterance.onend = () => {
-        this.isSpeaking = false;
-        if (onEndCallback) onEndCallback();
-      };
-      utterance.onerror = () => {
-        this.isSpeaking = false;
-        if (onEndCallback) onEndCallback();
+      const chunks = this.splitTextIntoChunks(spokenText, 130);
+      
+      const lineOptions = {
+        voice: options.voice || this.getBestSpanishVoice(),
+        pitch: options.pitch || 1.1,
+        rate: options.rate || 1.05
       };
 
-      window.speechSynthesis.speak(utterance);
+      this.speakChunksSequence(chunks, lineOptions, null, () => {
+        if (onEndCallback) onEndCallback();
+      });
     } catch (e) {
       if (onEndCallback) onEndCallback();
     }

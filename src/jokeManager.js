@@ -872,7 +872,7 @@ export const DEFAULT_JOKES = [
   }
 ];
 
-const STORAGE_KEY = 'garabato_comedy_jokes_v8';
+const STORAGE_KEY = 'garabato_comedy_jokes_v9';
 
 export class JokeManager {
   constructor(syncBridge = null) {
@@ -883,11 +883,18 @@ export class JokeManager {
 
   loadJokes() {
     try {
+      // Limpiar versiones anteriores obsoletas de localStorage
+      ['garabato_comedy_jokes_v1', 'garabato_comedy_jokes_v2', 'garabato_comedy_jokes_v3', 'garabato_comedy_jokes_v4', 'garabato_comedy_jokes_v5', 'garabato_comedy_jokes_v6', 'garabato_comedy_jokes_v7', 'garabato_comedy_jokes_v8'].forEach(oldKey => {
+        try { localStorage.removeItem(oldKey); } catch (e) {}
+      });
+
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
         const hasPaisa15 = parsed.some(j => j.id === 'paisa_15');
-        if (Array.isArray(parsed) && parsed.length >= 65 && hasPaisa15) {
+        const hasTomate = parsed.some(j => j.id === 'vip_tomate');
+        const hasOldJaimito = parsed.some(j => j.id === 'vip_jaimito');
+        if (Array.isArray(parsed) && parsed.length >= 70 && hasPaisa15 && hasTomate && !hasOldJaimito) {
           return parsed;
         }
       }

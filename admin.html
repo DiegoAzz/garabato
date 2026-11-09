@@ -290,9 +290,14 @@
             <label for="story-text-input" style="font-size: 11px;">Cuento o Chiste enviado por el usuario</label>
             <textarea id="story-text-input" rows="2" placeholder="Pega aquí el chiste o historia que te mandó por interno..." style="width: 100%; border-radius: 8px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid #334155; padding: 6px; font-size: 12px; resize: vertical;"></textarea>
           </div>
-          <button type="button" id="btn-send-audience-story" class="btn-sim-gift" style="width: 100%; background: linear-gradient(135deg, #a855f7, #ec4899); font-weight: 800; cursor: pointer; padding: 8px;">
-            🚀 Lanzar Cuento a Tarima (Mención en Vivo)
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" id="btn-send-audience-story" class="btn-sim-gift" style="flex: 2; background: linear-gradient(135deg, #a855f7, #ec4899); font-weight: 800; cursor: pointer; padding: 8px;">
+              🚀 Lanzar Cuento a Tarima (Mención en Vivo)
+            </button>
+            <button type="button" id="btn-save-as-vip-joke" class="btn-action-small" style="flex: 1; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; padding: 8px; border-radius: 8px; border: none; font-size: 11px;" title="Pasar al editor para corregir o guardar en la lista permanente">
+              ✏️ Editar en el Creador
+            </button>
+          </div>
         </div>
 
         <h2 class="card-title mt-4">🧪 Simulador de Eventos TikTok</h2>

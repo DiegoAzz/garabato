@@ -180,7 +180,82 @@ export function initAdminApp() {
     });
   });
 
-  // 5. Renderizar Listas de Chistes en el Admin
+  // 5. Renderizar Listas de Chistes en el Admin & Modo Edición
+  let currentEditingJokeId = null;
+  const btnSaveJoke = document.getElementById('btn-save-joke');
+  const btnCancelEdit = document.getElementById('btn-cancel-edit');
+
+  function loadJokeIntoForm(joke) {
+    currentEditingJokeId = joke.id;
+    if (jokeTitleInput) jokeTitleInput.value = joke.title || '';
+    if (jokeCategorySelect) {
+      jokeCategorySelect.value = joke.category || 'FREE_TAPS';
+      const isVip = jokeCategorySelect.value === 'VIP_GIFT';
+      if (groupJokeGift) groupJokeGift.classList.toggle('hidden', !isVip);
+      if (groupJokeTaps) groupJokeTaps.classList.toggle('hidden', isVip);
+    }
+
+    if (joke.category === 'VIP_GIFT') {
+      const foundGift = TIKTOK_GIFTS.find(g => g.id === joke.giftId || g.name === joke.giftName);
+      if (foundGift && jokeGiftSelect) {
+        if (groupCustomGift) groupCustomGift.classList.add('hidden');
+        jokeGiftSelect.value = foundGift.id;
+      } else {
+        if (groupCustomGift) {
+          groupCustomGift.classList.remove('hidden');
+          if (customGiftInput) customGiftInput.value = joke.giftName || joke.giftId || '';
+        }
+      }
+    } else {
+      if (jokeTapsInput) jokeTapsInput.value = joke.requiredTaps || 30;
+    }
+
+    if (jokeSetupInput) jokeSetupInput.value = joke.setup || '';
+    if (jokePunchInput) jokePunchInput.value = joke.punch || '';
+
+    if (btnSaveJoke) {
+      btnSaveJoke.innerHTML = '💾 Guardar Cambios (Actualizar Cuento)';
+      btnSaveJoke.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      btnSaveJoke.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.4)';
+    }
+    if (btnCancelEdit) {
+      btnCancelEdit.classList.remove('hidden');
+    }
+
+    if (jokeForm) {
+      jokeForm.classList.add('form-editing-mode');
+      jokeForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    if (jokeTitleInput) jokeTitleInput.focus();
+  }
+
+  function resetJokeForm() {
+    currentEditingJokeId = null;
+    if (jokeTitleInput) jokeTitleInput.value = '';
+    if (jokeSetupInput) jokeSetupInput.value = '';
+    if (jokePunchInput) jokePunchInput.value = '';
+    if (customGiftInput) customGiftInput.value = '';
+    if (groupCustomGift) groupCustomGift.classList.add('hidden');
+
+    if (btnSaveJoke) {
+      btnSaveJoke.innerHTML = '➕ Guardar en la Lista';
+      btnSaveJoke.style.background = '';
+      btnSaveJoke.style.boxShadow = '';
+    }
+    if (btnCancelEdit) {
+      btnCancelEdit.classList.add('hidden');
+    }
+    if (jokeForm) {
+      jokeForm.classList.remove('form-editing-mode');
+    }
+  }
+
+  if (btnCancelEdit) {
+    btnCancelEdit.addEventListener('click', () => {
+      resetJokeForm();
+    });
+  }
+
   function renderAdminJokes() {
     const vipJokes = jokeManager.getVipJokes();
     const freeJokes = jokeManager.getFreeJokes();
@@ -205,6 +280,7 @@ export function initAdminApp() {
             </div>
             <div class="admin-joke-actions">
               <button class="btn-joke-test" title="Probar en el Show">▶ Probar</button>
+              <button class="btn-joke-edit" title="Editar este cuento si te equivocaste">✏️ Editar</button>
               <button class="btn-joke-del" title="Eliminar">🗑️</button>
             </div>
           `;
@@ -215,7 +291,11 @@ export function initAdminApp() {
               isVip: true
             });
           });
+          li.querySelector('.btn-joke-edit').addEventListener('click', () => {
+            loadJokeIntoForm(joke);
+          });
           li.querySelector('.btn-joke-del').addEventListener('click', () => {
+            if (currentEditingJokeId === joke.id) resetJokeForm();
             jokeManager.deleteJoke(joke.id);
             renderAdminJokes();
           });
@@ -241,6 +321,7 @@ export function initAdminApp() {
             </div>
             <div class="admin-joke-actions">
               <button class="btn-joke-test" title="Probar en el Show">▶ Probar</button>
+              <button class="btn-joke-edit" title="Editar este cuento si te equivocaste">✏️ Editar</button>
               <button class="btn-joke-del" title="Eliminar">🗑️</button>
             </div>
           `;
@@ -251,7 +332,11 @@ export function initAdminApp() {
               isVip: false
             });
           });
+          li.querySelector('.btn-joke-edit').addEventListener('click', () => {
+            loadJokeIntoForm(joke);
+          });
           li.querySelector('.btn-joke-del').addEventListener('click', () => {
+            if (currentEditingJokeId === joke.id) resetJokeForm();
             jokeManager.deleteJoke(joke.id);
             renderAdminJokes();
           });
@@ -261,7 +346,7 @@ export function initAdminApp() {
     }
   }
 
-  // 6. Formulario de Creación de Chiste
+  // 6. Formulario de Creación y Edición de Chiste
   if (jokeForm) {
     jokeForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -286,23 +371,33 @@ export function initAdminApp() {
         giftName = selectedGift.name;
       }
 
-      jokeManager.addJoke({
-        title,
-        category,
-        setup,
-        punch,
-        giftId,
-        giftName,
-        requiredTaps: parseInt(jokeTapsInput.value, 10) || 30
-      });
-
-      // Limpiar formulario y re-renderizar
-      jokeTitleInput.value = '';
-      jokeSetupInput.value = '';
-      jokePunchInput.value = '';
-      if (customGiftInput) customGiftInput.value = '';
-      if (groupCustomGift) groupCustomGift.classList.add('hidden');
-      renderAdminJokes();
+      if (currentEditingJokeId) {
+        // ACTUALIZACIÓN DE CUENTO EXISTENTE
+        jokeManager.updateJoke(currentEditingJokeId, {
+          title,
+          category,
+          setup,
+          punch,
+          giftId,
+          giftName,
+          requiredTaps: parseInt(jokeTapsInput.value, 10) || 30
+        });
+        resetJokeForm();
+        renderAdminJokes();
+      } else {
+        // AGREGAR NUEVO CUENTO
+        jokeManager.addJoke({
+          title,
+          category,
+          setup,
+          punch,
+          giftId,
+          giftName,
+          requiredTaps: parseInt(jokeTapsInput.value, 10) || 30
+        });
+        resetJokeForm();
+        renderAdminJokes();
+      }
     });
   }
 
@@ -470,6 +565,29 @@ export function initAdminApp() {
   const storyGiftSelect = document.getElementById('story-gift-select');
   const storyTextInput = document.getElementById('story-text-input');
   const btnSendAudienceStory = document.getElementById('btn-send-audience-story');
+  const btnSaveAsVipJoke = document.getElementById('btn-save-as-vip-joke');
+
+  if (btnSaveAsVipJoke) {
+    btnSaveAsVipJoke.addEventListener('click', () => {
+      const story = (storyTextInput && storyTextInput.value || '').trim();
+      const user = (storyUserInput && storyUserInput.value || '').trim() || 'Espectador';
+      const giftName = (storyGiftSelect && storyGiftSelect.value) || '👑 Corona VIP';
+
+      if (!story) {
+        alert('Escribe o pega primero el cuento recibido para pasarlo al editor.');
+        return;
+      }
+
+      loadJokeIntoForm({
+        id: null,
+        title: `Cuento de ${user}`,
+        category: 'VIP_GIFT',
+        giftName: giftName,
+        setup: story,
+        punch: '¡Un aplauso para este cuento del público!'
+      });
+    });
+  }
 
   if (btnSendAudienceStory) {
     btnSendAudienceStory.addEventListener('click', () => {
