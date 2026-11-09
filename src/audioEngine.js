@@ -1368,7 +1368,9 @@ export class AudioEngine {
 
     try {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
+      // Eliminar cualquier símbolo '@' para que la voz nunca pronuncie "arroba"
+      const spokenText = String(text || '').replace(/@/g, '').trim();
+      const utterance = new SpeechSynthesisUtterance(spokenText);
       utterance.voice = options.voice || this.getBestSpanishVoice();
       utterance.pitch = options.pitch || 1.1;
       utterance.rate = options.rate || 1.05;

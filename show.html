@@ -25,12 +25,19 @@
         <span id="queue-counts-badge" class="queue-mini-badge hidden">0 cola</span>
       </div>
 
-      <div class="header-actions">
+      <div id="header-actions" class="header-actions">
         <button id="btn-toggle-bgm" class="btn-hud" title="Música de Fondo Suave (Stand-Up Lounge)">🎵 Música</button>
         <button id="btn-toggle-vertical" class="btn-hud" title="Alternar Formato TikTok 9:16">📱 9:16</button>
         <a href="./admin.html" target="_blank" class="btn-hud admin-link">🎛️ Admin</a>
+        <button id="btn-toggle-clean" class="btn-hud" title="Ocultar para el Live (Presiona 'H' para mostrar/ocultar)">👁️ Ocultar</button>
       </div>
     </header>
+
+    <!-- BANNER DINÁMICO DE INSTRUCCIONES: CÓMO FUNCIONA EL SHOW -->
+    <div id="mission-instructions-banner" class="mission-instructions-banner">
+      <span class="mission-pill">👑 EL PÚBLICO MANDA</span>
+      <span id="mission-text" class="mission-text">🎁 Manda regalos para: 🍅 Tirar Tomates • 💃 Bailar • 🎤 Cantar • 😭 Llorar</span>
+    </div>
 
     <div class="energy-bar-container">
       <div class="energy-label">RISÓMETRO DEL PÚBLICO</div>
@@ -39,10 +46,10 @@
       </div>
     </div>
 
-    <!-- COLUMNA IZQUIERDA: CHISTES VIP (DESBLOQUEADOS POR REGALO) -->
+    <!-- COLUMNA IZQUIERDA: ÓRDENES AL ACTOR POR REGALO -->
     <aside id="jokes-vip-guide" class="jokes-side-panel vip-side">
       <div class="jokes-panel-header vip-header">
-        <span class="panel-badge">👑 VIP</span>
+        <span class="panel-badge">👑 ÓRDENES</span>
         <span class="panel-title">POR REGALO</span>
       </div>
       <div id="jokes-vip-list" class="jokes-scroll-list">
@@ -50,11 +57,11 @@
       </div>
     </aside>
 
-    <!-- COLUMNA DERECHA: CHISTES GRATIS (DESBLOQUEADOS POR TAPS) -->
+    <!-- COLUMNA DERECHA: 50 CHISTES GRATIS POR TAPS -->
     <aside id="jokes-free-guide" class="jokes-side-panel free-side">
       <div class="jokes-panel-header free-header">
-        <span class="panel-badge">🆓 GRATIS</span>
-        <span class="panel-title">POR TAPS</span>
+        <span class="panel-badge">🆓 50 CHISTES</span>
+        <span class="panel-title">CON TAPS 👆</span>
       </div>
       <div id="jokes-free-list" class="jokes-scroll-list">
         <!-- Renderizado dinámicamente desde JokeManager -->
@@ -88,6 +95,11 @@
     <!-- Letrero / Subtítulos del Chiste Actual -->
     <div id="live-subtitles" class="subtitles-banner hidden">
       ¡Bienvenidos a Garabato Comedy Club 3D!
+    </div>
+
+    <!-- Llamado a la acción: Cuentos por el Interno -->
+    <div id="audience-cta-bar" class="audience-cta-bar">
+      <span id="cta-dynamic-text">💡 <strong>¿Cómo funciona?</strong> 👆 Taps = Chistes Gratis | 🎁 Regalos = Órdenes al Actor | 💌 Manda regalo + tu cuento</span>
     </div>
 
     <!-- Botón para Desbloquear Audio del Navegador -->

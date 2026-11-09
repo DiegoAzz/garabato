@@ -616,87 +616,263 @@ export const DEFAULT_JOKES = [
   // ==========================================
   {
     id: 'vip_tomate',
+    action: 'TOMATE',
     category: 'VIP_GIFT',
     title: '🍅 Tomatazo al Actor',
     giftId: 'rosa',
     giftName: '🌹 Rosa',
-    setup: '¡Alguien mandó una Rosa para castigar al actor con tomates!',
+    setup: '¡El público mandó una Rosa para castigar al actor con tomates en la cara!',
     punch: '¡💥 AUCH! ¡El ojo no compadre!',
     audioTrackId: null
   },
   {
-    id: 'vip_1',
+    id: 'vip_bailar',
+    action: 'BAILAR',
     category: 'VIP_GIFT',
-    title: 'Jaimito en TikTok',
-    giftId: 'rosa_blanca',
-    giftName: '🤍 Rosa blanca',
-    setup: 'Jaimito entra al LIVE de TikTok y le preguntan: ¿Cuánto es 2 más 2?',
-    punch: '¡Depende de cuántas rosas me mandes!',
+    title: '💃 Ponerlo a Bailar',
+    giftId: 'tiktok',
+    giftName: '🎵 TikTok',
+    setup: '¡El público mandó regalo para poner a bailar al comediante a lo loco!',
+    punch: '¡Miren esos pasos prohibidos en la tarima!',
     audioTrackId: null
   },
   {
-    id: 'vip_2',
+    id: 'vip_cantar',
+    action: 'CANTAR',
     category: 'VIP_GIFT',
-    title: 'La Dieta del Siglo',
-    giftId: 'dona',
-    giftName: '🍩 Dona Glaseada',
-    setup: 'Empecé una dieta estricta de donas y batidos mágicos...',
-    punch: '¡Ya perdí tres días de mi vida buscando la fuerza de voluntad!',
-    audioTrackId: null
-  },
-  {
-    id: 'vip_3',
-    category: 'VIP_GIFT',
-    title: 'El Capibara Filósofo',
-    giftId: 'capibara',
-    giftName: '🦫 Capibara',
-    setup: '¿Por qué el capibara nunca se estresa en el trabajo?',
-    punch: '¡Porque nada en aguas tranquilas y le resbala la opinión del jefe!',
-    audioTrackId: null
-  },
-  {
-    id: 'vip_4',
-    category: 'VIP_GIFT',
-    title: 'Gamer en Vivo',
-    giftId: 'super_gg',
-    giftName: '🏆 Super GG',
-    setup: 'Mi novia me dijo: O el juego o yo...',
-    punch: '¡Y le dije: GG mi amor, fue un placer conocerte!',
-    audioTrackId: null
-  },
-  {
-    id: 'vip_5',
-    category: 'VIP_GIFT',
-    title: 'Cantante en Ducha',
+    title: '🎤 Ponerlo a Cantar',
     giftId: 'micro',
     giftName: '🎤 Micrófono de Oro',
-    setup: 'Mi vecino me gritó: ¡Oye, cantas horrible en la ducha!',
-    punch: '¡Y yo le dije: Es que el agua está fría y no me sé el tono!',
+    setup: '¡El público pagó para que el actor cante a todo pulmón!',
+    punch: '¡La la laaa! ¡Qué voz tan celestial!',
     audioTrackId: null
   },
   {
-    id: 'vip_6',
+    id: 'vip_llorar',
+    action: 'LLORAR',
     category: 'VIP_GIFT',
-    title: 'Rey de la Comedia',
+    title: '😭 Ponerlo a Llorar',
+    giftId: 'corazon',
+    giftName: '💖 Corazón coreano',
+    setup: '¡Drama total! El público ordenó poner al actor a llorar desconsolado.',
+    punch: '¡Buaaa! ¡Soy un actor sensible!',
+    audioTrackId: null
+  },
+  {
+    id: 'vip_flexiones',
+    action: 'FLEXIONES',
+    category: 'VIP_GIFT',
+    title: '🏋️ Hacer Flexiones',
+    giftId: 'control',
+    giftName: '🎮 Control Retro',
+    setup: '¡Castigo físico! El público mandó al comediante al suelo a hacer flexiones.',
+    punch: '¡Uno... dos... no doy más de los brazos!',
+    audioTrackId: null
+  },
+  {
+    id: 'vip_estatua',
+    action: 'ESTATUA',
+    category: 'VIP_GIFT',
+    title: '🥶 Modo Estatua',
+    giftId: 'dino',
+    giftName: '🦖 Pequeño dino',
+    setup: '¡Modo estatua! El actor debe quedarse congelado como piedra.',
+    punch: '¡5 segundos como témpano de hielo!',
+    audioTrackId: null
+  },
+  {
+    id: 'vip_rabia',
+    action: 'RABIA',
+    category: 'VIP_GIFT',
+    title: '😡 Rabieta Cómica',
+    giftId: 'super_gg',
+    giftName: '💥 Super GG',
+    setup: '¡El público hizo enfurecer al actor hasta que arme una pataleta!',
+    punch: '¡Ya me cansé! ¡El actor de la tarima soy yo!',
+    audioTrackId: null
+  },
+  {
+    id: 'vip_cuento',
+    action: 'CUENTO',
+    category: 'VIP_GIFT',
+    title: '💌 Tu Cuento en Vivo',
     giftId: 'corona',
     giftName: '👑 Corona VIP',
-    setup: 'Fui al médico y le dije: Doctor, me siento invisible...',
-    punch: 'Y el doctor dijo: ¿Quién dijo eso? ¡Pase el siguiente paciente!',
+    setup: '¡Manda un regalo y escribe tu cuento por el interno para que el actor lo cuente!',
+    punch: '¡Un aplauso para este comediante del público!',
+    audioTrackId: null
+  },
+  // ==========================================
+  // 15 CHISTES PAISAS VIP / PAGOS (MEDELLÍN / ANTIOQUIA)
+  // ==========================================
+  {
+    id: "paisa_1",
+    category: "VIP_GIFT",
+    title: "El psicólogo paisa",
+    region: "Medellín / Antioquia",
+    giftId: "rosa_blanca",
+    giftName: "🤍 Rosa blanca",
+    setup: "Un paisa de Medellín fue al psicólogo y le dijo: «Doctor, tengo un problema grave. Cada vez que veo plata, me pongo nervioso». El psicólogo le preguntó: «¿Y qué siente cuando se la gasta?». El paisa abrió los ojos y respondió...",
+    punch: "«¡No sé, doctor! ¡Nunca he llegado tan lejos!»",
     audioTrackId: null
   },
   {
-    id: 'vip_7',
-    category: 'VIP_GIFT',
-    title: 'El León en la Oficina',
-    giftId: 'leon',
-    giftName: '🦁 León Galáctico',
-    setup: 'Un león empezó a trabajar de gerente en una oficina...',
-    punch: '¡Se comió al jefe y durante 6 meses nadie notó la diferencia!',
+    id: "paisa_2",
+    category: "VIP_GIFT",
+    title: "El taxi en Medellín",
+    region: "Medellín / Antioquia",
+    giftId: "dona",
+    giftName: "🍩 Dona Glaseada",
+    setup: "Un turista se montó en un taxi en Medellín y preguntó: «Señor, ¿cuánto me cobra por llevarme hasta El Poblado?». El taxista respondió: «Treinta mil, patrón». El turista dijo: «¿Y si me voy caminando detrás del taxi?». El conductor lo miró y le contestó...",
+    punch: "«¡Le cobro cuarenta mil, porque ahí sí me toca ir despacito!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_3",
+    category: "VIP_GIFT",
+    title: "La primera cita paisa",
+    region: "Medellín / Antioquia",
+    giftId: "capibara",
+    giftName: "🦫 Capibara",
+    setup: "Un muchacho paisa invitó a una muchacha a cenar en Medellín. Ella pidió la carta y preguntó: «¿Qué me recomienda?». Él, muy elegante, dijo: «Pedí lo que querás, hermosa, que hoy quiero impresionarte». Ella pidió langosta, vino y postre. Cuando llegó la cuenta, él respiró profundo y le dijo...",
+    punch: "«¡Qué belleza! ¡Me impresionaste vos primero!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_4",
+    category: "VIP_GIFT",
+    title: "Paisa y la Inteligencia Artificial",
+    region: "Medellín / Antioquia",
+    giftId: "nivel",
+    giftName: "🕹️ Subida de nivel",
+    setup: "Un paisa abrió una aplicación de inteligencia artificial y escribió: «Necesito una idea para ganar plata sin invertir un peso». La IA le dio veinte negocios, una estrategia y un plan de seis meses. Él leyó todo y respondió...",
+    punch: "«¿Y no tendrás una idea para vender este plan a otros paisas?»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_5",
+    category: "VIP_GIFT",
+    title: "Apartamento en Medellín",
+    region: "Medellín / Antioquia",
+    giftId: "fuegos",
+    giftName: "🎆 Fuegos artificiales",
+    setup: "Un vendedor de apartamentos le dijo a un paisa: «Este apartamento tiene vista panorámica, tres habitaciones, piscina y gimnasio». El paisa preguntó: «¿Y cuánto cuesta?». «Ochocientos millones». El paisa se quedó pensativo y dijo...",
+    punch: "«¿Y si me llevo solo la vista panorámica, cuánto me rebaja?»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_6",
+    category: "VIP_GIFT",
+    title: "Restaurante deconstruido",
+    region: "Medellín / Antioquia",
+    giftId: "ritmo",
+    giftName: "🥁 Ritmo de mir...",
+    setup: "Un paisa entró a un restaurante elegante de Medellín y pidió una bandeja paisa. El mesero le dijo: «Señor, aquí ofrecemos una versión deconstruida». El paisa preguntó: «¿Eso qué es?». «Servimos todos los ingredientes por separado». Él lo miró y respondió...",
+    punch: "«¡Ah, no, hermano! ¡Yo vine a almorzar, no a trabajar de albañil!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_7",
+    category: "VIP_GIFT",
+    title: "El paisa en el gimnasio",
+    region: "Medellín / Antioquia",
+    giftId: "eres_increible",
+    giftName: "🐱 Eres increíble",
+    setup: "Un paisa pagó un mes de gimnasio. El entrenador le preguntó: «¿Cuál es su objetivo?». Él respondió: «Quiero tener mucho músculo y buena figura». El entrenador preguntó: «¿Está dispuesto a dejar los fritos, las gaseosas y las harinas?». El paisa se quedó callado y dijo...",
+    punch: "«¡No, parcero! ¡Yo pagué gimnasio, no una despedida de mi familia!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_8",
+    category: "VIP_GIFT",
+    title: "El paisa y el banco",
+    region: "Medellín / Antioquia",
+    giftId: "leon",
+    giftName: "🦁 León Galáctico",
+    setup: "Un paisa fue al banco a pedir un préstamo. La asesora preguntó: «¿Tiene propiedades?». «No». «¿Tiene vehículo?». «Tampoco». «¿Y algún ingreso fijo?». El paisa sonrió y contestó...",
+    punch: "«¡Claro! ¡Todos los días entra alguien a cobrarme!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_9",
+    category: "VIP_GIFT",
+    title: "El Metro de Medellín",
+    region: "Medellín / Antioquia",
+    giftId: "super_gg",
+    giftName: "🏆 Super GG",
+    setup: "Un turista le preguntó a un paisa en el Metro de Medellín: «¿Ustedes cómo hacen para mantener esto tan organizado?». El paisa respondió orgulloso: «Aquí cuidamos mucho nuestro Metro». El turista preguntó: «¿Y qué pasa si alguien lo raya?». El paisa dijo...",
+    punch: "«¡Uy, parce! ¡Primero tiene que darle explicaciones a toda Medellín!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_10",
+    category: "VIP_GIFT",
+    title: "Negocio de empanadas",
+    region: "Medellín / Antioquia",
+    giftId: "dona_choco",
+    giftName: "🍩 Dona de chocolate",
+    setup: "Dos amigos paisas montaron un negocio de empanadas. Uno preguntó: «¿A cuánto vamos a vender cada una?». El otro respondió: «A tres mil». «¿Y cuánto cuesta hacerlas?». «Tres mil quinientos». El primero se preocupó: «¡Estamos perdiendo plata!». Y el socio respondió...",
+    punch: "«¡Entonces hagamos el doble, para recuperar más rápido!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_11",
+    category: "VIP_GIFT",
+    title: "El celular inteligente",
+    region: "Medellín / Antioquia",
+    giftId: "gg",
+    giftName: "🎮 GG",
+    setup: "Un paisa fue a comprar un celular. El vendedor dijo: «Este tiene cámara profesional, inteligencia artificial y reconocimiento facial». El paisa preguntó: «¿Y reconoce cuando me están cobrando de más?». «No, señor». Entonces respondió...",
+    punch: "«¡Ah, entonces todavía le falta inteligencia!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_12",
+    category: "VIP_GIFT",
+    title: "La suegra en Medellín",
+    region: "Medellín / Antioquia",
+    giftId: "micro_plata",
+    giftName: "🎤 Micrófono plateado",
+    setup: "Un paisa le contó a su amigo: «Parce, mi suegra vino a quedarse ocho días y ya lleva tres meses». El amigo preguntó: «¿Y no le has dicho nada?». El paisa respondió: «Sí, le compré una maleta preciosa». «¿Y funcionó?». El paisa suspiró...",
+    punch: "«¡Claro! ¡Ahora tiene dónde guardar más ropa!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_13",
+    category: "VIP_GIFT",
+    title: "El médico financiero",
+    region: "Medellín / Antioquia",
+    giftId: "corazon_brillo",
+    giftName: "💖 Corazón brillante",
+    setup: "Un paisa fue al médico y le dijo: «Doctor, necesito algo para dejar de pensar tanto en las deudas». El doctor respondió: «Le recomiendo descansar y dejar de revisar el celular por las noches». El paisa preguntó: «¿Y qué hago con los que me cobran?». El doctor dijo: «Bloquee las llamadas». El paisa sonrió...",
+    punch: "«¡Doctor, usted no es médico, usted es un genio financiero!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_14",
+    category: "VIP_GIFT",
+    title: "Vacaciones en Cartagena",
+    region: "Medellín / Antioquia",
+    giftId: "rosa_oro",
+    giftName: "🌹 Rosa de oro",
+    setup: "Un paisa llegó a Cartagena y un vendedor le ofreció un paseo en lancha por doscientos mil pesos. El paisa preguntó: «¿Y cuánto si voy nadando detrás?». El vendedor respondió: «Gratis, patrón». El paisa se emocionó y preguntó: «¿En serio?». El vendedor dijo...",
+    punch: "«¡Sí, pero el chaleco salvavidas se lo cobro aparte!»",
+    audioTrackId: null
+  },
+  {
+    id: "paisa_15",
+    category: "VIP_GIFT",
+    title: "El WiFi del barrio",
+    region: "Medellín / Antioquia",
+    giftId: "tiktok_live",
+    giftName: "🎵 TikTok Live",
+    setup: "Un paisa llamó al técnico porque el WiFi estaba muy lento. El técnico le dijo: «Tiene demasiados dispositivos conectados». El paisa respondió: «Pero si aquí solamente vivimos cuatro». El técnico revisó la lista y encontró treinta conexiones. El paisa miró por la ventana y gritó...",
+    punch: "«¡Con razón todo el barrio me saluda tan bonito!»",
     audioTrackId: null
   }
 ];
 
-const STORAGE_KEY = 'garabato_comedy_jokes_v3';
+const STORAGE_KEY = 'garabato_comedy_jokes_v8';
 
 export class JokeManager {
   constructor(syncBridge = null) {
@@ -710,7 +886,8 @@ export class JokeManager {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length >= 50) {
+        const hasPaisa15 = parsed.some(j => j.id === 'paisa_15');
+        if (Array.isArray(parsed) && parsed.length >= 65 && hasPaisa15) {
           return parsed;
         }
       }

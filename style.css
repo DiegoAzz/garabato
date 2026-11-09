@@ -149,6 +149,11 @@ body.tiktok-vertical-mode #show-hud {
   gap: 5px;
 }
 
+/* Modo Transmisión Limpia para OBS / TikTok LIVE */
+body.clean-stream-mode .header-actions {
+  display: none !important;
+}
+
 .btn-hud {
   background: rgba(15, 23, 42, 0.85);
   color: #ffffff;
@@ -175,6 +180,63 @@ body.tiktok-vertical-mode #show-hud {
 .admin-link {
   background: #2563eb;
   border-color: #3b82f6;
+}
+
+/* Banner de Misión / Instrucciones Visuales del Live */
+.mission-instructions-banner {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  border-radius: 18px;
+  padding: 4px 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 10px rgba(250, 204, 21, 0.2);
+  margin-top: 3px;
+  margin-bottom: 2px;
+  backdrop-filter: blur(8px);
+  max-width: 92%;
+  transition: all 0.3s ease;
+  z-index: 50;
+}
+
+.mission-pill {
+  background: linear-gradient(135deg, #f59e0b, #ec4899);
+  color: #ffffff;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.mission-text {
+  font-size: 9px;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.2px;
+}
+
+body.tiktok-vertical-mode .mission-instructions-banner {
+  padding: 2.5px 8px;
+  gap: 5px;
+  margin-top: 2px;
+  max-width: 95%;
+}
+
+body.tiktok-vertical-mode .mission-pill {
+  font-size: 7.2px;
+  padding: 1.5px 5px;
+}
+
+body.tiktok-vertical-mode .mission-text {
+  font-size: 7.8px;
 }
 
 /* Barra de Energía Colectiva */
@@ -286,6 +348,38 @@ body.tiktok-vertical-mode .welcome-toast-pill {
   top: 76px;
   font-size: 9px;
   padding: 4px 12px;
+}
+
+/* Cintillo de llamado a la acción: Cuentos por el Interno */
+.audience-cta-bar {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 8.5px;
+  color: #e2e8f0;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45);
+  z-index: 40;
+}
+
+.audience-cta-bar strong {
+  color: #facc15;
+}
+
+body.tiktok-vertical-mode .audience-cta-bar {
+  bottom: 5px;
+  font-size: 6.8px;
+  padding: 2px 7px;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .welcome-toast-pill strong {

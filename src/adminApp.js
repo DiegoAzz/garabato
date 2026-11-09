@@ -73,6 +73,16 @@ export function initAdminApp() {
   const btnSoundConfetti = document.getElementById('btn-sound-confetti');
 
   // 1. Estado de Conexión con /show
+  const btnAdminToggleClean = document.getElementById('btn-admin-toggle-clean');
+  let isCleanMode = false;
+  if (btnAdminToggleClean) {
+    btnAdminToggleClean.addEventListener('click', () => {
+      isCleanMode = !isCleanMode;
+      btnAdminToggleClean.textContent = isCleanMode ? '👁️ Mostrar Botones' : '👁️ Transmisión Limpia';
+      syncBridge.send('TOGGLE_CLEAN_MODE', { clean: isCleanMode });
+    });
+  }
+
   syncBridge.on('SHOW_READY', () => {
     if (statusBadge) {
       statusBadge.textContent = '● Show Conectado en Vivo';
@@ -455,7 +465,34 @@ export function initAdminApp() {
     });
   }
 
-  // 11. Sincronización del Comediante en tiempo real
+  // 11. Buzón de Cuentos del Público (Enviados por el Interno tras regalo)
+  const storyUserInput = document.getElementById('story-user-input');
+  const storyGiftSelect = document.getElementById('story-gift-select');
+  const storyTextInput = document.getElementById('story-text-input');
+  const btnSendAudienceStory = document.getElementById('btn-send-audience-story');
+
+  if (btnSendAudienceStory) {
+    btnSendAudienceStory.addEventListener('click', () => {
+      const story = (storyTextInput && storyTextInput.value || '').trim();
+      if (!story) {
+        alert('Por favor pega o escribe el cuento que te mandó el usuario por interno.');
+        return;
+      }
+      const user = (storyUserInput && storyUserInput.value || '').trim() || 'EspectadorVIP';
+      const gift = (storyGiftSelect && storyGiftSelect.value) || '🌹 Rosa';
+
+      syncBridge.send('AUDIENCE_CUSTOM_STORY', {
+        user,
+        gift,
+        story
+      });
+
+      if (storyTextInput) storyTextInput.value = '';
+      alert(`¡Cuento de @${user} enviado a la tarima con prioridad VIP!`);
+    });
+  }
+
+  // 12. Sincronización del Comediante en tiempo real
   function emitSingerUpdate() {
     const payload = {
       name: (singerNameInput && singerNameInput.value) || 'EL COMEDIANTE',

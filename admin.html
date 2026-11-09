@@ -16,7 +16,8 @@
       </div>
       <div class="admin-header-right">
         <span id="status-show-connection" class="status-badge">● Esperando /show</span>
-        <a href="./show.html" target="_blank" class="btn-open-show">🖥️ Abrir /show en otra ventana</a>
+        <button type="button" id="btn-admin-toggle-clean" class="btn-action-small" title="Oculta o muestra los botones de Admin en la pantalla del show">👁️ Transmisión Limpia</button>
+        <a href="./show.html" target="_blank" class="btn-open-show">🖥️ Abrir /show</a>
       </div>
     </header>
 
@@ -256,6 +257,42 @@
               <li class="empty-hint">Sin chistes gratis en cola</li>
             </ul>
           </div>
+        </div>
+
+        <!-- BUZÓN DE CUENTOS ENVIADOS POR EL INTERNO TRAS REGALO -->
+        <div class="audience-story-box mt-4" style="background: rgba(124, 58, 237, 0.12); border: 1.5px solid #a855f7; border-radius: 12px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: #facc15; font-size: 13px;">💌 Cuento del Público (Por el Interno)</strong>
+            <span style="background: #a855f7; color: #fff; font-size: 9px; padding: 2px 7px; border-radius: 8px; font-weight: 800;">👑 PRIORIDAD VIP</span>
+          </div>
+          <p class="card-desc" style="margin-bottom: 8px; font-size: 11px;">
+            Si un espectador donó un regalo y te envió su propio cuento por el chat o mensaje interno, pégalo aquí para que el actor lo cuente en vivo mencionando su autoría.
+          </p>
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="story-user-input" style="font-size: 11px;">Usuario que donó</label>
+              <input type="text" id="story-user-input" placeholder="Ej: Carlos123" style="padding: 6px;" />
+            </div>
+            <div class="form-group flex-1">
+              <label for="story-gift-select" style="font-size: 11px;">Regalo donado</label>
+              <select id="story-gift-select" style="padding: 6px;">
+                <option value="🌹 Rosa">🌹 Rosa</option>
+                <option value="👑 Corona VIP">👑 Corona</option>
+                <option value="🍩 Dona">🍩 Dona</option>
+                <option value="💖 Corazón coreano">💖 Corazón</option>
+                <option value="🦖 Pequeño dino">🦖 Dino</option>
+                <option value="🎮 Control Retro">🎮 Control</option>
+                <option value="🎁 Regalo VIP">🎁 Regalo</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="story-text-input" style="font-size: 11px;">Cuento o Chiste enviado por el usuario</label>
+            <textarea id="story-text-input" rows="2" placeholder="Pega aquí el chiste o historia que te mandó por interno..." style="width: 100%; border-radius: 8px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid #334155; padding: 6px; font-size: 12px; resize: vertical;"></textarea>
+          </div>
+          <button type="button" id="btn-send-audience-story" class="btn-sim-gift" style="width: 100%; background: linear-gradient(135deg, #a855f7, #ec4899); font-weight: 800; cursor: pointer; padding: 8px;">
+            🚀 Lanzar Cuento a Tarima (Mención en Vivo)
+          </button>
         </div>
 
         <h2 class="card-title mt-4">🧪 Simulador de Eventos TikTok</h2>

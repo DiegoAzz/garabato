@@ -257,22 +257,24 @@ export function initShowApp() {
           subtitles: `Ordenado por @${user}`
         });
 
+        const cleanU = String(user || 'amigo').replace(/^@+/, '').trim();
+
         if (subtitlesEl) {
-          subtitlesEl.textContent = `${icon} @${user} ordenó: ${title}`;
+          subtitlesEl.textContent = `${icon} @${cleanU} ordenó: ${title}`;
           subtitlesEl.classList.remove('hidden');
         }
 
         if (isVip && giftBanner) {
-          giftUser.textContent = user;
+          giftUser.textContent = cleanU;
           giftItem.textContent = gift || 'Regalo Especial';
           giftBanner.classList.remove('hidden');
           setTimeout(() => giftBanner.classList.add('hidden'), 3500);
         }
 
         if (act === 'LLORAR' || act === 'CRY') {
-          singer.animController.triggerCryReaction(user, 5000);
+          singer.animController.triggerCryReaction(cleanU, 5000);
           audioEngine.playCryingDrama(4.0);
-          audioEngine.speakActorLine(`¡Buaaa! ¡Por qué me haces llorar @${user}?!`, { pitch: 1.35 }, () => {
+          audioEngine.speakActorLine(`¡Buaaa! ¡Por qué me haces llorar ${cleanU}?!`, { pitch: 1.35 }, () => {
             setTimeout(() => {
               if (subtitlesEl) subtitlesEl.classList.add('hidden');
               done();
@@ -280,26 +282,41 @@ export function initShowApp() {
           });
         } else if (act === 'BAILAR' || act === 'DANCE') {
           singer.animController.triggerDanceFrenzyReaction();
-          stage.triggerExtremeDisco(5.0);
+          stage.triggerExtremeDisco(6.0);
           audioEngine.playCheer();
-          audioEngine.speakActorLine(`¡A bailar se ha dicho por orden de @${user}!`, { pitch: 1.1 }, () => {
+          audioEngine.speakActorLine(`¡A bailar se ha dicho por orden de ${cleanU}! ¡Suelten los pasos prohibidos!`, { pitch: 1.15 }, () => {
+            setTimeout(() => {
+              if (subtitlesEl) subtitlesEl.classList.add('hidden');
+              done();
+            }, 1200);
+          });
+        } else if (act === 'CANTAR' || act === 'SING') {
+          singer.animController.triggerDanceFrenzyReaction();
+          audioEngine.playCheer();
+          const lyrics = [
+            `¡La la laaaa! ¡Por orden de ${cleanU} me pongo a cantar a todo pulmón! ¡Qué chorro de voz tengo!`,
+            `¡O sole mío! ¡Miren qué entonación ${cleanU}, merezco un Grammy de TikTok! Música maestro!`
+          ];
+          const chosenLyric = lyrics[Math.floor(Math.random() * lyrics.length)];
+          audioEngine.speakActorLine(chosenLyric, { pitch: 1.25, rate: 0.98 }, () => {
+            audioEngine.playCrowdApplause(3.5);
             setTimeout(() => {
               if (subtitlesEl) subtitlesEl.classList.add('hidden');
               done();
             }, 1200);
           });
         } else if (act === 'RABIA' || act === 'RAGE') {
-          singer.animController.triggerRageReaction(user, 4800);
+          singer.animController.triggerRageReaction(cleanU, 4800);
           audioEngine.playTantrumRage(3.5);
-          audioEngine.speakActorLine(`¡Ya me cansé! ¡El actor de la tarima soy yo @${user}!`, { pitch: 0.9, rate: 1.2 }, () => {
+          audioEngine.speakActorLine(`¡Ya me cansé! ¡El actor de la tarima soy yo ${cleanU}!`, { pitch: 0.9, rate: 1.2 }, () => {
             setTimeout(() => {
               if (subtitlesEl) subtitlesEl.classList.add('hidden');
               done();
             }, 1200);
           });
         } else if (act === 'FLEXIONES' || act === 'PUSHUPS') {
-          singer.animController.triggerPushupsReaction(user, 5800);
-          audioEngine.speakActorLine(`Uno... dos... ¡no doy más @${user}!`, { pitch: 1.05 }, () => {
+          singer.animController.triggerPushupsReaction(cleanU, 5800);
+          audioEngine.speakActorLine(`Uno... dos... ¡no doy más ${cleanU}!`, { pitch: 1.05 }, () => {
             setTimeout(() => {
               if (subtitlesEl) subtitlesEl.classList.add('hidden');
               done();
@@ -325,7 +342,7 @@ export function initShowApp() {
           }
           tomatoRain.trigger();
           audioEngine.playComicalBoo();
-          audioEngine.speakActorLine(`¡💥 Auch! ¡Qué puntería con esa Rosa de tomates @${user}!`, { pitch: 1.25 }, () => {
+          audioEngine.speakActorLine(`¡Auch! ¡Qué puntería con esa Rosa de tomates ${cleanU}!`, { pitch: 1.25 }, () => {
             setTimeout(() => {
               if (subtitlesEl) subtitlesEl.classList.add('hidden');
               done();
@@ -367,8 +384,22 @@ export function initShowApp() {
           unlockAudio();
           item.classList.add('active-target');
           setTimeout(() => item.classList.remove('active-target'), 200);
-          if (joke.id === 'vip_tomate' || joke.title?.toLowerCase().includes('tomate') || joke.giftName?.toLowerCase().includes('rosa')) {
+          if (joke.action) {
+            enqueueActorAction(joke.action, 'EspectadorVIP', true, joke.giftName);
+          } else if (joke.id === 'vip_tomate' || joke.title?.toLowerCase().includes('tomate') || joke.giftName?.toLowerCase().includes('rosa')) {
             enqueueActorAction('TOMATE', 'EspectadorVIP', true, joke.giftName || '🌹 Rosa');
+          } else if (joke.title?.toLowerCase().includes('bailar')) {
+            enqueueActorAction('BAILAR', 'EspectadorVIP', true, joke.giftName || '🎵 TikTok');
+          } else if (joke.title?.toLowerCase().includes('cantar')) {
+            enqueueActorAction('CANTAR', 'EspectadorVIP', true, joke.giftName || '🎤 Micrófono de Oro');
+          } else if (joke.title?.toLowerCase().includes('llorar')) {
+            enqueueActorAction('LLORAR', 'EspectadorVIP', true, joke.giftName || '💖 Corazón coreano');
+          } else if (joke.title?.toLowerCase().includes('flexion')) {
+            enqueueActorAction('FLEXIONES', 'EspectadorVIP', true, joke.giftName || '🎮 Control Retro');
+          } else if (joke.title?.toLowerCase().includes('estatua')) {
+            enqueueActorAction('ESTATUA', 'EspectadorVIP', true, joke.giftName || '🦖 Pequeño dino');
+          } else if (joke.title?.toLowerCase().includes('rabia')) {
+            enqueueActorAction('RABIA', 'EspectadorVIP', true, joke.giftName || '💥 Super GG');
           } else {
             enqueueJoke(joke, 'EspectadorVIP', true, joke.giftName);
           }
@@ -517,6 +548,41 @@ export function initShowApp() {
     });
   }
 
+  // Modo Transmisión Limpia (Oculta botones 9:16 y Admin para el Live)
+  const btnToggleClean = document.getElementById('btn-toggle-clean');
+  function toggleCleanMode(forceState) {
+    if (typeof forceState === 'boolean') {
+      document.body.classList.toggle('clean-stream-mode', forceState);
+    } else {
+      document.body.classList.toggle('clean-stream-mode');
+    }
+  }
+
+  if (btnToggleClean) {
+    btnToggleClean.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleCleanMode();
+    });
+  }
+
+  // Tecla 'H' para ocultar/mostrar controles en cualquier momento
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'h' || e.key === 'H') {
+      toggleCleanMode();
+    }
+  });
+
+  // Si se abre con ?clean=1, ?obs=1 o ?live=1 (para OBS Studio / TikTok LIVE), activar modo limpio
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('clean') || urlParams.has('obs') || urlParams.has('live')) {
+    toggleCleanMode(true);
+  }
+
+  // Control remoto de modo limpio desde /admin
+  syncBridge.on('TOGGLE_CLEAN_MODE', (payload) => {
+    toggleCleanMode(payload && payload.clean);
+  });
+
   // ==========================================
   // SINCRONIZACIÓN DE EVENTOS EN TIEMPO REAL
   // ==========================================
@@ -534,6 +600,22 @@ export function initShowApp() {
       }
     }
     if (cfg.autoDucking !== undefined) audioEngine.autoDuckingEnabled = !!cfg.autoDucking;
+  });
+
+  // Cuentos enviados por espectadores por interno / chat tras mandar regalo
+  syncBridge.on('AUDIENCE_CUSTOM_STORY', (data) => {
+    if (!data || !data.story) return;
+    const user = data.user || 'EspectadorVIP';
+    const gift = data.gift || 'Regalo';
+    const customJoke = {
+      id: 'audience_story_' + Date.now(),
+      title: `Cuento de @${user}`,
+      setup: `¡Atención mi gente! @${user} nos envió ${gift} y por el interno nos mandó este cuento... ¡A ver qué tal le sale al compadre! Escuchen esto: ${data.story}`,
+      punch: `¡Jajaja! ¿Qué opinan del cuento de @${user}? ¡Un aplauso para este comediante del público!`,
+      giftName: gift,
+      isAudienceStory: true
+    };
+    enqueueJoke(customJoke, user, true, gift);
   });
 
   // Disparo manual desde Admin ("▶ Probar")
@@ -619,20 +701,21 @@ export function initShowApp() {
   });
 
   const WELCOME_PHRASES = [
-    (u) => `¡Epa @${u}! Pasa, bienvenido. Ponte cómodo que aquí tú eres el que manda... ¿qué me vas a poner a hacer hoy?`,
-    (u) => `¡Hola @${u}! Qué elegancia. Recuerda: manda una Rosa y me agarras a tomatazos, ¡o ponme a bailar!`,
-    (u) => `¡Ojo que llegó @${u}! Mira esa cara de jefe que tiene... ¡Bienvenido, tú tienes el control de la tarima!`,
-    (u) => `¡Atención todos, aplausos para @${u} que acaba de entrar! ¡Tú mandas compadre, si quieres ponerme a llorar solo dilo!`,
-    (u) => `¡Llegó @${u}! Ya me estaba quedando sin aire, pero como tú mandas, ¡aquí estoy a tu entera disposición!`,
-    (u) => `¡Qué hubo @${u}! Bienvenido al show. Tira una Rosa para un tomatazo o haz taps para chistes gratis.`
+    (u) => `¡Epa ${u}! Pasa, bienvenido. Ponte cómodo que aquí tú eres el que manda... ¿qué me vas a poner a hacer hoy?`,
+    (u) => `¡Hola ${u}! Qué elegancia. Recuerda: manda una Rosa y me agarras a tomatazos, ¡o ponme a bailar!`,
+    (u) => `¡Ojo que llegó ${u}! Mira esa cara de jefe que tiene... ¡Bienvenido, tú tienes el control de la tarima!`,
+    (u) => `¡Atención todos, aplausos para ${u} que acaba de entrar! ¡Tú mandas compadre, si quieres ponerme a llorar solo dilo!`,
+    (u) => `¡Llegó ${u}! Ya me estaba quedando sin aire, pero como tú mandas, ¡aquí estoy a tu entera disposición!`,
+    (u) => `¡Qué hubo ${u}! Bienvenido al show. Tira una Rosa para un tomatazo o haz taps para chistes gratis.`
   ];
 
   function handleViewerJoin(user) {
-    if (!user) user = 'Espectador';
+    const rawUser = String(user || 'amigo');
+    const cleanUser = rawUser.replace(/^@+/, '').trim();
 
-    // 1. Mostrar toast visual inmediatamente
+    // 1. Mostrar toast visual inmediatamente con @ en pantalla
     if (welcomeToastEl && welcomeUserEl) {
-      welcomeUserEl.textContent = `@${user}`;
+      welcomeUserEl.textContent = `@${cleanUser}`;
       welcomeToastEl.classList.remove('hidden');
       clearTimeout(welcomeToastEl._hideTimer);
       welcomeToastEl._hideTimer = setTimeout(() => {
@@ -640,17 +723,40 @@ export function initShowApp() {
       }, 4200);
     }
 
-    // 2. Si el actor no está ocupado y pasaron al menos 8 segundos, saludar con voz cómica y gesto efusivo
+    // 2. Si el actor no está ocupado y pasaron al menos 8 segundos, saludar con voz cómica (sin pronunciar arroba)
     const now = Date.now();
     const isActorBusy = eventQueue.isBusy || audioEngine.isSpeaking;
     if (!isActorBusy && (now - lastSpokenWelcomeTime > 8000)) {
       lastSpokenWelcomeTime = now;
       const phraseGen = WELCOME_PHRASES[Math.floor(Math.random() * WELCOME_PHRASES.length)];
-      const text = phraseGen(user);
-      singer.animController.triggerWelcomeReaction(user, 4000);
+      const text = phraseGen(cleanUser);
+      singer.animController.triggerWelcomeReaction(cleanUser, 4000);
       audioEngine.speakActorLine(text, { pitch: 1.05, rate: 1.05 });
     }
   }
+
+  // Rotador Dinámico de Instrucciones Visuales para la Audiencia del Live
+  const missionTextEl = document.getElementById('mission-text');
+  const ctaDynamicTextEl = document.getElementById('cta-dynamic-text');
+  const LIVE_MISSION_TIPS = [
+    '🎁 Manda regalos para ordenar: 🍅 Tirar Tomates • 💃 Bailar • 🎤 Cantar • 😭 Llorar',
+    '🌹 1 Rosa = Lluvia de Tomates en la cara del actor en la tarima',
+    '👆 Haz Taps rápidos en pantalla para desbloquear los 50 Chistes Regionales',
+    '🎵 Regalo TikTok = El comediante suelta sus pasos prohibidos',
+    '💌 Manda un regalo y escribe tu chiste en el chat/interno ¡lo cuenta en vivo!'
+  ];
+  const LIVE_RULES_TIPS = [
+    '💡 <strong>¿Cómo funciona?</strong> 👆 Taps = Chistes Gratis | 🎁 Regalos = Órdenes al Actor | 💌 Manda regalo + tu cuento',
+    '👑 <strong>¡El Público Manda!</strong> Los regalos de TikTok dirigen cada movimiento del actor en tarima.',
+    '🍅 <strong>¡Castigo Cómic!</strong> Si no te gusta el chiste, manda 1 Rosa y el público lo llena de tomates.',
+    '💬 <strong>Tu Momento de Fama:</strong> Manda cualquier regalo y pon tu cuento en el chat, el actor lo leerá al aire.'
+  ];
+  let tipIdx = 0;
+  setInterval(() => {
+    tipIdx = (tipIdx + 1) % LIVE_MISSION_TIPS.length;
+    if (missionTextEl) missionTextEl.textContent = LIVE_MISSION_TIPS[tipIdx];
+    if (ctaDynamicTextEl) ctaDynamicTextEl.innerHTML = LIVE_RULES_TIPS[tipIdx % LIVE_RULES_TIPS.length];
+  }, 4800);
 
   // Notificación de entrada desde /admin o conector
   syncBridge.on('VIEWER_JOIN', (payload) => {
