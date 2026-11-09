@@ -186,7 +186,7 @@ export function initShowApp() {
   function enqueueJoke(joke, user = 'Espectador', isVip = false, gift = null) {
     markActivity();
     const textLen = ((joke.setup || '').length + (joke.punch || '').length);
-    const dynamicDuration = Math.min(Math.max(16000, textLen * 130 + 10000), 28000);
+    const dynamicDuration = Math.max(45000, textLen * 250 + 20000);
 
     eventQueue.enqueue({
       isVip,
@@ -331,7 +331,7 @@ export function initShowApp() {
           singer.animController.triggerCryReaction(cleanU, 4500);
           audioEngine.playCryingDrama(4.0);
           audioEngine.speakActorLine(`¡Buaaa! ¡Por qué me haces llorar ${cleanU}?!`, {
-            pitch: 1.35,
+            pitch: 1.04,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '😭', false)
           });
           setTimeout(() => {
@@ -356,15 +356,15 @@ export function initShowApp() {
           // 2. Encender pista bailable 128 BPM y anunciar en paralelo
           audioEngine.startPartyDanceTrack(8.0);
           audioEngine.speakActorLine(`¡Música maestro! ¡A romper la pista con los pasos prohibidos por orden de ${cleanU}!`, {
-            pitch: 1.18,
-            rate: 1.05
+            pitch: 1.0,
+            rate: 1.04
           });
 
           // 3. Temporizador estricto e independiente para finalizar el baile limpiamente sin bloqueos
           setTimeout(() => {
             audioEngine.playCrowdApplause(4.0);
             showSubtitlePhrase(`👏 ¡Uff, qué sabrosura! ¡Gracias por el baile ${cleanU}!`, '🎉', true);
-            audioEngine.speakActorLine(`¡Uff, qué sabrosura de música! ¡Gracias por ponerme a bailar ${cleanU}!`, { pitch: 1.1 });
+            audioEngine.speakActorLine(`¡Uff, qué sabrosura de música! ¡Gracias por ponerme a bailar ${cleanU}!`, { pitch: 1.0 });
             setTimeout(() => {
               hideSubtitles();
               cameraDirector.unlockShot();
@@ -452,7 +452,7 @@ export function initShowApp() {
 
           const songText = `${song.intro}. ${song.lyrics}. ${song.outro}`;
           audioEngine.speakActorLine(songText, {
-            pitch: 1.25,
+            pitch: 1.0,
             rate: 1.02,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '🎤', true)
           });
@@ -473,8 +473,8 @@ export function initShowApp() {
           singer.animController.triggerRageReaction(cleanU, 4500);
           audioEngine.playTantrumRage(3.5);
           audioEngine.speakActorLine(`¡Ya me cansé! ¡El actor de la tarima soy yo ${cleanU}!`, {
-            pitch: 0.9,
-            rate: 1.2,
+            pitch: 0.98,
+            rate: 1.15,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '😡', false)
           });
           setTimeout(() => {
@@ -486,7 +486,7 @@ export function initShowApp() {
         } else if (act === 'FLEXIONES' || act === 'PUSHUPS') {
           singer.animController.triggerPushupsReaction(cleanU, 5000);
           audioEngine.speakActorLine(`Uno... dos... ¡no doy más ${cleanU}!`, {
-            pitch: 1.05,
+            pitch: 1.0,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '🏋️', false)
           });
           setTimeout(() => {
@@ -506,8 +506,8 @@ export function initShowApp() {
             cameraDirector.unlockShot();
             singer.animController.resetToIdle();
             audioEngine.speakActorLine(`¡Uff, ya me descongelé! ¡Casi me da hipotermia ${cleanU}!`, {
-              pitch: 1.15,
-              rate: 1.1
+              pitch: 1.0,
+              rate: 1.05
             });
             setTimeout(() => {
               singer.animController.resetToIdle();
@@ -527,7 +527,7 @@ export function initShowApp() {
           tomatoRain.trigger();
           audioEngine.playComicalBoo();
           audioEngine.speakActorLine(`¡Auch! ¡Qué puntería con esa Rosa de tomates ${cleanU}!`, {
-            pitch: 1.25,
+            pitch: 1.02,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '🍅', false)
           });
           setTimeout(() => {
@@ -541,8 +541,8 @@ export function initShowApp() {
           singer.animController.triggerWelcomeReaction(cleanU, 4000);
           showSubtitlePhrase(`💌 ¡Manda un regalo y cuéntame tu historia por chat @${cleanU}!`, '💌', false);
           audioEngine.speakActorLine(`¡Atención mi gente! Si mandas cualquier regalo y me escribes tu chiste en el chat o por el interno, ¡lo cuento aquí mismo en la tarima para todo el público!`, {
-            pitch: 1.15,
-            rate: 1.05
+            pitch: 1.0,
+            rate: 1.04
           });
           setTimeout(() => {
             hideSubtitles();
@@ -938,7 +938,7 @@ export function initShowApp() {
       const phraseGen = WELCOME_PHRASES[Math.floor(Math.random() * WELCOME_PHRASES.length)];
       const text = phraseGen(cleanUser);
       singer.animController.triggerWelcomeReaction(cleanUser, 4000);
-      audioEngine.speakActorLine(text, { pitch: 1.05, rate: 1.05 });
+      audioEngine.speakActorLine(text, { pitch: 1.0, rate: 1.02 });
     }
   }
 
@@ -1086,8 +1086,8 @@ export function initShowApp() {
     showSubtitlePhrase(phrase, '📢', false);
 
     audioEngine.speakActorLine(phrase, {
-      pitch: 1.15,
-      rate: 1.08,
+      pitch: 1.0,
+      rate: 1.04,
       onChunk: (chunk) => showSubtitlePhrase(chunk, '📢', false)
     });
 
@@ -1098,6 +1098,13 @@ export function initShowApp() {
       lastActivityTime = Date.now();
     }, 4200);
   }
+
+  // Sincronización en tiempo real de voz y tono desde Admin
+  syncBridge.on('SYNC_VOICE_SETTINGS', (payload) => {
+    if (payload) {
+      audioEngine.setVoiceSettings(payload);
+    }
+  });
 
   // Prueba de frase de inactividad desde Admin
   syncBridge.on('TEST_IDLE_PHRASE', (payload) => {

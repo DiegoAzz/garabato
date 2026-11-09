@@ -38,7 +38,7 @@ export class EventQueue {
       safeDuration = Math.min(Math.max(eventDef.duration || 10000, 6000) + 2500, 16000);
     } else {
       const textLen = ((eventDef.setup || '').length + (eventDef.punch || '').length);
-      safeDuration = Math.min(Math.max(eventDef.duration || 16000, 14000), Math.max(textLen * 120 + 9000, 18000), 30000);
+      safeDuration = Math.max(eventDef.duration || 45000, textLen * 250 + 20000);
     }
 
     const event = {

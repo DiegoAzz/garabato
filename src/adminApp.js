@@ -458,6 +458,143 @@ export function initAdminApp() {
   if (bgmVolumeSlider) bgmVolumeSlider.addEventListener('input', sendBgmConfig);
   if (bgmDuckingCheck) bgmDuckingCheck.addEventListener('change', sendBgmConfig);
 
+  // Configuración de Voz Humana del Comediante (TTS)
+  const voiceSelectEl = document.getElementById('voice-select');
+  const voicePitchSlider = document.getElementById('voice-pitch-slider');
+  const voicePitchLabel = document.getElementById('voice-pitch-label');
+  const voiceRateSlider = document.getElementById('voice-rate-slider');
+  const voiceRateLabel = document.getElementById('voice-rate-label');
+  const btnTestVoice = document.getElementById('btn-test-voice');
+
+  let availableVoices = [];
+
+  function loadAvailableVoices() {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      availableVoices = window.speechSynthesis.getVoices() || [];
+    } catch (e) {
+      availableVoices = [];
+    }
+    if (!voiceSelectEl || availableVoices.length === 0) return;
+
+    const spanishVoices = availableVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('es'));
+    const voicesToShow = spanishVoices.length > 0 ? spanishVoices : availableVoices;
+
+    const currentSavedURI = localStorage.getItem('garabato_voice_uri') || '';
+    voiceSelectEl.innerHTML = '';
+
+    voicesToShow.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.voiceURI || v.name;
+      const nameLower = (v.name || '').toLowerCase();
+      const isNatural = nameLower.includes('natural') || nameLower.includes('online') || nameLower.includes('google');
+      const isLatin = (v.lang && (v.lang.includes('419') || v.lang.includes('CO') || v.lang.includes('MX') || v.lang.includes('US'))) ||
+                      nameLower.includes('salome') || nameLower.includes('jorge') || nameLower.includes('dalia') || nameLower.includes('gonzalo');
+      
+      const badge = (isNatural && isLatin) ? '⭐ [Recomendada Latina]' : isNatural ? '✨ [Natural]' : '';
+      opt.textContent = `${v.name} (${v.lang}) ${badge}`;
+      if (currentSavedURI && (v.voiceURI === currentSavedURI || v.name === currentSavedURI)) {
+        opt.selected = true;
+      }
+      voiceSelectEl.appendChild(opt);
+    });
+
+    // Si no había selección guardada, preseleccionar la mejor recomendada
+    if (!currentSavedURI && voiceSelectEl.options.length > 0) {
+      const bestIdx = voicesToShow.findIndex(v => {
+        const n = (v.name || '').toLowerCase();
+        return (n.includes('natural') || n.includes('google') || n.includes('salome') || n.includes('jorge')) && !n.includes('helena');
+      });
+      if (bestIdx >= 0) {
+        voiceSelectEl.selectedIndex = bestIdx;
+        localStorage.setItem('garabato_voice_uri', voiceSelectEl.value);
+      }
+    }
+  }
+
+  function syncVoiceConfig() {
+    const voiceURI = voiceSelectEl ? voiceSelectEl.value : '';
+    const pitch = voicePitchSlider ? parseFloat(voicePitchSlider.value) : 1.0;
+    const rate = voiceRateSlider ? parseFloat(voiceRateSlider.value) : 1.02;
+
+    if (voicePitchLabel) {
+      voicePitchLabel.textContent = `${pitch.toFixed(2)} (${pitch < 0.95 ? 'Grave' : pitch > 1.05 ? 'Agudo' : 'Humano'})`;
+    }
+    if (voiceRateLabel) {
+      voiceRateLabel.textContent = `${rate.toFixed(2)} (${rate < 0.95 ? 'Pausado' : rate > 1.08 ? 'Rápido' : 'Natural'})`;
+    }
+
+    try {
+      localStorage.setItem('garabato_voice_uri', voiceURI);
+      localStorage.setItem('garabato_voice_pitch', pitch);
+      localStorage.setItem('garabato_voice_rate', rate);
+    } catch (e) {}
+
+    syncBridge.send('SYNC_VOICE_SETTINGS', { voiceURI, pitch, rate });
+  }
+
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    loadAvailableVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadAvailableVoices;
+    }
+  }
+
+  // Restaurar sliders guardados
+  try {
+    const savedP = localStorage.getItem('garabato_voice_pitch');
+    const savedR = localStorage.getItem('garabato_voice_rate');
+    if (savedP && voicePitchSlider) {
+      voicePitchSlider.value = savedP;
+      if (voicePitchLabel) voicePitchLabel.textContent = `${parseFloat(savedP).toFixed(2)} (Humano)`;
+    }
+    if (savedR && voiceRateSlider) {
+      voiceRateSlider.value = savedR;
+      if (voiceRateLabel) voiceRateLabel.textContent = `${parseFloat(savedR).toFixed(2)} (Natural)`;
+    }
+  } catch (e) {}
+
+  if (voiceSelectEl) voiceSelectEl.addEventListener('change', syncVoiceConfig);
+  if (voicePitchSlider) voicePitchSlider.addEventListener('input', syncVoiceConfig);
+  if (voiceRateSlider) voiceRateSlider.addEventListener('input', syncVoiceConfig);
+
+  if (btnTestVoice) {
+    btnTestVoice.addEventListener('click', () => {
+      syncVoiceConfig();
+      const voiceURI = voiceSelectEl ? voiceSelectEl.value : '';
+      const pitch = voicePitchSlider ? parseFloat(voicePitchSlider.value) : 1.0;
+      const rate = voiceRateSlider ? parseFloat(voiceRateSlider.value) : 1.02;
+
+      const testPhrase = '¡Epa mi gente! Así es como suena mi voz en vivo en la tarima del Garabato Comedy Club. ¿Qué tal me escucho hoy?';
+      
+      const oldTxt = btnTestVoice.textContent;
+      btnTestVoice.textContent = '🔊 Hablando...';
+      btnTestVoice.style.background = '#10b981';
+      setTimeout(() => {
+        btnTestVoice.textContent = oldTxt;
+        btnTestVoice.style.background = '';
+      }, 3500);
+
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utt = new SpeechSynthesisUtterance(testPhrase);
+          if (voiceURI && availableVoices.length > 0) {
+            const v = availableVoices.find(voice => voice.voiceURI === voiceURI || voice.name === voiceURI);
+            if (v) utt.voice = v;
+          }
+          utt.pitch = pitch;
+          utt.rate = rate;
+          utt.lang = 'es-ES';
+          window.speechSynthesis.speak(utt);
+        } catch (err) {}
+      }
+
+      // Enviar también a la pantalla Show
+      syncBridge.send('TEST_IDLE_PHRASE', { phrase: testPhrase });
+    });
+  }
+
   // 9. Monitor de Cola en Vivo (Actualizado desde /show)
   syncBridge.on('QUEUE_STATE_UPDATE', (data) => {
     if (!data) return;

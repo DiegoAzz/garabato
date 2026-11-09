@@ -488,27 +488,19 @@ export class AudioEngine {
     }
 
     try {
-      // Fix crítico de Chrome: reanudar speechSynthesis si estaba en pausa interna
       window.speechSynthesis.cancel();
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
 
+      const voiceCfg = this.getVoiceSettings();
+      const voice = options.voice || this.getBestSpanishVoice();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = options.lang || 'es-ES';
-      utterance.pitch = options.pitch !== undefined ? options.pitch : 1.35;
-      utterance.rate = options.rate !== undefined ? options.rate : 1.15;
+      if (voice) utterance.voice = voice;
+      utterance.lang = (voice && voice.lang) || options.lang || 'es-ES';
+      utterance.pitch = options.pitch !== undefined ? options.pitch : voiceCfg.pitch;
+      utterance.rate = options.rate !== undefined ? options.rate : voiceCfg.rate;
       utterance.volume = 1.0;
-
-      // Buscar voz en español
-      if (this.speechVoices.length === 0) {
-        this.speechVoices = window.speechSynthesis.getVoices();
-      }
-
-      if (this.speechVoices.length > 0) {
-        const spanishVoice = this.speechVoices.find(v => v.lang && v.lang.toLowerCase().startsWith('es'));
-        if (spanishVoice) utterance.voice = spanishVoice;
-      }
 
       this.isSpeaking = true;
       this.speechUtterance = utterance;
@@ -557,14 +549,11 @@ export class AudioEngine {
     this.stopSpeechKeepAlive();
     this.keepAliveInterval = setInterval(() => {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.pause();
+        if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
-        } else {
-          this.stopSpeechKeepAlive();
         }
       }
-    }, 4500);
+    }, 2000);
   }
 
   stopSpeechKeepAlive() {
@@ -667,10 +656,11 @@ export class AudioEngine {
       currentIndex++;
 
       const utterance = new SpeechSynthesisUtterance(chunkText);
+      const voiceCfg = this.getVoiceSettings();
       const voice = options.voice || this.getBestSpanishVoice();
       if (voice) utterance.voice = voice;
-      utterance.pitch = options.pitch || 1.0;
-      utterance.rate = options.rate || 1.02;
+      utterance.pitch = options.pitch !== undefined ? options.pitch : voiceCfg.pitch;
+      utterance.rate = options.rate !== undefined ? options.rate : voiceCfg.rate;
       utterance.lang = (voice && voice.lang) || 'es-ES';
 
       // Referencia fuerte permanente para evitar que el Garbage Collector destruya la voz
@@ -684,11 +674,11 @@ export class AudioEngine {
         chunkFinished = true;
         clearTimeout(watchdogTimer);
         this.activeUtterances.delete(utterance);
-        setTimeout(playNext, 100);
+        setTimeout(playNext, 80);
       };
 
-      // Watchdog de seguridad estricto: Si Chrome suspende la síntesis en background o no dispara onend, avanza
-      const maxChunkTimeMs = Math.max(6500, chunkText.length * 110);
+      // Watchdog generoso de seguridad para evitar bloqueos si Chrome falla onend, sin cortar la narración natural
+      const maxChunkTimeMs = Math.max(16000, chunkText.length * 280);
       watchdogTimer = setTimeout(() => {
         advanceNext();
       }, maxChunkTimeMs);
@@ -1487,17 +1477,111 @@ export class AudioEngine {
     });
   }
 
+  getVoiceSettings() {
+    let pitch = 1.0;
+    let rate = 1.02;
+    let voiceURI = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const p = localStorage.getItem('garabato_voice_pitch');
+        const r = localStorage.getItem('garabato_voice_rate');
+        const v = localStorage.getItem('garabato_voice_uri');
+        if (p) pitch = parseFloat(p) || 1.0;
+        if (r) rate = parseFloat(r) || 1.02;
+        if (v) voiceURI = v;
+      }
+    } catch (e) {}
+    return { pitch, rate, voiceURI };
+  }
+
+  setVoiceSettings(cfg) {
+    if (!cfg) return;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        if (cfg.pitch !== undefined) localStorage.setItem('garabato_voice_pitch', cfg.pitch);
+        if (cfg.rate !== undefined) localStorage.setItem('garabato_voice_rate', cfg.rate);
+        if (cfg.voiceURI !== undefined) localStorage.setItem('garabato_voice_uri', cfg.voiceURI);
+      }
+    } catch (e) {}
+  }
+
   /**
-   * Obtiene la mejor voz profesional en español disponible (priorizando Neural / Natural)
+   * Obtiene la mejor voz profesional humana en español disponible en el navegador.
+   * Prioridad:
+   * 1. Voz guardada por el usuario en Admin
+   * 2. Voces Colombianas / Latinoamericanas Naturales (Salome, Jorge, Gonzalo, Dalia, etc.)
+   * 3. Voces de Google en español latino (Google español de Estados Unidos)
+   * 4. Cualquier voz Natural/Online en español
+   * 5. Voces masculinas/expresivas de Windows (Raul, Pablo, Sabina - descartando Helena)
    */
   getBestSpanishVoice() {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+    if (!this.speechVoices || this.speechVoices.length === 0) {
+      try {
+        this.speechVoices = window.speechSynthesis.getVoices();
+      } catch (e) {}
+    }
     if (!this.speechVoices || this.speechVoices.length === 0) return null;
-    const neural = this.speechVoices.find(v => 
-      v.lang && v.lang.toLowerCase().startsWith('es') && 
-      (v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Neural') || v.name.includes('Google'))
-    );
-    if (neural) return neural;
 
+    const { voiceURI } = this.getVoiceSettings();
+    if (voiceURI) {
+      const match = this.speechVoices.find(v => v.voiceURI === voiceURI || v.name === voiceURI);
+      if (match) return match;
+    }
+
+    // 1. Voces Colombianas / Latinoamericanas Naturales
+    const latinNatural = this.speechVoices.find(v => {
+      const name = (v.name || '').toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      if (!lang.startsWith('es')) return false;
+      const isNatural = name.includes('natural') || name.includes('online') || name.includes('neural');
+      const isLatin = lang.includes('co') || lang.includes('mx') || lang.includes('419') || lang.includes('us') ||
+                      name.includes('salome') || name.includes('jorge') || name.includes('dalia') || name.includes('gonzalo') || name.includes('camila') || name.includes('tomas');
+      return isNatural && isLatin;
+    });
+    if (latinNatural) return latinNatural;
+
+    // 2. Voces de Google en español latinoamericano (Google español de Estados Unidos)
+    const googleLatin = this.speechVoices.find(v => {
+      const name = (v.name || '').toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      return lang.startsWith('es') && name.includes('google') && (lang.includes('us') || lang.includes('419') || lang.includes('mx') || name.includes('estados unidos'));
+    });
+    if (googleLatin) return googleLatin;
+
+    // 3. Cualquier Google español
+    const anyGoogle = this.speechVoices.find(v => {
+      const name = (v.name || '').toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      return lang.startsWith('es') && name.includes('google');
+    });
+    if (anyGoogle) return anyGoogle;
+
+    // 4. Cualquier voz natural/online en español
+    const anyNatural = this.speechVoices.find(v => {
+      const name = (v.name || '').toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      return lang.startsWith('es') && (name.includes('natural') || name.includes('online') || name.includes('neural'));
+    });
+    if (anyNatural) return anyNatural;
+
+    // 5. Voces expresivas de Windows (Raul, Pablo, Sabina - descartando Helena)
+    const expressiveWindows = this.speechVoices.find(v => {
+      const name = (v.name || '').toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      return lang.startsWith('es') && (name.includes('raul') || name.includes('pablo') || name.includes('sabina'));
+    });
+    if (expressiveWindows) return expressiveWindows;
+
+    // 6. Cualquier voz en español que NO sea Helena
+    const nonHelena = this.speechVoices.find(v => {
+      const name = (v.name || '').toLowerCase();
+      const lang = (v.lang || '').toLowerCase();
+      return lang.startsWith('es') && !name.includes('helena');
+    });
+    if (nonHelena) return nonHelena;
+
+    // 7. Cualquier voz en español
     const anyEs = this.speechVoices.find(v => v.lang && v.lang.toLowerCase().startsWith('es'));
     if (anyEs) return anyEs;
 
@@ -1517,13 +1601,14 @@ export class AudioEngine {
     try {
       this.stopSpeech();
 
+      const voiceCfg = this.getVoiceSettings();
       const voice = options.voice || this.getBestSpanishVoice();
-      const pitch = options.pitch || 1.0; // Tono humano natural profesional
-      const rate = options.rate || 1.02;
+      const pitch = options.pitch !== undefined ? options.pitch : voiceCfg.pitch;
+      const rate = options.rate !== undefined ? options.rate : voiceCfg.rate;
 
-      // Dividir historias largas en oraciones naturales de máximo 130 caracteres
-      const setupChunks = this.splitTextIntoChunks(setupText, 130);
-      const punchChunks = punchlineText ? this.splitTextIntoChunks(punchlineText, 130) : [];
+      // Dividir historias largas en oraciones naturales de máximo 110 caracteres
+      const setupChunks = this.splitTextIntoChunks(setupText, 110);
+      const punchChunks = punchlineText ? this.splitTextIntoChunks(punchlineText, 110) : [];
 
       const setupOptions = { voice, pitch, rate };
 
@@ -1540,11 +1625,11 @@ export class AudioEngine {
             return;
           }
 
-          // 2. Remate cómico con tono ligeramente más expresivo
+          // 2. Remate cómico con cadencia cómplice y misma voz natural
           const punchOptions = {
             voice,
-            pitch: pitch * 1.04,
-            rate: rate * 1.05
+            pitch,
+            rate: rate * 1.02
           };
 
           this.speakChunksSequence(punchChunks, punchOptions, (chunk, idx, total) => {
@@ -1555,7 +1640,7 @@ export class AudioEngine {
             this.playSitcomLaughs(3.5);
             if (onEndCallback) onEndCallback();
           });
-        }, 650);
+        }, 550);
       });
     } catch (e) {
       console.warn('[AudioEngine] Error en speakJokeProfessional:', e);
