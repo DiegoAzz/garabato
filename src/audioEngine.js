@@ -7,6 +7,50 @@
  * - Desbloqueo universal de audio y compatibilidad con autoplay en navegadores
  */
 
+/**
+ * Limpieza profunda de texto para síntesis de voz (TTS).
+ * Elimina comillas angulares (« »), comillas simples/dobles, guiones largos,
+ * puntos suspensivos hablados, dos puntos, emojis y caracteres especiales
+ * para que la voz del navegador lea 100% LIMPIO como un humano sin pronunciar símbolos.
+ */
+export function cleanSpokenText(text) {
+  if (!text) return '';
+  return String(text)
+    // 1. Eliminar comillas angulares (« »), comillas curvas y rectas
+    .replace(/[«»"“‘’”`]/g, '')
+    // 2. Eliminar guiones largos, medios y rayas (TTS suele decir "raya" o "guión")
+    .replace(/[—–_]/g, ' ')
+    // 3. Puntos suspensivos: convertirlos en punto simple (hace pausa natural sin decir "puntos suspensivos")
+    .replace(/\.{2,}/g, '.')
+    .replace(/…/g, '.')
+    // 4. Dos puntos y punto y coma: sustituir por coma para pausar sin decir "dos puntos"
+    .replace(/[:;]/g, ', ')
+    // 5. Corchetes, paréntesis, barras, numerales, asteriscos y arrobas
+    .replace(/[()[\]{}<>@#$%^&*~|\\\/+=]/g, ' ')
+    // 6. Eliminar emojis (para que no diga "cara de risa", "tomate", etc.)
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/gu, '')
+    // 7. Normalizar signos de exclamación e interrogación repetidos
+    .replace(/¡+/g, '¡')
+    .replace(/!+/g, '!')
+    .replace(/¿+/g, '¿')
+    .replace(/\?+/g, '?')
+    // 8. Normalizar espacios
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Limpieza para subtítulos visuales compactos y legibles
+ */
+export function cleanSubtitleText(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/[«»"]/g, '')
+    .replace(/—/g, ' - ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export class AudioEngine {
   constructor() {
     this.ctx = null;
@@ -416,24 +460,21 @@ export class AudioEngine {
   }
 
   /**
-   * Divide cuentos largos en fragmentos naturales por oraciones o comas (máx 130 caracteres)
-   * para que el motor de voz del navegador NUNCA se corte a mitad de camino.
+   * Divide cuentos largos en fragmentos naturales por oraciones o comas (máx 90 caracteres)
+   * Limpia totalmente cualquier carácter que el sintetizador pueda vocalizar (« », —, ..., dos puntos, etc.)
+   * y produce subtítulos limpios, breves y cómodos de leer al ritmo de la voz.
    */
-  splitTextIntoChunks(text, maxChunkLen = 130) {
+  splitTextIntoChunks(text, maxChunkLen = 90) {
     if (!text) return [];
-    // Limpieza profunda: sin arrobas, espacios normalizados
-    const clean = String(text)
-      .replace(/@/g, '')
-      .replace(/\r\n/g, '\n')
-      .replace(/\s+/g, ' ')
-      .trim();
+    // Limpieza profunda de caracteres no deseados en la voz
+    const clean = cleanSpokenText(text);
 
     if (clean.length <= maxChunkLen) {
       return [clean];
     }
 
-    // Dividir por signos de puntuación de oraciones (. ? ! ; \n)
-    const sentenceDelim = /([.?!;\n]+)/g;
+    // Dividir por signos de puntuación naturales (. ? ! \n)
+    const sentenceDelim = /([.?!]+)/g;
     const parts = clean.split(sentenceDelim);
     const rawSentences = [];
     for (let i = 0; i < parts.length; i += 2) {
@@ -454,9 +495,9 @@ export class AudioEngine {
           currentChunk = '';
         }
 
-        // Si una sola oración excede maxChunkLen, subdividir por comas o palabras
+        // Si una sola oración excede maxChunkLen, subdividir por comas
         if (sentence.length > maxChunkLen) {
-          const subParts = sentence.split(/([,:]+)/g);
+          const subParts = sentence.split(/([,]+)/g);
           let subSentence = '';
           for (let s = 0; s < subParts.length; s += 2) {
             const piece = ((subParts[s] || '') + (subParts[s + 1] || '')).trim();
@@ -1511,7 +1552,9 @@ export class AudioEngine {
         rate: options.rate || 1.05
       };
 
-      this.speakChunksSequence(chunks, lineOptions, null, () => {
+      this.speakChunksSequence(chunks, lineOptions, (chunk, idx, total) => {
+        if (options.onChunk) options.onChunk(chunk, idx, total);
+      }, () => {
         if (onEndCallback) onEndCallback();
       });
     } catch (e) {

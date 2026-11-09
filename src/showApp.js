@@ -3,7 +3,7 @@ import { buildDiscoStage } from './stageBuilder.js';
 import { createStickman } from './garabatoCharacter.js';
 import { AudienceManager } from './audienceManager.js';
 import { CameraDirector } from './cameraDirector.js';
-import { AudioEngine } from './audioEngine.js';
+import { AudioEngine, cleanSubtitleText } from './audioEngine.js';
 import { SyncBridge } from './syncBridge.js';
 import { TomatoRain } from './tomatoRain.js';
 import { EventQueue } from './eventQueue.js';
@@ -73,6 +73,28 @@ export function initShowApp() {
   const comedyQueueStatus = document.getElementById('comedy-queue-status');
   const queueStatusText = document.getElementById('queue-status-text');
   const queueCountsBadge = document.getElementById('queue-counts-badge');
+
+  // Subtítulos dinámicos compactos frase a frase (debajo del personaje)
+  function showSubtitlePhrase(phrase, icon = '🎙️', isPunch = false) {
+    if (!subtitlesEl) return;
+    const clean = cleanSubtitleText(phrase);
+    if (!clean) return;
+
+    subtitlesEl.classList.remove('hidden');
+    if (isPunch) {
+      subtitlesEl.classList.add('is-punchline');
+    } else {
+      subtitlesEl.classList.remove('is-punchline');
+    }
+    subtitlesEl.innerHTML = `<span class="sub-icon">${icon}</span><span class="sub-text">${clean}</span>`;
+  }
+
+  function hideSubtitles() {
+    if (subtitlesEl) {
+      subtitlesEl.classList.add('hidden');
+      subtitlesEl.classList.remove('is-punchline');
+    }
+  }
 
   const milestoneCelebration = document.getElementById('milestone-celebration');
   const milestoneNameEl = document.getElementById('milestone-celebration-name');
@@ -165,11 +187,8 @@ export function initShowApp() {
           subtitles: `🎙️ ${joke.setup}`
         });
 
-        // 3. Subtítulos en pantalla
-        if (subtitlesEl) {
-          subtitlesEl.textContent = `🎙️ "${joke.setup}"`;
-          subtitlesEl.classList.remove('hidden');
-        }
+        // 3. Subtítulos en pantalla compactos frase a frase
+        showSubtitlePhrase(joke.title, isVip ? '👑' : '🎙️', false);
 
         // 4. Si fue regalo, mostrar banner de TikTok
         if (isVip && giftBanner) {
@@ -179,17 +198,17 @@ export function initShowApp() {
           setTimeout(() => giftBanner.classList.add('hidden'), 4000);
         }
 
-        // 5. Narrar el chiste con voz humana profesional, pausas cómicas, ba-dum-tss y aplausos 5s
-        audioEngine.speakJokeProfessional(joke.setup, joke.punch, {}, () => {
-          // Remate entregado
-          if (subtitlesEl) {
-            subtitlesEl.textContent = `😂 "${joke.punch}"`;
+        // 5. Narrar el chiste con voz humana profesional, frase a frase (sin bloquear la vista)
+        audioEngine.speakJokeProfessional(joke.setup, joke.punch, {
+          onSetupChunk: (chunk) => {
+            showSubtitlePhrase(chunk, '🎙️', false);
+            stage.setLedData({ subtitles: `🎙️ ${cleanSubtitleText(chunk)}` });
+          },
+          onPunchChunk: (chunk) => {
+            showSubtitlePhrase(chunk, '😂', true);
+            stage.setLedData({ subtitles: `😂 ${cleanSubtitleText(chunk)}` });
           }
-
-          stage.setLedData({
-            subtitles: `😂 ${joke.punch}`
-          });
-
+        }, () => {
           // Baile triunfal y confeti
           singer.animController.triggerSongEndReaction();
           stage.burstConfetti();
@@ -200,11 +219,11 @@ export function initShowApp() {
           audioEngine.playSitcomLaughs(4.0);
           audioEngine.playCrowdApplause(5.0);
 
-          // Al completarse los aplausos (5.2s), cerrar subtítulo y avanzar al siguiente en la cola
+          // Al completarse los aplausos (5s), cerrar subtítulo y avanzar al siguiente en la cola
           setTimeout(() => {
-            if (subtitlesEl) subtitlesEl.classList.add('hidden');
+            hideSubtitles();
             done();
-          }, 5200);
+          }, 5000);
         });
       }
     });
@@ -258,11 +277,7 @@ export function initShowApp() {
         });
 
         const cleanU = String(user || 'amigo').replace(/^@+/, '').trim();
-
-        if (subtitlesEl) {
-          subtitlesEl.textContent = `${icon} @${cleanU} ordenó: ${title}`;
-          subtitlesEl.classList.remove('hidden');
-        }
+        showSubtitlePhrase(`${icon} ${cleanU} ordenó: ${title}`, icon, false);
 
         if (isVip && giftBanner) {
           giftUser.textContent = cleanU;
@@ -274,9 +289,12 @@ export function initShowApp() {
         if (act === 'LLORAR' || act === 'CRY') {
           singer.animController.triggerCryReaction(cleanU, 5000);
           audioEngine.playCryingDrama(4.0);
-          audioEngine.speakActorLine(`¡Buaaa! ¡Por qué me haces llorar ${cleanU}?!`, { pitch: 1.35 }, () => {
+          audioEngine.speakActorLine(`¡Buaaa! ¡Por qué me haces llorar ${cleanU}?!`, {
+            pitch: 1.35,
+            onChunk: (chunk) => showSubtitlePhrase(chunk, '😭', false)
+          }, () => {
             setTimeout(() => {
-              if (subtitlesEl) subtitlesEl.classList.add('hidden');
+              hideSubtitles();
               done();
             }, 1200);
           });
@@ -284,9 +302,12 @@ export function initShowApp() {
           singer.animController.triggerDanceFrenzyReaction();
           stage.triggerExtremeDisco(6.0);
           audioEngine.playCheer();
-          audioEngine.speakActorLine(`¡A bailar se ha dicho por orden de ${cleanU}! ¡Suelten los pasos prohibidos!`, { pitch: 1.15 }, () => {
+          audioEngine.speakActorLine(`¡A bailar se ha dicho por orden de ${cleanU}! ¡Suelten los pasos prohibidos!`, {
+            pitch: 1.15,
+            onChunk: (chunk) => showSubtitlePhrase(chunk, '💃', false)
+          }, () => {
             setTimeout(() => {
-              if (subtitlesEl) subtitlesEl.classList.add('hidden');
+              hideSubtitles();
               done();
             }, 1200);
           });
@@ -298,35 +319,47 @@ export function initShowApp() {
             `¡O sole mío! ¡Miren qué entonación ${cleanU}, merezco un Grammy de TikTok! Música maestro!`
           ];
           const chosenLyric = lyrics[Math.floor(Math.random() * lyrics.length)];
-          audioEngine.speakActorLine(chosenLyric, { pitch: 1.25, rate: 0.98 }, () => {
+          audioEngine.speakActorLine(chosenLyric, {
+            pitch: 1.25,
+            rate: 0.98,
+            onChunk: (chunk) => showSubtitlePhrase(chunk, '🎤', false)
+          }, () => {
             audioEngine.playCrowdApplause(3.5);
             setTimeout(() => {
-              if (subtitlesEl) subtitlesEl.classList.add('hidden');
+              hideSubtitles();
               done();
             }, 1200);
           });
         } else if (act === 'RABIA' || act === 'RAGE') {
           singer.animController.triggerRageReaction(cleanU, 4800);
           audioEngine.playTantrumRage(3.5);
-          audioEngine.speakActorLine(`¡Ya me cansé! ¡El actor de la tarima soy yo ${cleanU}!`, { pitch: 0.9, rate: 1.2 }, () => {
+          audioEngine.speakActorLine(`¡Ya me cansé! ¡El actor de la tarima soy yo ${cleanU}!`, {
+            pitch: 0.9,
+            rate: 1.2,
+            onChunk: (chunk) => showSubtitlePhrase(chunk, '😡', false)
+          }, () => {
             setTimeout(() => {
-              if (subtitlesEl) subtitlesEl.classList.add('hidden');
+              hideSubtitles();
               done();
             }, 1200);
           });
         } else if (act === 'FLEXIONES' || act === 'PUSHUPS') {
           singer.animController.triggerPushupsReaction(cleanU, 5800);
-          audioEngine.speakActorLine(`Uno... dos... ¡no doy más ${cleanU}!`, { pitch: 1.05 }, () => {
+          audioEngine.speakActorLine(`Uno... dos... ¡no doy más ${cleanU}!`, {
+            pitch: 1.05,
+            onChunk: (chunk) => showSubtitlePhrase(chunk, '🏋️', false)
+          }, () => {
             setTimeout(() => {
-              if (subtitlesEl) subtitlesEl.classList.add('hidden');
+              hideSubtitles();
               done();
             }, 1500);
           });
         } else if (act === 'ESTATUA' || act === 'FREEZE') {
           singer.animController.triggerFreezeReaction(5000);
           audioEngine.playFreezeChime();
+          showSubtitlePhrase(`🧊 Modo estatua congelado por ${cleanU}`, '🧊', false);
           setTimeout(() => {
-            if (subtitlesEl) subtitlesEl.classList.add('hidden');
+            hideSubtitles();
             done();
           }, 5200);
         } else if (act === 'TOMATE' || act === 'TOMATO' || act === 'TOMATOES') {
@@ -342,9 +375,12 @@ export function initShowApp() {
           }
           tomatoRain.trigger();
           audioEngine.playComicalBoo();
-          audioEngine.speakActorLine(`¡Auch! ¡Qué puntería con esa Rosa de tomates ${cleanU}!`, { pitch: 1.25 }, () => {
+          audioEngine.speakActorLine(`¡Auch! ¡Qué puntería con esa Rosa de tomates ${cleanU}!`, {
+            pitch: 1.25,
+            onChunk: (chunk) => showSubtitlePhrase(chunk, '🍅', false)
+          }, () => {
             setTimeout(() => {
-              if (subtitlesEl) subtitlesEl.classList.add('hidden');
+              hideSubtitles();
               done();
             }, 1500);
           });
