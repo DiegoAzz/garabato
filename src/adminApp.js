@@ -636,6 +636,174 @@ export function initAdminApp() {
     });
   });
 
+  // ==========================================
+  // 13. SISTEMA ANTI-INACTIVIDAD TIKTOK (LLAMADOS JOCOSOS AL PÚBLICO)
+  // ==========================================
+  const DEFAULT_IDLE_PHRASES = [
+    "¡Oigan! ¿Se durmieron todos o qué? ¡Denle taps a la pantalla que los chistes son gratis!",
+    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Tiren taps al corazón!",
+    "¿Qué pasó con los dedos de este público? ¡Taps a la pantalla muchachos, que el actor tiene que comer!",
+    "¡Epa! ¿Están congelados como estatuas? ¡Tóquenme la pantalla que quiero contar el chiste de los paisas!",
+    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o denle taps a la pantalla.",
+    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Taps, taps, taps a la pantalla!",
+    "¡Oigan, una Rosa cuesta una monedita y me ponen a llorar o a bailar! ¡Anímense!",
+    "¡El comediante más barato de TikTok está aquí! ¡Taps gratis a la pantalla para desbloquear chistes!",
+    "¡Mueve los dedos, mi rey! ¡Taps a la pantalla que la comedia no para!",
+    "¡Si llegamos a la meta de taps suelto un chiste bomba! ¡A tocar la pantalla todo el mundo!"
+  ];
+
+  const IDLE_STORAGE_KEY = 'garabato_idle_config_v1';
+  let idleConfig = {
+    enabled: true,
+    timeoutSeconds: 10,
+    phrases: [...DEFAULT_IDLE_PHRASES]
+  };
+
+  try {
+    const saved = localStorage.getItem(IDLE_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && Array.isArray(parsed.phrases) && parsed.phrases.length > 0) {
+        idleConfig = { ...idleConfig, ...parsed };
+      }
+    }
+  } catch (e) {}
+
+  const idleSystemToggle = document.getElementById('idle-system-toggle');
+  const idleTimeoutSelect = document.getElementById('idle-timeout-select');
+  const idlePhraseForm = document.getElementById('idle-phrase-form');
+  const idlePhraseInput = document.getElementById('idle-phrase-input');
+  const btnSaveIdlePhrase = document.getElementById('btn-save-idle-phrase');
+  const btnCancelIdlePhrase = document.getElementById('btn-cancel-idle-phrase');
+  const btnResetIdlePhrases = document.getElementById('btn-reset-idle-phrases');
+  const idlePhrasesList = document.getElementById('idle-phrases-list');
+  const idlePhrasesCount = document.getElementById('idle-phrases-count');
+
+  let editingIdleIndex = -1;
+
+  if (idleSystemToggle) {
+    idleSystemToggle.checked = Boolean(idleConfig.enabled);
+    idleSystemToggle.addEventListener('change', () => {
+      idleConfig.enabled = idleSystemToggle.checked;
+      saveIdleConfig();
+    });
+  }
+
+  if (idleTimeoutSelect) {
+    idleTimeoutSelect.value = String(idleConfig.timeoutSeconds || 10);
+    idleTimeoutSelect.addEventListener('change', () => {
+      idleConfig.timeoutSeconds = parseInt(idleTimeoutSelect.value, 10) || 10;
+      saveIdleConfig();
+    });
+  }
+
+  function saveIdleConfig() {
+    try {
+      localStorage.setItem(IDLE_STORAGE_KEY, JSON.stringify(idleConfig));
+    } catch (e) {}
+    syncBridge.send('IDLE_CONFIG_UPDATE', idleConfig);
+  }
+
+  function renderIdlePhrases() {
+    if (!idlePhrasesList) return;
+    idlePhrasesList.innerHTML = '';
+    if (idlePhrasesCount) idlePhrasesCount.textContent = idleConfig.phrases.length;
+
+    if (idleConfig.phrases.length === 0) {
+      idlePhrasesList.innerHTML = '<li class="empty-hint">Sin frases programadas. Agrega una arriba.</li>';
+      return;
+    }
+
+    idleConfig.phrases.forEach((phrase, idx) => {
+      const li = document.createElement('li');
+      li.className = 'admin-joke-card';
+      li.style.padding = '8px 12px';
+      li.innerHTML = `
+        <div class="admin-joke-info" style="flex: 1;">
+          <strong class="admin-joke-cue" style="color: #f8fafc; font-size: 12px; font-weight: 600;">"${phrase}"</strong>
+        </div>
+        <div class="admin-joke-actions">
+          <button class="btn-joke-test" title="Probar esta frase en el show">▶ Probar</button>
+          <button class="btn-joke-edit" title="Editar frase">✏️</button>
+          <button class="btn-joke-del" title="Eliminar frase">🗑️</button>
+        </div>
+      `;
+
+      li.querySelector('.btn-joke-test').addEventListener('click', () => {
+        syncBridge.send('TEST_IDLE_PHRASE', { phrase });
+      });
+
+      li.querySelector('.btn-joke-edit').addEventListener('click', () => {
+        editingIdleIndex = idx;
+        if (idlePhraseInput) {
+          idlePhraseInput.value = phrase;
+          idlePhraseInput.focus();
+        }
+        if (btnSaveIdlePhrase) {
+          btnSaveIdlePhrase.innerHTML = '💾 Guardar';
+          btnSaveIdlePhrase.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        }
+        if (btnCancelIdlePhrase) btnCancelIdlePhrase.classList.remove('hidden');
+      });
+
+      li.querySelector('.btn-joke-del').addEventListener('click', () => {
+        if (editingIdleIndex === idx) resetIdleForm();
+        idleConfig.phrases.splice(idx, 1);
+        saveIdleConfig();
+        renderIdlePhrases();
+      });
+
+      idlePhrasesList.appendChild(li);
+    });
+  }
+
+  function resetIdleForm() {
+    editingIdleIndex = -1;
+    if (idlePhraseInput) idlePhraseInput.value = '';
+    if (btnSaveIdlePhrase) {
+      btnSaveIdlePhrase.innerHTML = '➕ Agregar';
+      btnSaveIdlePhrase.style.background = '';
+    }
+    if (btnCancelIdlePhrase) btnCancelIdlePhrase.classList.add('hidden');
+  }
+
+  if (btnCancelIdlePhrase) {
+    btnCancelIdlePhrase.addEventListener('click', resetIdleForm);
+  }
+
+  if (idlePhraseForm) {
+    idlePhraseForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = (idlePhraseInput && idlePhraseInput.value || '').trim();
+      if (!text) return;
+
+      if (editingIdleIndex >= 0 && editingIdleIndex < idleConfig.phrases.length) {
+        idleConfig.phrases[editingIdleIndex] = text;
+      } else {
+        idleConfig.phrases.unshift(text);
+      }
+
+      resetIdleForm();
+      saveIdleConfig();
+      renderIdlePhrases();
+    });
+  }
+
+  if (btnResetIdlePhrases) {
+    btnResetIdlePhrases.addEventListener('click', () => {
+      if (confirm('¿Restaurar las 10 frases jocosas de inactividad por defecto?')) {
+        idleConfig.phrases = [...DEFAULT_IDLE_PHRASES];
+        resetIdleForm();
+        saveIdleConfig();
+        renderIdlePhrases();
+      }
+    });
+  }
+
+  // Render inicial de frases de inactividad
+  renderIdlePhrases();
+  setTimeout(() => saveIdleConfig(), 600);
+
   // Render inicial
   renderAdminJokes();
 }

@@ -417,8 +417,34 @@ export function createStickman(isSinger = false, initialColor = null, customConf
       this.gesture = 'freeze';
       showBubbleText('🥶 ¡MODO ESTATUA ACTIVADO!', '#06b6d4', duration);
       setTimeout(() => {
-        this.gesture = 'none';
+        if (this.gesture === 'freeze') {
+          this.resetToIdle();
+        }
       }, duration);
+    },
+
+    resetToIdle() {
+      this.gesture = 'none';
+      this.danceMove = 'none';
+      group.rotation.set(0, 0, 0);
+      hips.position.set(0, this.baseY, 0);
+      hips.rotation.set(0, 0, 0);
+      torsoGroup.rotation.set(0, 0, 0);
+      torsoMesh.rotation.set(0, 0, 0);
+      headGroup.rotation.set(0, 0, 0);
+      legL.hipJoint.rotation.set(0, 0, 0);
+      legR.hipJoint.rotation.set(0, 0, 0);
+      legL.kneeJoint.rotation.set(0, 0, 0);
+      legR.kneeJoint.rotation.set(0, 0, 0);
+      armL.shoulder.rotation.set(-0.35, 0, -0.3);
+      armL.elbow.rotation.set(-0.25, 0, 0);
+      if (isSinger) {
+        armR.shoulder.rotation.set(-1.45, 0, 0.3);
+        armR.elbow.rotation.set(-1.1, 0, 0);
+      } else {
+        armR.shoulder.rotation.set(-0.35, 0, 0.3);
+        armR.elbow.rotation.set(-0.25, 0, 0);
+      }
     },
 
     triggerWelcomeReaction(user = 'Espectador', duration = 3800) {
@@ -714,6 +740,22 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         }
 
         hips.position.y = this.baseY + Math.abs(wave) * 0.08;
+      } else {
+        // Postura natural de comediante Stand-Up (Respiración viva y gesticulación)
+        hips.position.y = this.baseY + Math.sin(t * 2) * 0.02;
+        torsoMesh.rotation.z = Math.sin(t * 1.5) * 0.02;
+        headGroup.rotation.y = Math.sin(t * 1.2) * 0.06;
+        headGroup.rotation.x = Math.sin(t * 2) * 0.03;
+        headGroup.rotation.z = 0;
+
+        armL.shoulder.rotation.x = -0.35 + Math.sin(t * 1.8) * 0.12;
+        armL.shoulder.rotation.z = -0.3 + Math.cos(t * 1.4) * 0.06;
+        armL.elbow.rotation.x = -0.25;
+
+        legL.hipJoint.rotation.x = 0;
+        legL.kneeJoint.rotation.x = 0;
+        legR.hipJoint.rotation.x = 0;
+        legR.kneeJoint.rotation.x = 0;
       }
 
       // Si es cantante, mantener micrófono en posición natural

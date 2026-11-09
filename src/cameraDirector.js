@@ -15,8 +15,12 @@ export class CameraDirector {
         target: new THREE.Vector3(0, 2.0, -1.5)
       },
       SINGER: {
-        pos: new THREE.Vector3(0, 2.6, 2.2),
-        target: new THREE.Vector3(0, 2.1, -2.8)
+        pos: new THREE.Vector3(0, 2.4, 2.0),
+        target: new THREE.Vector3(0, 1.8, -2.8)
+      },
+      PRIMERA_PLANA: {
+        pos: new THREE.Vector3(0, 1.8, 0.9),
+        target: new THREE.Vector3(0, 1.35, -3.0)
       },
       CROWD: {
         pos: new THREE.Vector3(-3.5, 2.8, 8.5),
@@ -40,8 +44,13 @@ export class CameraDirector {
         target: new THREE.Vector3(0, 2.0, -1.8)
       },
       SINGER: {
-        pos: new THREE.Vector3(0, 5.0, 10.5),
-        target: new THREE.Vector3(0, 2.2, -2.6)
+        pos: new THREE.Vector3(0, 3.2, 3.8),
+        target: new THREE.Vector3(0, 1.8, -2.8)
+      },
+      PRIMERA_PLANA: {
+        // Enfoque frontal directo sin público delante, capturando cuerpo completo y tarima con máximo detalle
+        pos: new THREE.Vector3(0, 2.2, 1.6),
+        target: new THREE.Vector3(0, 1.35, -3.0)
       },
       CROWD: {
         pos: new THREE.Vector3(0, 7.2, 15.0),
@@ -66,6 +75,7 @@ export class CameraDirector {
     this.timer = 0;
     this.isEventFocus = false;
     this.eventFocusShot = null;
+    this.lockedUntil = 0;
   }
 
   focusOnEvent(spectatorPos = null, durationMs = 4500) {
@@ -112,6 +122,15 @@ export class CameraDirector {
     }
   }
 
+  lockShot(name, durationMs = 10000) {
+    this.setShot(name);
+    this.lockedUntil = Date.now() + durationMs;
+  }
+
+  unlockShot() {
+    this.lockedUntil = 0;
+  }
+
   setAutoDirector(enabled) {
     this.autoDirector = enabled;
   }
@@ -125,7 +144,9 @@ export class CameraDirector {
       return;
     }
 
-    if (this.autoDirector && this.currentShotName !== 'DIVE') {
+    const isLocked = this.lockedUntil && Date.now() < this.lockedUntil;
+
+    if (!isLocked && this.autoDirector && this.currentShotName !== 'DIVE') {
       this.timer += delta;
       if (this.timer >= this.switchInterval) {
         this.timer = 0;

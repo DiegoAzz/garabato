@@ -75,6 +75,12 @@ export function initShowApp() {
   const queueStatusText = document.getElementById('queue-status-text');
   const queueCountsBadge = document.getElementById('queue-counts-badge');
 
+  // Control de Actividad y Anti-Inactividad TikTok
+  let lastActivityTime = Date.now();
+  function markActivity() {
+    lastActivityTime = Date.now();
+  }
+
   // Subtítulos dinámicos compactos frase a frase (debajo del personaje)
   function showSubtitlePhrase(phrase, icon = '🎙️', isPunch = false) {
     if (!subtitlesEl) return;
@@ -165,6 +171,7 @@ export function initShowApp() {
   // EJECUCIÓN PROFESIONAL DE UN CHISTE
   // ==========================================
   function enqueueJoke(joke, user = 'Espectador', isVip = false, gift = null) {
+    markActivity();
     const textLen = ((joke.setup || '').length + (joke.punch || '').length);
     const dynamicDuration = Math.max(55000, textLen * 180 + 15000);
 
@@ -237,6 +244,7 @@ export function initShowApp() {
   // EJECUCIÓN DE ÓRDENES AL ACTOR ("EL PÚBLICO MANDA")
   // ==========================================
   function enqueueActorAction(actionType, user = 'Espectador', isVip = false, gift = null) {
+    markActivity();
     const act = (actionType || '').toUpperCase();
     let title = '¡Acción del Actor!';
     let icon = '🎭';
@@ -305,11 +313,14 @@ export function initShowApp() {
             }, 1200);
           });
         } else if (act === 'BAILAR' || act === 'DANCE') {
+          // Cámara en primera plana frontal enfocando todo el cuerpo y tarima sin perder ningún detalle
+          cameraDirector.lockShot('PRIMERA_PLANA', 11500);
+
           // 1. Activar efectos visuales de fiesta extrema y euforia de la audiencia
           singer.animController.triggerDanceFrenzyReaction();
           stage.triggerExtremeDisco(9.0);
           audience.triggerFrenzy(9.0);
-          showSubtitlePhrase(`💃 ¡A BAILAR! Pasos prohibidos ordenados por ${cleanU}`, '💃', false);
+          stage.setLedData({ songTitle: '🕺 ¡PISTA DE BAILE!', subtitles: `Baile para @${cleanU}` });
 
           // 2. Anuncio del actor con energía y música de baile
           audioEngine.speakActorLine(`¡Música maestro! ¡A romper la pista con los pasos prohibidos por orden de ${cleanU}!`, {
@@ -317,20 +328,29 @@ export function initShowApp() {
             rate: 1.05,
             onChunk: (chunk) => showSubtitlePhrase(chunk, '💃', false)
           }, () => {
+            // El usuario especificó: durante el baile el texto no debe tapar al actor.
+            // Ocultamos subtítulo para dejar la tarima y el muñeco 100% despejados y visibles en primer plano
+            hideSubtitles();
+            stage.setLedData({ songTitle: `🕺 BAILE DE @${cleanU.toUpperCase()}`, subtitles: '🔥 ¡PASOS PROHIBIDOS! 🔥' });
+
             // 3. Encender la pista bailable con bajo y bombo 128 BPM
-            showSubtitlePhrase(`🔥 ¡BAILE DESCONTROLADO DE ${cleanU.toUpperCase()}! 🔥`, '🎶', true);
             audioEngine.startPartyDanceTrack(8.0, () => {
               // 4. Cierre triunfal con aplausos y ovación
               showSubtitlePhrase(`👏 ¡Uff, qué sabrosura! ¡Gracias por el baile ${cleanU}!`, '🎉', true);
               audioEngine.speakActorLine(`¡Uff, qué sabrosura de música! ¡Gracias por ponerme a bailar ${cleanU}!`, { pitch: 1.1 }, () => {
                 setTimeout(() => {
                   hideSubtitles();
+                  cameraDirector.unlockShot();
+                  singer.animController.resetToIdle();
                   done();
                 }, 1000);
               });
             });
           });
         } else if (act === 'CANTAR' || act === 'SING') {
+          // Cámara en primera plana frontal enfocando micrófono y cantante en detalle
+          cameraDirector.lockShot('PRIMERA_PLANA', 13500);
+
           // Catálogo de canciones al azar con estilos musicales acordes
           const songsCatalog = [
             {
@@ -417,6 +437,8 @@ export function initShowApp() {
             showSubtitlePhrase(`👏 ¡Ovación del público para ${cleanU}!`, '⭐', true);
             setTimeout(() => {
               hideSubtitles();
+              cameraDirector.unlockShot();
+              singer.animController.resetToIdle();
               done();
             }, 1800);
           });
@@ -430,6 +452,7 @@ export function initShowApp() {
           }, () => {
             setTimeout(() => {
               hideSubtitles();
+              singer.animController.resetToIdle();
               done();
             }, 1200);
           });
@@ -441,6 +464,7 @@ export function initShowApp() {
           }, () => {
             setTimeout(() => {
               hideSubtitles();
+              singer.animController.resetToIdle();
               done();
             }, 1500);
           });
@@ -450,7 +474,14 @@ export function initShowApp() {
           showSubtitlePhrase(`🧊 Modo estatua congelado por ${cleanU}`, '🧊', false);
           setTimeout(() => {
             hideSubtitles();
-            done();
+            singer.animController.resetToIdle();
+            audioEngine.speakActorLine(`¡Uff, ya me descongelé! ¡Casi me da hipotermia ${cleanU}!`, {
+              pitch: 1.15,
+              rate: 1.1
+            }, () => {
+              singer.animController.resetToIdle();
+              done();
+            });
           }, 5200);
         } else if (act === 'TOMATE' || act === 'TOMATO' || act === 'TOMATOES') {
           // Lluvia de tomates al mandar una Rosa (1 moneda)
@@ -610,6 +641,7 @@ export function initShowApp() {
   container.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.joke-card-item')) return;
 
+    markActivity();
     unlockAudio();
     // 1. Siempre lanzar corazón auténtico de TikTok
     spawnFloatingHeart(e.clientX, e.clientY);
@@ -836,6 +868,7 @@ export function initShowApp() {
   ];
 
   function handleViewerJoin(user) {
+    markActivity();
     const rawUser = String(user || 'amigo');
     const cleanUser = rawUser.replace(/^@+/, '').trim();
 
@@ -948,6 +981,91 @@ export function initShowApp() {
 
   // Avisar a admin que el show está listo
   syncBridge.send('SHOW_READY', { timestamp: Date.now() });
+
+  // ==========================================
+  // SISTEMA ANTI-INACTIVIDAD TIKTOK (LLAMADOS JOCOSOS AL PÚBLICO)
+  // ==========================================
+  const IDLE_STORAGE_KEY = 'garabato_idle_config';
+  const DEFAULT_IDLE_PHRASES = [
+    "¡Oigan! ¿Se durmieron todos o qué? ¡Denle taps a la pantalla que los chistes son gratis!",
+    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Tiren taps al corazón!",
+    "¿Qué pasó con los dedos de este público? ¡Taps a la pantalla muchachos, que el actor tiene que comer!",
+    "¡Epa! ¿Están congelados como estatuas? ¡Tóquenme la pantalla que quiero contar el chiste de los paisas!",
+    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o denle taps a la pantalla.",
+    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Taps, taps, taps a la pantalla!",
+    "¡Oigan, una Rosa cuesta una monedita y me ponen a llorar o a bailar! ¡Anímense!",
+    "¡El comediante más barato de TikTok está aquí! ¡Taps gratis a la pantalla para desbloquear chistes!",
+    "¡Mueve los dedos, mi rey! ¡Taps a la pantalla para que la risa no pare!",
+    "¿Quién manda en este show? ¡Taps para chistes gratis o regalo para mandar al comediante!"
+  ];
+
+  let idleConfig = {
+    enabled: true,
+    timeoutSeconds: 10,
+    phrases: [...DEFAULT_IDLE_PHRASES]
+  };
+
+  try {
+    const savedIdle = localStorage.getItem(IDLE_STORAGE_KEY);
+    if (savedIdle) {
+      const parsed = JSON.parse(savedIdle);
+      if (parsed && typeof parsed === 'object') {
+        idleConfig = { ...idleConfig, ...parsed };
+      }
+    }
+  } catch (e) {}
+
+  syncBridge.on('IDLE_CONFIG_UPDATE', (newCfg) => {
+    if (!newCfg) return;
+    idleConfig = { ...idleConfig, ...newCfg };
+  });
+
+  let isIdleCalling = false;
+
+  function triggerIdleInvitation(forcedPhrase = null) {
+    if (isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking) return;
+    if (!forcedPhrase && (!idleConfig.enabled || !idleConfig.phrases || idleConfig.phrases.length === 0)) return;
+
+    const phrase = forcedPhrase || idleConfig.phrases[Math.floor(Math.random() * idleConfig.phrases.length)];
+    if (!phrase) return;
+
+    isIdleCalling = true;
+    lastActivityTime = Date.now();
+
+    singer.animController.triggerWelcomeReaction('Público', 3500);
+    showSubtitlePhrase(phrase, '📢', false);
+
+    audioEngine.speakActorLine(phrase, {
+      pitch: 1.15,
+      rate: 1.08,
+      onChunk: (chunk) => showSubtitlePhrase(chunk, '📢', false)
+    }, () => {
+      setTimeout(() => {
+        hideSubtitles();
+        singer.animController.resetToIdle();
+        isIdleCalling = false;
+        lastActivityTime = Date.now();
+      }, 1000);
+    });
+  }
+
+  // Prueba de frase de inactividad desde Admin
+  syncBridge.on('TEST_IDLE_PHRASE', (payload) => {
+    if (payload && payload.phrase) {
+      triggerIdleInvitation(payload.phrase);
+    }
+  });
+
+  // Verificación continua cada 1 segundo (evita que TikTok penalice por inactividad)
+  setInterval(() => {
+    if (!idleConfig.enabled || isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking) {
+      return;
+    }
+    const elapsedSeconds = (Date.now() - lastActivityTime) / 1000;
+    if (elapsedSeconds >= (idleConfig.timeoutSeconds || 10)) {
+      triggerIdleInvitation();
+    }
+  }, 1000);
 
   // ==========================================
   // BUCLE DE ANIMACIÓN 60 FPS ULTRA-OPTIMIZADO
