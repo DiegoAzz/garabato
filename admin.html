@@ -18,6 +18,7 @@
         <span id="status-show-connection" class="status-badge">● Esperando /show</span>
         <button type="button" id="btn-admin-toggle-clean" class="btn-action-small" title="Oculta o muestra los botones de Admin en la pantalla del show">👁️ Transmisión Limpia</button>
         <a href="./show.html" target="_blank" class="btn-open-show">🖥️ Abrir /show</a>
+        <a href="./mobile.html" target="_blank" class="btn-open-show" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; margin-left: 6px;" title="Abre el enlace adaptable para celulares y TikTok LIVE Móvil">📱 Enlace Móvil</a>
       </div>
     </header>
 
@@ -374,6 +375,27 @@
               ✏️ Editar en el Creador
             </button>
           </div>
+        </div>
+
+        <!-- CONEXIÓN REAL TIKTOK LIVE -->
+        <h2 class="card-title mt-4" style="color: #f43f5e;">🔴 Conexión TikTok LIVE</h2>
+        <div class="tiktok-connect-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: #f43f5e; font-size: 13px;">Transmisión en Vivo</strong>
+            <span id="tiktok-live-badge" class="counter" style="background: #334155; color: #cbd5e1; font-size: 9px; padding: 2px 8px; border-radius: 10px;">Desconectado</span>
+          </div>
+          <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
+            Ingresa tu usuario de TikTok para leer en tiempo real los comentarios, regalos y taps de la audiencia.
+          </p>
+          <div class="tiktok-input-row">
+            <input type="text" id="tiktok-user-input" value="CreandoConIA" placeholder="Ej: @CreandoConIA" />
+            <button type="button" id="btn-tiktok-connect" class="btn-connect-tiktok">🔴 Conectar Live</button>
+          </div>
+          <div id="tiktok-status-pill" class="tiktok-status-pill hidden">
+            <span class="pulse-dot-green"></span>
+            <span id="tiktok-status-text">Conectado al LIVE de @CreandoConIA</span>
+          </div>
+          <div id="tiktok-live-msg" style="margin-top: 8px; font-size: 11px; color: #94a3b8; display: none;"></div>
         </div>
 
         <h2 class="card-title mt-4">🧪 Simulador de Eventos TikTok</h2>

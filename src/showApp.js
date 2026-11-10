@@ -29,7 +29,6 @@ export function initShowApp() {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setSize(container.clientWidth, container.clientHeight);
-  // Optimización de rendimiento para TikTok LIVE: cap de pixelRatio para 60 FPS estables sin sobrecalentar GPU
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -55,7 +54,7 @@ export function initShowApp() {
   // 6. Director de Cámaras
   const cameraDirector = new CameraDirector(camera);
 
-  // 7. Sistema de Tomates (Pool optimizado)
+  // 7. Sistema de Tomates
   const tomatoRain = new TomatoRain(scene, audioEngine);
 
   // 8. Elementos HUD
@@ -108,7 +107,7 @@ export function initShowApp() {
     cancelIdleInvitation();
   }
 
-  // Subtítulos dinámicos compactos frase a frase (debajo del personaje)
+  // Subtítulos dinámicos compactos
   function showSubtitlePhrase(phrase, icon = '🎙️', isPunch = false) {
     if (!subtitlesEl) return;
     const clean = cleanSubtitleText(phrase);
@@ -145,7 +144,6 @@ export function initShowApp() {
   // ==========================================
   const eventQueue = new EventQueue({
     onEventStart: (evt, remaining) => {
-      // Notificar Splash en pantalla
       if (milestoneCelebration) {
         if (milestoneIconEl) milestoneIconEl.textContent = evt.icon || (evt.isVip ? '👑' : '🎙️');
         if (milestoneNameEl) milestoneNameEl.textContent = evt.title || 'Chiste de Stand-Up';
@@ -170,10 +168,8 @@ export function initShowApp() {
       }
     },
     onQueueUpdate: (queueData) => {
-      // 1. Notificar a /admin del estado de la cola
       syncBridge.send('QUEUE_STATE_UPDATE', queueData);
 
-      // 2. Actualizar HUD en vivo
       if (queueCountsBadge) {
         if (queueData.pendingCount > 0) {
           queueCountsBadge.textContent = `${queueData.vipCount > 0 ? `👑${queueData.vipCount} ` : ''}${queueData.normalCount > 0 ? `🆓${queueData.normalCount} ` : ''}cola`;
@@ -214,21 +210,17 @@ export function initShowApp() {
       execute: (evt, done) => {
         unlockAudio();
 
-        // 1. Iluminar al espectador correspondiente y enfocar cámara
         const specPos = audience.getSpectatorPosition(user);
         audience.highlightSpectator(user, 8000);
         cameraDirector.focusOnEvent(specPos, 5000);
 
-        // 2. Pantalla LED del escenario
         stage.setLedData({
           songTitle: isVip ? `👑 CHISTE VIP: ${joke.title}` : `🎙️ ${joke.title}`,
           subtitles: `🎙️ ${joke.setup}`
         });
 
-        // 3. Subtítulos en pantalla compactos frase a frase
         showSubtitlePhrase(joke.title, isVip ? '👑' : '🎙️', false);
 
-        // 4. Si fue regalo, mostrar banner de TikTok
         if (isVip && giftBanner) {
           giftUser.textContent = user;
           giftItem.textContent = gift || joke.giftName || 'Regalo VIP';
@@ -236,7 +228,6 @@ export function initShowApp() {
           setTimeout(() => giftBanner.classList.add('hidden'), 4000);
         }
 
-        // 5. Narrar el chiste con voz humana profesional, frase a frase (sin bloquear la vista)
         audioEngine.speakJokeProfessional(joke.setup, joke.punch, {
           onSetupChunk: (chunk) => {
             showSubtitlePhrase(chunk, '🎙️', false);
@@ -247,17 +238,14 @@ export function initShowApp() {
             stage.setLedData({ subtitles: `😂 ${cleanSubtitleText(chunk)}` });
           }
         }, () => {
-          // Baile triunfal y confeti
           singer.animController.triggerSongEndReaction();
           stage.burstConfetti();
           audience.triggerFrenzy(5.0);
 
-          // Risas y aplausos de 5 segundos
           audioEngine.playRimshot();
           audioEngine.playSitcomLaughs(4.0);
           audioEngine.playCrowdApplause(5.0);
 
-          // Al completarse los aplausos (5s), cerrar subtítulo y avanzar al siguiente en la cola
           setTimeout(() => {
             hideSubtitles();
             done();
@@ -355,26 +343,19 @@ export function initShowApp() {
             done();
           }, 4800);
         } else if (act === 'BAILAR' || act === 'DANCE') {
-          // Cámara en primera plana frontal enfocando cuerpo completo y tarima sin perder detalle
           cameraDirector.lockShot('PRIMERA_PLANA', 9500);
-
-          // 1. Iniciar inmediatamente efectos de baile y luces disco (sin esperar a la síntesis de voz)
           singer.animController.triggerDanceFrenzyReaction();
           stage.triggerExtremeDisco(8.5);
           audience.triggerFrenzy(8.5);
           stage.setLedData({ songTitle: `🕺 BAILE DE @${cleanU.toUpperCase()}`, subtitles: '🔥 ¡PASOS PROHIBIDOS! 🔥' });
-
-          // Ocultar subtítulos durante el baile para dejar al muñeco y la tarima 100% despejados
           hideSubtitles();
 
-          // 2. Encender pista bailable 128 BPM y anunciar en paralelo
           audioEngine.startPartyDanceTrack(8.0);
           audioEngine.speakActorLine(`¡Música maestro! ¡A romper la pista con los pasos prohibidos por orden de ${cleanU}!`, {
             pitch: 1.0,
             rate: 1.04
           });
 
-          // 3. Temporizador estricto e independiente para finalizar el baile limpiamente sin bloqueos
           setTimeout(() => {
             audioEngine.playCrowdApplause(4.0);
             showSubtitlePhrase(`👏 ¡Uff, qué sabrosura! ¡Gracias por el baile ${cleanU}!`, '🎉', true);
@@ -387,10 +368,8 @@ export function initShowApp() {
             }, 1400);
           }, 8200);
         } else if (act === 'CANTAR' || act === 'SING') {
-          // Cámara en primera plana frontal enfocando micrófono y cantante en detalle
           cameraDirector.lockShot('PRIMERA_PLANA', 13500);
 
-          // Catálogo de canciones al azar con estilos musicales acordes
           const songsCatalog = [
             {
               genre: '🤠 RANCHERA DE DESPECHO',
@@ -408,49 +387,13 @@ export function initShowApp() {
               genre: '🎭 ÓPERA DRAMÁTICA ABSURDA',
               intro: `¡Mi do de pecho para ${cleanU}!`,
               lyrics: `¡Fiiiiígaro! ¡Fígaro, Fígaro, Fígaroooo! ¡O sole mío, devuélveme el pasaje del metro! ¡Qué voz tan celestial tengo ${cleanU}!`,
-              outro: `¡Grazie, grazie, el tenor de TikTok!`
-            },
-            {
-              genre: '💔 DESPECHO DE CANTINA',
-              intro: `¡Mesero, sírvame otra gaseosa por culpa de ${cleanU}!`,
-              lyrics: `¡Me dejó en visto con dos chulos azules! ¡Y ahora le canto con el alma rota en la tarima! ¡Salud por los que amamos y no nos pagan!`,
-              outro: `¡Ay dolor, qué despecho tan sabroso!`
+              outro: `¡Grazie, gracias, el tenor de TikTok!`
             },
             {
               genre: '🪗 VALLENATO COSTERO',
               intro: `¡Ay hombe! ¡Con sabor a fiesta para ${cleanU}!`,
               lyrics: `¡Esta noche yo me voy de parranda con ${cleanU}! ¡Porque la vida es sabrosa y el live está prendido! ¡Con acordeón y alegría en el pecho!`,
               outro: `¡Eso es compadre, qué viva el vallenato!`
-            },
-            {
-              genre: '🌹 BALADA ROMÁNTICA',
-              intro: `¡Dedicada al amor de mi vida ${cleanU}!`,
-              lyrics: `¡Si nos dejan... nos vamos a vivir a un penthouse! ¡Donde no cobren el arriendo ni los servicios! ¡Te amaré aunque no tengas saldo!`,
-              outro: `¡Qué romanticismo, me hice llorar a mí mismo!`
-            },
-            {
-              genre: '🎺 SALSA BRAVA SABROSA',
-              intro: `¡Vaya! ¡Para todos los rumberos de ${cleanU}!`,
-              lyrics: `¡Periódico de ayer, que nadie más leyó! ¡Saca a tu pareja y dale una vuelta! ¡Que esta salsa brava se baila en una sola baldosa!`,
-              outro: `¡Azúuuucar! ¡Qué swing tan bravo!`
-            },
-            {
-              genre: '🕺 POP OCHENTERO FIESTERO',
-              intro: `¡Estilo retro para ${cleanU}!`,
-              lyrics: `¡A quién le importa lo que yo haga! ¡A quién le importa lo que yo diga! ¡Yo soy el actor de la tarima y aquí me quedo ${cleanU}!`,
-              outro: `¡Qué temazo de los ochenta!`
-            },
-            {
-              genre: '🌴 CUMBIA TROPICAL',
-              intro: `¡Sabor tropical pedido por ${cleanU}!`,
-              lyrics: `¡Oye mujer, qué buena que está la noche! ¡Baila la cumbia pegadita al taburete! ¡Con una cerveza y un tamal bien caliente!`,
-              outro: `¡Que viva la fiesta y la cumbia sabrosa!`
-            },
-            {
-              genre: '🎸 ROCK AND ROLL CÓMICO',
-              intro: `¡Uno, dos, tres, cuatro, rock ${cleanU}!`,
-              lyrics: `¡El rock del reloj me tiene electrizado! ¡Mueve la cintura como Elvis en la tarima! ¡Guitarrazo limpio para todo el público!`,
-              outro: `¡Yeah baby! ¡El rock and roll nunca muere!`
             }
           ];
 
@@ -460,8 +403,6 @@ export function initShowApp() {
 
           singer.animController.danceMove = 'salsa';
           audience.triggerFrenzy(7.0);
-
-          // Iniciar acompañamiento musical inmediato
           audioEngine.startSingingAccompaniment(9.0);
 
           const songText = `${song.intro}. ${song.lyrics}. ${song.outro}`;
@@ -471,7 +412,6 @@ export function initShowApp() {
             onChunk: (chunk) => showSubtitlePhrase(chunk, '🎤', true)
           });
 
-          // Conclusión garantizada a los 9.2 segundos (independiente de bloqueos de audio)
           setTimeout(() => {
             audioEngine.playCrowdApplause(4.0);
             audioEngine.playCheer();
@@ -575,17 +515,33 @@ export function initShowApp() {
   }
 
   // ==========================================
-  // RENDERIZADO DE LAS DOS LISTAS EN PANTALLA
+  // RENDERIZADO INTELIGENTE DE CHISTES PARA TIKTOK LIVE
   // ==========================================
+  let vipCarouselPage = 0;
+  const VIP_ITEMS_PER_PAGE = 4;
+
+  // Auto-carrusel suave para los regalos VIP cada 7 segundos
+  setInterval(() => {
+    const vipJokes = jokeManager.getVipJokes();
+    if (vipJokes.length > VIP_ITEMS_PER_PAGE) {
+      vipCarouselPage = (vipCarouselPage + 1) % Math.ceil(vipJokes.length / VIP_ITEMS_PER_PAGE);
+      renderJokesOnScreen();
+    }
+  }, 7000);
+
   function renderJokesOnScreen() {
     const vipJokes = jokeManager.getVipJokes();
     const freeJokes = jokeManager.getFreeJokes();
     const activeFreeJoke = jokeManager.getActiveFreeJoke();
+    const activeIndex = freeJokes.findIndex(j => j.id === activeFreeJoke?.id);
 
-    // Renderizar Columna Izquierda: Chistes VIP
+    // 1. COLUMNA IZQUIERDA: MENÚ DE REGALOS VIP (Rotativo suave)
     if (jokesVipListEl) {
       jokesVipListEl.innerHTML = '';
-      vipJokes.forEach(joke => {
+      const startIdx = vipCarouselPage * VIP_ITEMS_PER_PAGE;
+      const visibleVip = vipJokes.slice(startIdx, startIdx + VIP_ITEMS_PER_PAGE);
+
+      visibleVip.forEach(joke => {
         const item = document.createElement('div');
         item.className = 'joke-card-item vip-item';
         item.innerHTML = `
@@ -627,42 +583,72 @@ export function initShowApp() {
       });
     }
 
-    // Renderizar Columna Derecha: Chistes Gratis (Por Taps)
+    // 2. COLUMNA DERECHA: META DE TAPS DESTACADA + 2 PRÓXIMOS
     if (jokesFreeListEl) {
       jokesFreeListEl.innerHTML = '';
-      freeJokes.forEach(joke => {
-        const isActive = activeFreeJoke && activeFreeJoke.id === joke.id;
-        const currentTaps = joke.currentTaps || 0;
-        const reqTaps = joke.requiredTaps || 30;
-        const pct = Math.min(100, Math.round((currentTaps / reqTaps) * 100));
+      if (!activeFreeJoke) return;
 
-        const item = document.createElement('div');
-        item.className = `joke-card-item free-item ${isActive ? 'active-target' : ''}`;
-        item.innerHTML = `
+      const currentTaps = activeFreeJoke.currentTaps || 0;
+      const reqTaps = activeFreeJoke.requiredTaps || 30;
+      const pct = Math.min(100, Math.round((currentTaps / reqTaps) * 100));
+      const displayIndex = (activeIndex >= 0 ? activeIndex : 0) + 1;
+
+      // TARJETA DE CHISTE ACTIVO GRANDE Y DESTACADO
+      const activeCard = document.createElement('div');
+      activeCard.className = 'joke-card-item free-item active-target';
+      activeCard.style.padding = '6px 8px';
+      activeCard.style.background = 'rgba(236, 72, 153, 0.25)';
+      activeCard.style.border = '2px solid #ec4899';
+      activeCard.style.boxShadow = '0 0 14px rgba(236, 72, 153, 0.6)';
+      activeCard.innerHTML = `
+        <div class="joke-card-top" style="margin-bottom: 2px;">
+          <span class="joke-card-icon" style="font-size: 13px;">🎯</span>
+          <strong class="joke-card-title" style="font-size: 9px; color: #fff;">#${displayIndex} ${activeFreeJoke.title}</strong>
+        </div>
+        <div class="joke-card-meta" style="margin-bottom: 3px;">
+          <span style="color: #ec4899; font-weight: 800; font-size: 8px;">🔥 META EN JUEGO</span>
+          <strong style="font-size: 9px; color: #f43f5e;">${currentTaps}/${reqTaps} Taps 👆</strong>
+        </div>
+        <div class="joke-progress-track" style="height: 5px;">
+          <div class="joke-progress-fill" style="width: ${pct}%;"></div>
+        </div>
+        <div style="margin-top: 4px; font-size: 7px; color: #cbd5e1; text-align: center; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 3px;">
+          💬 Escribe <strong>#${displayIndex}</strong> o cualquier número en el chat
+        </div>
+      `;
+      jokesFreeListEl.appendChild(activeCard);
+
+      // Mostrar los siguientes 2 chistes en la lista (próximos en fila)
+      for (let offset = 1; offset <= 2; offset++) {
+        const nextIdx = ((activeIndex >= 0 ? activeIndex : 0) + offset) % freeJokes.length;
+        const nextJoke = freeJokes[nextIdx];
+        if (!nextJoke) continue;
+
+        const nextCard = document.createElement('div');
+        nextCard.className = 'joke-card-item free-item';
+        nextCard.style.opacity = '0.75';
+        nextCard.innerHTML = `
           <div class="joke-card-top">
-            <span class="joke-card-icon">🎙️</span>
-            <span class="joke-card-title">${joke.title}${joke.region ? ` (${joke.region.replace('Región ', '').replace(' y Cundinamarca', '')})` : ''}</span>
+            <span class="joke-card-icon" style="font-size: 8px;">🔜</span>
+            <span class="joke-card-title" style="font-size: 7.5px;">#${nextIdx + 1} ${nextJoke.title}</span>
           </div>
           <div class="joke-card-meta">
-            <span>${isActive ? '🎯 ACTIVO' : 'Tocar'}</span>
-            <strong>${currentTaps}/${reqTaps} Taps</strong>
-          </div>
-          <div class="joke-progress-track">
-            <div class="joke-progress-fill" style="width: ${pct}%;"></div>
+            <span style="font-size: 6.5px;">Siguiente</span>
+            <span style="font-size: 6.5px; color: #94a3b8;">${nextJoke.requiredTaps || 30} Taps</span>
           </div>
         `;
-        item.addEventListener('click', (e) => {
+        nextCard.addEventListener('click', (e) => {
           e.stopPropagation();
           unlockAudio();
-          jokeManager.setActiveFreeJoke(joke.id);
+          jokeManager.setActiveFreeJoke(nextJoke.id);
           renderJokesOnScreen();
         });
-        jokesFreeListEl.appendChild(item);
-      });
+        jokesFreeListEl.appendChild(nextCard);
+      }
     }
   }
 
-  // Render inicial de las dos listas
+  // Render inicial
   renderJokesOnScreen();
 
   // Escuchar si el catálogo de chistes cambió en /admin
@@ -690,7 +676,6 @@ export function initShowApp() {
     heart.className = 'floating-tiktok-heart';
     heart.textContent = TIKTOK_HEARTS[Math.floor(Math.random() * TIKTOK_HEARTS.length)];
 
-    // Si no se pasaron coordenadas de ratón (ej: viene del chat/API de TikTok), flotar desde abajo a la derecha
     const posX = clientX !== undefined ? clientX : (window.innerWidth * 0.75 + (Math.random() - 0.5) * 80);
     const posY = clientY !== undefined ? clientY : (window.innerHeight * 0.70 + (Math.random() - 0.5) * 60);
 
@@ -705,16 +690,20 @@ export function initShowApp() {
 
     markActivity();
     unlockAudio();
-    // 1. Siempre lanzar corazón auténtico de TikTok
     spawnFloatingHeart(e.clientX, e.clientY);
 
-    // 2. Sumar taps al chiste gratis activo
+    // Sumar taps al chiste gratis activo con avance automático
     const result = jokeManager.addTapsToActiveJoke(1);
     if (result) {
       renderJokesOnScreen();
       if (result.isCompleted) {
-        // ¡Meta de taps alcanzada! Se encola el chiste
         enqueueJoke(result.joke, 'Comunidad de Taps', false);
+        // Avanzar automáticamente al siguiente chiste en el repertorio
+        const freeJokes = jokeManager.getFreeJokes();
+        const currentIdx = freeJokes.findIndex(j => j.id === result.joke.id);
+        const nextIdx = (currentIdx + 1) % freeJokes.length;
+        jokeManager.setActiveFreeJoke(freeJokes[nextIdx].id);
+        renderJokesOnScreen();
       }
     }
   });
@@ -728,7 +717,6 @@ export function initShowApp() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
-    // Iniciar automáticamente la música de fondo suave para stand-up & cuentos
     if (!audioEngine.bgMusicPlaying && audioEngine.bgMusicPreset !== 'off') {
       audioEngine.startComedyLoungeMusic(audioEngine.bgMusicPreset || 'lounge');
     }
@@ -768,7 +756,7 @@ export function initShowApp() {
     });
   }
 
-  // Modo Transmisión Limpia (Oculta botones 9:16 y Admin para el Live)
+  // Modo Transmisión Limpia
   const btnToggleClean = document.getElementById('btn-toggle-clean');
   function toggleCleanMode(forceState) {
     if (typeof forceState === 'boolean') {
@@ -785,20 +773,17 @@ export function initShowApp() {
     });
   }
 
-  // Tecla 'H' para ocultar/mostrar controles en cualquier momento
   window.addEventListener('keydown', (e) => {
     if (e.key === 'h' || e.key === 'H') {
       toggleCleanMode();
     }
   });
 
-  // Si se abre con ?clean=1, ?obs=1 o ?live=1 (para OBS Studio / TikTok LIVE), activar modo limpio
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('clean') || urlParams.has('obs') || urlParams.has('live')) {
+  if (urlParams.has('clean') || urlParams.has('obs') || urlParams.has('live') || urlParams.has('mobile')) {
     toggleCleanMode(true);
   }
 
-  // Control remoto de modo limpio desde /admin
   syncBridge.on('TOGGLE_CLEAN_MODE', (payload) => {
     toggleCleanMode(payload && payload.clean);
   });
@@ -806,8 +791,6 @@ export function initShowApp() {
   // ==========================================
   // SINCRONIZACIÓN DE EVENTOS EN TIEMPO REAL
   // ==========================================
-
-  // Control de Música de Fondo desde Admin
   syncBridge.on('BG_MUSIC_CONFIG', (cfg) => {
     if (!cfg) return;
     if (cfg.volume !== undefined) audioEngine.setBgMusicVolume(cfg.volume);
@@ -822,7 +805,6 @@ export function initShowApp() {
     if (cfg.autoDucking !== undefined) audioEngine.autoDuckingEnabled = !!cfg.autoDucking;
   });
 
-  // Cuentos enviados por espectadores por interno / chat tras mandar regalo
   syncBridge.on('AUDIENCE_CUSTOM_STORY', (data) => {
     if (!data || !data.story) return;
     const cleanUser = String(data.user || 'un amigo').replace(/^@+/, '').trim();
@@ -845,19 +827,17 @@ export function initShowApp() {
     enqueueJoke(customJoke, cleanUser, true, cleanGift);
   });
 
-  // Disparo manual desde Admin ("▶ Probar")
   syncBridge.on('TRIGGER_JOKE', (payload) => {
     if (!payload || !payload.joke) return;
     enqueueJoke(payload.joke, payload.user || 'Admin', Boolean(payload.isVip));
   });
 
-  // Disparo de órdenes al actor desde Admin o Chat
   syncBridge.on('ACTOR_ACTION', (payload) => {
     if (!payload || !payload.action) return;
     enqueueActorAction(payload.action, payload.user || 'Admin', false);
   });
 
-  // Eventos de TikTok (Likes, Regalos, Tomates)
+  // Eventos de TikTok (Likes, Regalos, Chat, Tomates)
   syncBridge.on('TIKTOK_EVENT', (evt) => {
     if (!evt) return;
     const action = (evt.action || '').toUpperCase();
@@ -867,13 +847,11 @@ export function initShowApp() {
       const giftName = evt.gift || 'Rosa';
       const cleanGift = giftName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-      // Regla de Oro: Rosa (o Rosa blanca) = Lluvia de tomates al actor en tarima
       if (cleanGift.includes('rosa')) {
         enqueueActorAction('TOMATE', user, true, giftName);
         return;
       }
 
-      // Órdenes interactivas directas vinculadas a regalos
       if (cleanGift.includes('corazon coreano')) {
         enqueueActorAction('LLORAR', user, true, giftName);
         return;
@@ -888,12 +866,10 @@ export function initShowApp() {
         return;
       }
 
-      // Buscar el chiste VIP configurado para este regalo
       const matchedJoke = jokeManager.findVipJokeByGift(giftName);
       if (matchedJoke) {
         enqueueJoke(matchedJoke, user, true, giftName);
       } else {
-        // Chiste VIP por defecto si el regalo no tenía chiste exacto
         const defaultVip = jokeManager.getVipJokes()[0];
         if (defaultVip) enqueueJoke(defaultVip, user, true, giftName);
       }
@@ -918,6 +894,32 @@ export function initShowApp() {
         renderJokesOnScreen();
         if (result.isCompleted) {
           enqueueJoke(result.joke, user, false);
+          // Avance automático al siguiente chiste
+          const freeJokes = jokeManager.getFreeJokes();
+          const currentIdx = freeJokes.findIndex(j => j.id === result.joke.id);
+          const nextIdx = (currentIdx + 1) % freeJokes.length;
+          jokeManager.setActiveFreeJoke(freeJokes[nextIdx].id);
+          renderJokesOnScreen();
+        }
+      }
+    } else if (action === 'CHAT') {
+      const comment = (evt.comment || '').trim();
+      // Detectar si el espectador escribió un número del 1 al 50 para elegir el chiste
+      const match = comment.match(/(?:#|chiste\s*|el\s*)?(\b[1-9]\b|\b[1-4][0-9]\b|\b50\b)/i);
+      if (match) {
+        const jokeNumber = parseInt(match[1], 10);
+        const freeJokes = jokeManager.getFreeJokes();
+        if (jokeNumber >= 1 && jokeNumber <= freeJokes.length) {
+          const selectedJoke = freeJokes[jokeNumber - 1];
+          jokeManager.setActiveFreeJoke(selectedJoke.id);
+          renderJokesOnScreen();
+
+          cancelIdleInvitation();
+          markActivity();
+          audioEngine.speakActorLine(`¡Atención mi gente! ${user} eligió el chiste número ${jokeNumber}: ${selectedJoke.title}. ¡Taps a la pantalla para escucharlo!`, {
+            pitch: 1.0,
+            rate: 1.05
+          });
         }
       }
     } else if (action === 'TOMATE') {
@@ -941,12 +943,10 @@ export function initShowApp() {
     const rawUser = String(user || 'amigo');
     const cleanUser = rawUser.replace(/^@+/, '').trim();
 
-    // 1. Sumar físicamente el nuevo espectador 3D al público frente a la tarima con su nombre flotante
     if (audience && cleanUser) {
       audience.addViewer(cleanUser);
     }
 
-    // 2. Mostrar toast visual inmediatamente con el nombre en pantalla
     if (welcomeToastEl && welcomeUserEl) {
       welcomeUserEl.textContent = cleanUser;
       welcomeToastEl.classList.remove('hidden');
@@ -956,7 +956,6 @@ export function initShowApp() {
       }, 4200);
     }
 
-    // 3. Si el actor no está ocupado y pasaron al menos 8 segundos, saludar con voz cómica (sin pronunciar arroba)
     const now = Date.now();
     const isActorBusy = eventQueue.isBusy || audioEngine.isSpeaking;
     if (!isActorBusy && (now - lastSpokenWelcomeTime > 8000)) {
@@ -968,21 +967,21 @@ export function initShowApp() {
     }
   }
 
-  // Rotador Dinámico de Instrucciones Visuales para la Audiencia del Live
+  // Rotador Dinámico de Instrucciones Visuales
   const missionTextEl = document.getElementById('mission-text');
   const ctaDynamicTextEl = document.getElementById('cta-dynamic-text');
   const LIVE_MISSION_TIPS = [
-    '🎁 Manda regalos para ordenar: 🍅 Tirar Tomates • 💃 Bailar • 🎤 Cantar • 😭 Llorar',
+    '🎯 ¡Chiste en juego! Haz taps para completarlo o escribe su número en el chat',
     '🌹 1 Rosa = Lluvia de Tomates en la cara del actor en la tarima',
-    '👆 Haz Taps rápidos en pantalla para desbloquear los 50 Chistes Regionales',
-    '🎵 Regalo TikTok = El comediante suelta sus pasos prohibidos',
+    '👑 Regalos VIP dirigen cada movimiento del actor en tarima',
+    '💬 Escribe un número del 1 al 50 en el chat para elegir el siguiente chiste',
     '💌 Manda un regalo y escribe tu chiste en el chat/interno ¡lo cuenta en vivo!'
   ];
   const LIVE_RULES_TIPS = [
-    '💡 <strong>¿Cómo funciona?</strong> 👆 Taps = Chistes Gratis | 🎁 Regalos = Órdenes al Actor | 💌 Manda regalo + tu cuento',
+    '💡 <strong>¿Cómo jugar?</strong> 👆 Taps = Chiste en Juego | 💬 Escribe un número (1-50) | 🎁 Regalos = Órdenes',
     '👑 <strong>¡El Público Manda!</strong> Los regalos de TikTok dirigen cada movimiento del actor en tarima.',
-    '🍅 <strong>¡Castigo Cómic!</strong> Si no te gusta el chiste, manda 1 Rosa y el público lo llena de tomates.',
-    '💬 <strong>Tu Momento de Fama:</strong> Manda cualquier regalo y pon tu cuento en el chat, el actor lo leerá al aire.'
+    '🍅 <strong>¡Castigo Cómico!</strong> Manda 1 Rosa y el público lo llena de tomates en vivo.',
+    '💬 <strong>Elige tu Chiste:</strong> Escribe cualquier número del 1 al 50 en el chat para cambiar de chiste.'
   ];
   let tipIdx = 0;
   setInterval(() => {
@@ -991,12 +990,10 @@ export function initShowApp() {
     if (ctaDynamicTextEl) ctaDynamicTextEl.innerHTML = LIVE_RULES_TIPS[tipIdx % LIVE_RULES_TIPS.length];
   }, 4800);
 
-  // Notificación de entrada desde /admin o conector
   syncBridge.on('VIEWER_JOIN', (payload) => {
     if (payload && payload.user) handleViewerJoin(payload.user);
   });
 
-  // Soundboard emitido desde /admin
   syncBridge.on('COMEDY_SOUND', (payload) => {
     if (!payload) return;
     unlockAudio();
@@ -1013,7 +1010,6 @@ export function initShowApp() {
     }
   });
 
-  // Saltar chiste actual desde /admin
   syncBridge.on('SKIP_CURRENT_JOKE', () => {
     audioEngine.stopSpeech();
     singer.animController.resetToIdle();
@@ -1022,7 +1018,6 @@ export function initShowApp() {
     eventQueue.completeCurrent();
   });
 
-  // Vaciar toda la cola
   syncBridge.on('CLEAR_QUEUE', () => {
     audioEngine.stopSpeech();
     singer.animController.resetToIdle();
@@ -1031,7 +1026,6 @@ export function initShowApp() {
     eventQueue.clear();
   });
 
-  // Actualizar comediante
   syncBridge.on('UPDATE_SINGER', (payload) => {
     if (payload.name) {
       stage.setLedData({ singerName: payload.name });
@@ -1048,18 +1042,16 @@ export function initShowApp() {
     }
   });
 
-  // Control de cámaras
   syncBridge.on('CAMERA_SHOT', (payload) => {
     if (cameraDirector && payload.shot) {
       cameraDirector.setShot(payload.shot);
     }
   });
 
-  // Avisar a admin que el show está listo
   syncBridge.send('SHOW_READY', { timestamp: Date.now() });
 
   // ==========================================
-  // SISTEMA ANTI-INACTIVIDAD TIKTOK (LLAMADOS JOCOSOS AL PÚBLICO)
+  // SISTEMA ANTI-INACTIVIDAD TIKTOK
   // ==========================================
   const IDLE_STORAGE_KEY = 'garabato_idle_config';
   const DEFAULT_IDLE_PHRASES = [
@@ -1123,21 +1115,18 @@ export function initShowApp() {
     }, 4000);
   }
 
-  // Sincronización en tiempo real de voz y tono desde Admin
   syncBridge.on('SYNC_VOICE_SETTINGS', (payload) => {
     if (payload) {
       audioEngine.setVoiceSettings(payload);
     }
   });
 
-  // Prueba de frase de inactividad desde Admin
   syncBridge.on('TEST_IDLE_PHRASE', (payload) => {
     if (payload && payload.phrase) {
       triggerIdleInvitation(payload.phrase);
     }
   });
 
-  // Verificación continua cada 1 segundo (evita que TikTok penalice por inactividad)
   setInterval(() => {
     if (!idleConfig.enabled || isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking) {
       return;
@@ -1149,7 +1138,7 @@ export function initShowApp() {
   }, 1000);
 
   // ==========================================
-  // BUCLE DE ANIMACIÓN 60 FPS ULTRA-OPTIMIZADO
+  // BUCLE DE ANIMACIÓN 60 FPS
   // ==========================================
   const clock = new THREE.Clock();
   let lastRenderedEnergy = -1;
@@ -1161,23 +1150,17 @@ export function initShowApp() {
       const delta = Math.min(clock.getDelta(), 0.08);
       const time = clock.getElapsedTime();
 
-      // Niveles de audio reactivos
       const audioLevels = audioEngine.update();
-
-      // Sincronización de boca del comediante con la voz
       const mouthAmount = audioEngine.isSpeaking ? audioEngine.vocalAmplitude : 0;
       singer.animController.setMouthOpen(mouthAmount);
 
-      // Actualizar comediante, escenario, público
       singer.animController.update(time, delta, audioLevels);
       stage.update(time, delta, audioLevels);
       audience.update(time, delta, audioLevels);
 
-      // Actualizar tomates y cámara
       tomatoRain.update(delta);
       cameraDirector.update(delta);
 
-      // Risómetro en HUD (Throttled para evitar layout reflow innecesario)
       if (energyFill && Math.abs(lastRenderedEnergy - audience.collectiveEnergy) > 1.2) {
         lastRenderedEnergy = audience.collectiveEnergy;
         energyFill.style.width = `${Math.round(lastRenderedEnergy)}%`;

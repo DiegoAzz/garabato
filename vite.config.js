@@ -14,7 +14,8 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         show: resolve(__dirname, 'show.html'),
-        admin: resolve(__dirname, 'admin.html')
+        admin: resolve(__dirname, 'admin.html'),
+        mobile: resolve(__dirname, 'mobile.html')
       },
       output: {
         manualChunks: {

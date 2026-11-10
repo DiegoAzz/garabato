@@ -357,7 +357,6 @@ export function initAdminApp() {
 
       if (!title || !setup || !punch) return;
 
-      // Comprobar si se ingresó un regalo personalizado
       const isCustomGift = groupCustomGift && !groupCustomGift.classList.contains('hidden') && customGiftInput?.value?.trim();
       let giftId = 'rosa';
       let giftName = '🌹 Rosa';
@@ -372,7 +371,6 @@ export function initAdminApp() {
       }
 
       if (currentEditingJokeId) {
-        // ACTUALIZACIÓN DE CUENTO EXISTENTE
         jokeManager.updateJoke(currentEditingJokeId, {
           title,
           category,
@@ -385,7 +383,6 @@ export function initAdminApp() {
         resetJokeForm();
         renderAdminJokes();
       } else {
-        // AGREGAR NUEVO CUENTO
         jokeManager.addJoke({
           title,
           category,
@@ -499,7 +496,6 @@ export function initAdminApp() {
       voiceSelectEl.appendChild(opt);
     });
 
-    // Si no había selección guardada, preseleccionar la mejor recomendada
     if (!currentSavedURI && voiceSelectEl.options.length > 0) {
       const bestIdx = voicesToShow.findIndex(v => {
         const n = (v.name || '').toLowerCase();
@@ -540,7 +536,6 @@ export function initAdminApp() {
     }
   }
 
-  // Restaurar sliders guardados
   try {
     const savedP = localStorage.getItem('garabato_voice_pitch');
     const savedR = localStorage.getItem('garabato_voice_rate');
@@ -590,7 +585,6 @@ export function initAdminApp() {
         } catch (err) {}
       }
 
-      // Enviar también a la pantalla Show
       syncBridge.send('TEST_IDLE_PHRASE', { phrase: testPhrase });
     });
   }
@@ -599,7 +593,6 @@ export function initAdminApp() {
   syncBridge.on('QUEUE_STATE_UPDATE', (data) => {
     if (!data) return;
 
-    // Chiste Activo
     if (data.active) {
       if (adminActiveTitle) adminActiveTitle.textContent = `${data.active.icon || '🎙️'} ${data.active.title || 'Chiste'}`;
       if (adminActiveMeta) adminActiveMeta.textContent = `Pedido por @${data.active.user || 'Espectador'} — "${data.active.setup || ''}"`;
@@ -610,7 +603,6 @@ export function initAdminApp() {
       if (btnSkipCurrentJoke) btnSkipCurrentJoke.disabled = true;
     }
 
-    // Colas VIP y Gratis
     if (queueVipBadge) queueVipBadge.textContent = data.vipCount || 0;
     if (queueFreeBadge) queueFreeBadge.textContent = data.normalCount || 0;
 
@@ -887,7 +879,6 @@ export function initAdminApp() {
 
         syncBridge.send('TEST_IDLE_PHRASE', { phrase });
 
-        // Reproducir también en la pestaña de Admin para verificación auditiva inmediata
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
           try {
             window.speechSynthesis.cancel();
@@ -971,6 +962,118 @@ export function initAdminApp() {
   // Render inicial de frases de inactividad
   renderIdlePhrases();
   setTimeout(() => saveIdleConfig(), 600);
+
+  // ==========================================
+  // 14. GESTIÓN DE CONEXIÓN CON TIKTOK LIVE
+  // ==========================================
+  const tiktokUserInput = document.getElementById('tiktok-user-input');
+  const btnTiktokConnect = document.getElementById('btn-tiktok-connect');
+  const tiktokLiveBadge = document.getElementById('tiktok-live-badge');
+  const tiktokStatusPill = document.getElementById('tiktok-status-pill');
+  const tiktokStatusText = document.getElementById('tiktok-status-text');
+  const tiktokLiveMsg = document.getElementById('tiktok-live-msg');
+
+  let currentTikTokConnected = false;
+
+  if (tiktokUserInput) {
+    const savedUser = localStorage.getItem('garabato_tiktok_user');
+    if (savedUser) tiktokUserInput.value = savedUser;
+  }
+
+  function updateTikTokUI(state) {
+    if (!state) return;
+    const isConn = state.status === 'connected';
+    const isConnecting = state.status === 'connecting';
+    const isErr = state.status === 'error';
+
+    currentTikTokConnected = isConn;
+
+    if (tiktokLiveBadge) {
+      if (isConn) {
+        tiktokLiveBadge.textContent = '🟢 EN VIVO';
+        tiktokLiveBadge.style.background = '#22c55e';
+        tiktokLiveBadge.style.color = '#000';
+      } else if (isConnecting) {
+        tiktokLiveBadge.textContent = '🟡 Conectando...';
+        tiktokLiveBadge.style.background = '#f59e0b';
+        tiktokLiveBadge.style.color = '#000';
+      } else if (isErr) {
+        tiktokLiveBadge.textContent = '🔴 Error';
+        tiktokLiveBadge.style.background = '#ef4444';
+        tiktokLiveBadge.style.color = '#fff';
+      } else {
+        tiktokLiveBadge.textContent = 'Desconectado';
+        tiktokLiveBadge.style.background = '#334155';
+        tiktokLiveBadge.style.color = '#cbd5e1';
+      }
+    }
+
+    if (btnTiktokConnect) {
+      if (isConn) {
+        btnTiktokConnect.textContent = '⏹️ Desconectar';
+        btnTiktokConnect.style.background = '#ef4444';
+        btnTiktokConnect.disabled = false;
+      } else if (isConnecting) {
+        btnTiktokConnect.textContent = '⌛ Conectando...';
+        btnTiktokConnect.style.background = '#f59e0b';
+        btnTiktokConnect.disabled = true;
+      } else {
+        btnTiktokConnect.textContent = '🔴 Conectar Live';
+        btnTiktokConnect.style.background = 'linear-gradient(135deg, #f43f5e, #ec4899)';
+        btnTiktokConnect.disabled = false;
+      }
+    }
+
+    if (tiktokStatusPill && tiktokStatusText) {
+      if (isConn) {
+        tiktokStatusPill.classList.remove('hidden');
+        tiktokStatusText.textContent = `En vivo conectado a @${state.username || 'usuario'}`;
+      } else {
+        tiktokStatusPill.classList.add('hidden');
+      }
+    }
+
+    if (tiktokLiveMsg) {
+      if (state.message) {
+        tiktokLiveMsg.textContent = state.message;
+        tiktokLiveMsg.style.display = 'block';
+        tiktokLiveMsg.style.color = isConn ? '#4ade80' : isErr ? '#f87171' : '#94a3b8';
+      } else {
+        tiktokLiveMsg.style.display = 'none';
+      }
+    }
+  }
+
+  // Escuchar estado enviado por WebSocket
+  syncBridge.on('TIKTOK_STATUS', (status) => {
+    updateTikTokUI(status);
+  });
+
+  // Consultar estado inicial vía REST si está disponible
+  if (typeof fetch !== 'undefined') {
+    fetch('/api/tiktok/status')
+      .then(res => res.json())
+      .then(data => updateTikTokUI(data))
+      .catch(() => {});
+  }
+
+  if (btnTiktokConnect) {
+    btnTiktokConnect.addEventListener('click', () => {
+      if (currentTikTokConnected) {
+        syncBridge.disconnectTikTok();
+        updateTikTokUI({ status: 'disconnected', message: 'Desconectado de TikTok LIVE.' });
+      } else {
+        const username = (tiktokUserInput && tiktokUserInput.value || '').trim();
+        if (!username) {
+          alert('Por favor ingresa tu nombre de usuario de TikTok (ej: CreandoConIA)');
+          return;
+        }
+        localStorage.setItem('garabato_tiktok_user', username);
+        updateTikTokUI({ status: 'connecting', username, message: `Conectando con @${username}...` });
+        syncBridge.connectTikTok(username);
+      }
+    });
+  }
 
   // Render inicial
   renderAdminJokes();
