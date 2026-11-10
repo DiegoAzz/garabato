@@ -646,6 +646,8 @@ export function initShowApp() {
   // ==========================================
   let showYTPlayerA = null;
   let showYTPlayerB = null;
+  let currentShowVideoIdA = null;
+  let currentShowVideoIdB = null;
   let showDeckAIsPlaying = false;
   let showDeckBIsPlaying = false;
   let deckAVolume = 0.85;
@@ -664,10 +666,35 @@ export function initShowApp() {
     const isA = deckKey === 'A';
     const slotId = isA ? 'yt-show-iframe-slot-a' : 'yt-show-iframe-slot-b';
 
+    if (isA) {
+      currentShowVideoIdA = videoId;
+      if (showYTPlayerA && typeof showYTPlayerA.cueVideoById === 'function') {
+        if (showDeckAIsPlaying) {
+          if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(videoId);
+        } else {
+          showYTPlayerA.cueVideoById(videoId);
+        }
+        if (onReadyCallback) onReadyCallback(showYTPlayerA);
+        return;
+      }
+    } else {
+      currentShowVideoIdB = videoId;
+      if (showYTPlayerB && typeof showYTPlayerB.cueVideoById === 'function') {
+        if (showDeckBIsPlaying) {
+          if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(videoId);
+        } else {
+          showYTPlayerB.cueVideoById(videoId);
+        }
+        if (onReadyCallback) onReadyCallback(showYTPlayerB);
+        return;
+      }
+    }
+
     const loadAPI = () => {
       if (window.YT && window.YT.Player) {
         if (isA) {
-          if (showYTPlayerA && showYTPlayerA.cueVideoById) {
+          if (showYTPlayerA && typeof showYTPlayerA.cueVideoById === 'function') {
+            currentShowVideoIdA = videoId;
             if (showDeckAIsPlaying) {
               if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(videoId);
             } else {
@@ -676,16 +703,17 @@ export function initShowApp() {
             if (onReadyCallback) onReadyCallback(showYTPlayerA);
             return;
           }
+          currentShowVideoIdA = videoId;
           showYTPlayerA = new window.YT.Player(slotId, {
-            width: '100%',
-            height: '100%',
+            width: '200',
+            height: '120',
             videoId: videoId,
             playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
             events: {
               onReady: (event) => {
-                const vol = Math.round(deckAVolume * 100);
+                const vol = Math.max(0, Math.min(100, Math.round(deckAVolume * 100)));
                 event.target.setVolume(vol);
-                if (isMasterMuted) event.target.mute();
+                if (isMasterMuted || vol <= 0) event.target.mute();
                 else event.target.unMute();
                 if (showDeckAIsPlaying) {
                   event.target.playVideo();
@@ -707,7 +735,8 @@ export function initShowApp() {
             }
           });
         } else {
-          if (showYTPlayerB && showYTPlayerB.cueVideoById) {
+          if (showYTPlayerB && typeof showYTPlayerB.cueVideoById === 'function') {
+            currentShowVideoIdB = videoId;
             if (showDeckBIsPlaying) {
               if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(videoId);
             } else {
@@ -716,16 +745,17 @@ export function initShowApp() {
             if (onReadyCallback) onReadyCallback(showYTPlayerB);
             return;
           }
+          currentShowVideoIdB = videoId;
           showYTPlayerB = new window.YT.Player(slotId, {
-            width: '100%',
-            height: '100%',
+            width: '200',
+            height: '120',
             videoId: videoId,
             playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
             events: {
               onReady: (event) => {
-                const vol = Math.round(deckBVolume * 100);
+                const vol = Math.max(0, Math.min(100, Math.round(deckBVolume * 100)));
                 event.target.setVolume(vol);
-                if (isMasterMuted) event.target.mute();
+                if (isMasterMuted || vol <= 0) event.target.mute();
                 else event.target.unMute();
                 if (showDeckBIsPlaying) {
                   event.target.playVideo();
@@ -748,7 +778,7 @@ export function initShowApp() {
           });
         }
       } else {
-        setTimeout(loadAPI, 200);
+        setTimeout(loadAPI, 150);
       }
     };
 
@@ -817,6 +847,7 @@ export function initShowApp() {
     if (payload.deck === 'A') {
       showDeckAIsPlaying = false;
       if (payload.type === 'youtube' && payload.videoId) {
+        currentShowVideoIdA = payload.videoId;
         initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
           if (p && p.pauseVideo) p.pauseVideo();
         });
@@ -826,6 +857,7 @@ export function initShowApp() {
     } else if (payload.deck === 'B') {
       showDeckBIsPlaying = false;
       if (payload.type === 'youtube' && payload.videoId) {
+        currentShowVideoIdB = payload.videoId;
         initOrLoadShowYTPlayer('B', payload.videoId, (p) => {
           if (p && p.pauseVideo) p.pauseVideo();
         });
@@ -849,9 +881,19 @@ export function initShowApp() {
       if (payload.type === 'youtube' && payload.videoId) {
         audioEngine.stopDjTrack();
         audioEngine.isYTPlaying = true;
-        initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
-          if (p && p.playVideo) p.playVideo();
-        });
+        if (showYTPlayerA && typeof showYTPlayerA.playVideo === 'function') {
+          if (currentShowVideoIdA !== payload.videoId) {
+            currentShowVideoIdA = payload.videoId;
+            if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(payload.videoId);
+          } else {
+            showYTPlayerA.playVideo();
+          }
+        } else {
+          currentShowVideoIdA = payload.videoId;
+          initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
+            if (p && p.playVideo) p.playVideo();
+          });
+        }
       } else if (payload.url) {
         if (showYTPlayerA && showYTPlayerA.stopVideo) showYTPlayerA.stopVideo();
         audioEngine.playCustomAudioTrack(payload.url, payload.title || 'Deck A', payload.resume || false);
@@ -861,9 +903,19 @@ export function initShowApp() {
       if (payload.type === 'youtube' && payload.videoId) {
         if (deckBAudio) deckBAudio.pause();
         audioEngine.isYTPlaying = true;
-        initOrLoadShowYTPlayer('B', payload.videoId, (p) => {
-          if (p && p.playVideo) p.playVideo();
-        });
+        if (showYTPlayerB && typeof showYTPlayerB.playVideo === 'function') {
+          if (currentShowVideoIdB !== payload.videoId) {
+            currentShowVideoIdB = payload.videoId;
+            if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(payload.videoId);
+          } else {
+            showYTPlayerB.playVideo();
+          }
+        } else {
+          currentShowVideoIdB = payload.videoId;
+          initOrLoadShowYTPlayer('B', payload.videoId, (p) => {
+            if (p && p.playVideo) p.playVideo();
+          });
+        }
       } else if (payload.url) {
         if (showYTPlayerB && showYTPlayerB.stopVideo) showYTPlayerB.stopVideo();
         if (!deckBAudio.src.endsWith(payload.url)) {
@@ -962,23 +1014,32 @@ export function initShowApp() {
     deckAVolume = payload.volA !== undefined ? payload.volA : 0.85;
     deckBVolume = payload.volB !== undefined ? payload.volB : 0.85;
 
+    const vA = payload.vA !== undefined ? payload.vA : Math.max(0, Math.min(100, Math.round(deckAVolume * 100)));
+    const vB = payload.vB !== undefined ? payload.vB : Math.max(0, Math.min(100, Math.round(deckBVolume * 100)));
+
     // Actualizar Deck A
     audioEngine.setDjVolume(deckAVolume);
-    if (showYTPlayerA && showYTPlayerA.setVolume) {
-      showYTPlayerA.setVolume(Math.round(deckAVolume * 100));
-      if (isMasterMuted) showYTPlayerA.mute();
-      else showYTPlayerA.unMute();
+    if (showYTPlayerA && typeof showYTPlayerA.setVolume === 'function') {
+      showYTPlayerA.setVolume(vA);
+      if (isMasterMuted || vA <= 0) {
+        if (typeof showYTPlayerA.mute === 'function') showYTPlayerA.mute();
+      } else {
+        if (typeof showYTPlayerA.unMute === 'function') showYTPlayerA.unMute();
+      }
     }
 
     // Actualizar Deck B
     if (deckBAudio) {
       deckBAudio.volume = Math.max(0, Math.min(1, deckBVolume));
-      deckBAudio.muted = isMasterMuted;
+      deckBAudio.muted = isMasterMuted || vB <= 0;
     }
-    if (showYTPlayerB && showYTPlayerB.setVolume) {
-      showYTPlayerB.setVolume(Math.round(deckBVolume * 100));
-      if (isMasterMuted) showYTPlayerB.mute();
-      else showYTPlayerB.unMute();
+    if (showYTPlayerB && typeof showYTPlayerB.setVolume === 'function') {
+      showYTPlayerB.setVolume(vB);
+      if (isMasterMuted || vB <= 0) {
+        if (typeof showYTPlayerB.mute === 'function') showYTPlayerB.mute();
+      } else {
+        if (typeof showYTPlayerB.unMute === 'function') showYTPlayerB.unMute();
+      }
     }
   });
 
