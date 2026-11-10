@@ -106,9 +106,14 @@
             </div>
           </div>
 
-          <button type="button" id="btn-stop-all-music" class="btn-dj-stop" style="width: 100%; margin-top: 4px; padding: 8px;">
-            ⏹ DETENER TODA LA MÚSICA
-          </button>
+          <div class="dj-transport-controls" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+            <button type="button" id="btn-pause-music" class="btn-dj-pause" style="padding: 10px 8px; font-weight: 800; border-radius: 8px; border: 1.5px solid #facc15; background: #854d0e; color: #fef08a; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px;">
+              ⏸️ PAUSAR MÚSICA
+            </button>
+            <button type="button" id="btn-stop-all-music" class="btn-dj-stop" style="padding: 10px 8px; font-weight: 800; border-radius: 8px; border: 1.5px solid #ef4444; background: #991b1b; color: #fee2e2; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px;">
+              ⏹️ STOP DEFINITIVO (0:00)
+            </button>
+          </div>
         </div>
 
         <!-- Sintetizador de Ritmos Procedurales de Club -->
@@ -206,6 +211,21 @@
             </label>
             <span style="font-size: 10px; color: #f59e0b;">⌨ Atajo: Tecla [Espacio] o [M]</span>
           </div>
+        </div>
+
+        <!-- MÓDULO: CONTROL DE VOZ AUTOMÁTICA DEL DJ (ACTIVAR / SILENCIAR) -->
+        <div class="dj-voice-card" style="margin-top: 10px; background: rgba(15, 23, 42, 0.7); border: 1.5px solid #334155; border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div>
+            <div style="font-size: 13px; font-weight: 900; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
+              <span id="dj-voice-status-icon">🔊</span> Voz Automática del DJ
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+              Saludos y frases del muñeco en pantalla (Desactívala para hablar tú solo)
+            </div>
+          </div>
+          <button type="button" id="btn-toggle-dj-voice" class="btn-voice-toggle" style="padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 900; cursor: pointer; border: 1.5px solid #22c55e; background: #14532d; color: #86efac; transition: all 0.2s; white-space: nowrap;">
+            🔊 ACTIVADA
+          </button>
         </div>
 
         <!-- Launchpads de Efectos DJ (Soundboard) -->

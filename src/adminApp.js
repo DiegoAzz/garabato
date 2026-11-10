@@ -43,11 +43,16 @@ export function initAdminApp() {
   const djVolumeLabel = document.getElementById('dj-volume-label');
   const djPlaylistList = document.getElementById('dj-playlist-list');
   const btnRefreshPlaylist = document.getElementById('btn-refresh-playlist');
+  const btnPauseMusic = document.getElementById('btn-pause-music');
   const btnStopAllMusic = document.getElementById('btn-stop-all-music');
   const musicCountBadge = document.getElementById('music-count-badge');
+  const btnToggleDjVoice = document.getElementById('btn-toggle-dj-voice');
+  const djVoiceStatusIcon = document.getElementById('dj-voice-status-icon');
 
   let currentPlayingTrackId = null;
+  let isCurrentTrackPaused = false;
   let customTracksList = [];
+  let isDjVoiceEnabled = localStorage.getItem('garabato_dj_voice_enabled') !== 'false';
 
   function showUploadStatus(msg, isError = false) {
     if (!djUploadStatus) return;
@@ -81,9 +86,31 @@ export function initAdminApp() {
     }
   }
 
+  function updateTransportButtons() {
+    if (!btnPauseMusic) return;
+    if (currentPlayingTrackId && !isCurrentTrackPaused) {
+      btnPauseMusic.innerHTML = '⏸️ PAUSAR MÚSICA';
+      btnPauseMusic.style.background = '#854d0e';
+      btnPauseMusic.style.borderColor = '#facc15';
+      btnPauseMusic.style.color = '#fef08a';
+    } else if (currentPlayingTrackId && isCurrentTrackPaused) {
+      btnPauseMusic.innerHTML = '▶️ REANUDAR MÚSICA';
+      btnPauseMusic.style.background = '#15803d';
+      btnPauseMusic.style.borderColor = '#22c55e';
+      btnPauseMusic.style.color = '#86efac';
+    } else {
+      btnPauseMusic.innerHTML = '⏸️ PAUSAR MÚSICA';
+      btnPauseMusic.style.background = '#1e293b';
+      btnPauseMusic.style.borderColor = '#475569';
+      btnPauseMusic.style.color = '#94a3b8';
+    }
+  }
+
   function renderPlaylist() {
     if (!djPlaylistList) return;
     if (musicCountBadge) musicCountBadge.textContent = `${customTracksList.length} pistas`;
+
+    updateTransportButtons();
 
     if (customTracksList.length === 0) {
       djPlaylistList.innerHTML = `
@@ -102,22 +129,44 @@ export function initAdminApp() {
 
       const sizeMb = track.size ? (track.size / (1024 * 1024)).toFixed(1) + ' MB' : '';
 
+      let actionButtonsHtml = '';
+      if (isCurrent && !isCurrentTrackPaused) {
+        actionButtonsHtml = `
+          <button type="button" class="btn-track-pause" data-action="pause" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #854d0e; border: 1.5px solid #facc15; color: #fef08a; cursor: pointer;">⏸️ Pausar</button>
+          <button type="button" class="btn-track-stop" data-action="stop" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #991b1b; border: 1.5px solid #ef4444; color: #fee2e2; cursor: pointer;">⏹️ Stop</button>
+        `;
+      } else if (isCurrent && isCurrentTrackPaused) {
+        actionButtonsHtml = `
+          <button type="button" class="btn-track-play" data-action="resume" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #15803d; border: 1.5px solid #22c55e; color: #86efac; cursor: pointer;">▶️ Reanudar</button>
+          <button type="button" class="btn-track-stop" data-action="stop" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #991b1b; border: 1.5px solid #ef4444; color: #fee2e2; cursor: pointer;">⏹️ Stop</button>
+        `;
+      } else {
+        actionButtonsHtml = `
+          <button type="button" class="btn-track-play" data-action="play">▶ Tocar</button>
+        `;
+      }
+
       row.innerHTML = `
         <div class="dj-track-meta">
-          <span class="dj-track-name" title="${track.name}">${isCurrent ? '▶ ' : '🎵 '}${track.name}</span>
+          <span class="dj-track-name" title="${track.name}">${isCurrent ? (isCurrentTrackPaused ? '⏸️ ' : '▶ ') : '🎵 '}${track.name}</span>
           <span class="dj-track-sub">${sizeMb} • ${new Date(track.createdAt || Date.now()).toLocaleTimeString()}</span>
         </div>
         <div class="dj-track-actions">
-          ${isCurrent 
-            ? `<button type="button" class="btn-track-stop" data-action="stop">⏹ Parar</button>`
-            : `<button type="button" class="btn-track-play" data-action="play">▶ Tocar</button>`
-          }
+          ${actionButtonsHtml}
           <button type="button" class="btn-track-delete" data-action="delete" title="Eliminar pista">🗑️</button>
         </div>
       `;
 
       row.querySelector('[data-action="play"]')?.addEventListener('click', () => {
-        playCustomTrack(track);
+        playCustomTrack(track, false);
+      });
+
+      row.querySelector('[data-action="pause"]')?.addEventListener('click', () => {
+        pauseCustomTrack();
+      });
+
+      row.querySelector('[data-action="resume"]')?.addEventListener('click', () => {
+        playCustomTrack(track, true);
       });
 
       row.querySelector('[data-action="stop"]')?.addEventListener('click', () => {
@@ -134,24 +183,68 @@ export function initAdminApp() {
     });
   }
 
-  function playCustomTrack(track) {
+  function playCustomTrack(track, resume = false) {
     currentPlayingTrackId = track.id;
+    isCurrentTrackPaused = false;
     if (djNowPlayingTitle) djNowPlayingTitle.textContent = track.name;
     if (djNowPlayingBanner) djNowPlayingBanner.style.display = 'flex';
 
     syncBridge.send('DJ_PLAY_CUSTOM_AUDIO', {
       url: track.url,
-      name: track.name
+      name: track.name,
+      resume: resume
     });
 
     renderPlaylist();
   }
 
+  function pauseCustomTrack() {
+    if (!currentPlayingTrackId) return;
+    const currentTrack = customTracksList.find(t => t.id === currentPlayingTrackId);
+    isCurrentTrackPaused = true;
+    if (djNowPlayingTitle && currentTrack) {
+      djNowPlayingTitle.textContent = `${currentTrack.name} (⏸️ EN PAUSA)`;
+    }
+    syncBridge.send('DJ_PAUSE_TRACK', { id: currentPlayingTrackId });
+    renderPlaylist();
+  }
+
   function stopAllMusic() {
     currentPlayingTrackId = null;
-    if (djNowPlayingTitle) djNowPlayingTitle.textContent = 'En pausa';
+    isCurrentTrackPaused = false;
+    if (djNowPlayingTitle) djNowPlayingTitle.textContent = '⏹️ Música Detenida (0:00)';
     syncBridge.send('DJ_STOP_TRACK', {});
     renderPlaylist();
+  }
+
+  function updateDjVoiceUI() {
+    if (!btnToggleDjVoice) return;
+    if (isDjVoiceEnabled) {
+      btnToggleDjVoice.textContent = '🔊 ACTIVADA';
+      btnToggleDjVoice.style.background = '#14532d';
+      btnToggleDjVoice.style.borderColor = '#22c55e';
+      btnToggleDjVoice.style.color = '#86efac';
+      if (djVoiceStatusIcon) djVoiceStatusIcon.textContent = '🔊';
+    } else {
+      btnToggleDjVoice.textContent = '🔇 SILENCIADA (MUTE)';
+      btnToggleDjVoice.style.background = '#450a0a';
+      btnToggleDjVoice.style.borderColor = '#ef4444';
+      btnToggleDjVoice.style.color = '#fca5a5';
+      if (djVoiceStatusIcon) djVoiceStatusIcon.textContent = '🔇';
+    }
+  }
+
+  if (btnToggleDjVoice) {
+    updateDjVoiceUI();
+    btnToggleDjVoice.addEventListener('click', () => {
+      isDjVoiceEnabled = !isDjVoiceEnabled;
+      localStorage.setItem('garabato_dj_voice_enabled', isDjVoiceEnabled ? 'true' : 'false');
+      updateDjVoiceUI();
+      syncBridge.send('DJ_TOGGLE_VOICE', { enabled: isDjVoiceEnabled });
+    });
+    setTimeout(() => {
+      syncBridge.send('DJ_TOGGLE_VOICE', { enabled: isDjVoiceEnabled });
+    }, 1200);
   }
 
   async function deleteCustomTrack(trackId) {
@@ -292,6 +385,19 @@ export function initAdminApp() {
       const vol = parseInt(djMasterVolume.value, 10);
       if (djVolumeLabel) djVolumeLabel.textContent = `${vol}%`;
       syncBridge.send('DJ_SET_VOLUME', { volume: vol / 100 });
+    });
+  }
+
+  if (btnPauseMusic) {
+    btnPauseMusic.addEventListener('click', () => {
+      if (currentPlayingTrackId && !isCurrentTrackPaused) {
+        pauseCustomTrack();
+      } else if (currentPlayingTrackId && isCurrentTrackPaused) {
+        const track = customTracksList.find(t => t.id === currentPlayingTrackId);
+        if (track) playCustomTrack(track, true);
+      } else if (customTracksList.length > 0) {
+        playCustomTrack(customTracksList[0], false);
+      }
     });
   }
 

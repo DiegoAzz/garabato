@@ -582,11 +582,11 @@ export function initShowApp() {
     markActivity();
     audioEngine.initContext();
     if (payload && payload.url) {
-      audioEngine.playCustomAudioTrack(payload.url, payload.name || 'Canción DJ');
+      audioEngine.playCustomAudioTrack(payload.url, payload.name || 'Canción DJ', payload.resume || false);
       singer.animController.triggerDjHandsUp(3500);
       if (queueStatusText) queueStatusText.textContent = `🎧 Pista: ${payload.name || 'Personalizada'}`;
       if (subtitlesEl) {
-        showSubtitlePhrase(`🎵 Reproduciendo: ${payload.name || 'Pista de Audio'}`, '🎧', false);
+        showSubtitlePhrase(payload.resume ? `▶ Reanudando: ${payload.name || 'Música'}` : `🎵 Reproduciendo: ${payload.name || 'Pista de Audio'}`, '🎧', false);
       }
     }
   });
@@ -597,10 +597,31 @@ export function initShowApp() {
     }
   });
 
+  syncBridge.on('DJ_PAUSE_TRACK', () => {
+    audioEngine.pauseDjTrack();
+    singer.animController.resetToIdle();
+    if (queueStatusText) queueStatusText.textContent = '⏸️ DJ en Pausa';
+    if (subtitlesEl) {
+      showSubtitlePhrase('⏸️ Música en pausa (en el mismo segundo)', '⏸️', false);
+    }
+  });
+
   syncBridge.on('DJ_STOP_TRACK', () => {
     audioEngine.stopDjTrack();
     singer.animController.resetToIdle();
     if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
+    if (subtitlesEl) {
+      showSubtitlePhrase('⏹️ Música detenida definitivamente (0:00)', '⏹️', false);
+    }
+  });
+
+  syncBridge.on('DJ_TOGGLE_VOICE', (payload) => {
+    const isMuted = payload ? !payload.enabled : false;
+    audioEngine.setVoiceMuted(isMuted);
+    console.info(`[ShowApp] Voz del DJ ${isMuted ? 'SILENCIADA 🔇' : 'ACTIVADA 🔊'}`);
+    if (subtitlesEl && isMuted) {
+      showSubtitlePhrase('🔇 Voz del DJ silenciada', '🔇', false);
+    }
   });
 
   syncBridge.on('DJ_SOUND_FX', (payload) => {
@@ -882,7 +903,7 @@ export function initShowApp() {
 
     const now = Date.now();
     const isActorBusy = eventQueue.isBusy || audioEngine.isSpeaking;
-    if (!isActorBusy && (now - lastSpokenWelcomeTime > 8000)) {
+    if (!audioEngine.isVoiceMuted && !isActorBusy && (now - lastSpokenWelcomeTime > 8000)) {
       lastSpokenWelcomeTime = now;
       const phraseGen = WELCOME_PHRASES[Math.floor(Math.random() * WELCOME_PHRASES.length)];
       const text = phraseGen(cleanUser);
@@ -1014,6 +1035,7 @@ export function initShowApp() {
   });
 
   function triggerIdleInvitation(forcedPhrase = null) {
+    if (audioEngine.isVoiceMuted) return;
     if (!forcedPhrase && (isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking)) return;
     if (!forcedPhrase && (!idleConfig.enabled || !idleConfig.phrases || idleConfig.phrases.length === 0)) return;
 

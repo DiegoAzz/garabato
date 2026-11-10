@@ -200,14 +200,14 @@ export class AudienceManager {
     ctx.fill();
     ctx.stroke();
 
-    // Texto del mensaje con ajuste de líneas
-    ctx.fillStyle = isVip ? '#fef08a' : '#ffffff';
+    // Texto del mensaje con ajuste de líneas y contraste ultra nítido
+    const textFill = isVip ? '#fde047' : '#ffffff';
     let fontSize = 24;
     const clean = String(text || '').trim();
     if (clean.length > 50) fontSize = 17;
     else if (clean.length > 30) fontSize = 20;
 
-    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.font = `900 ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -233,6 +233,11 @@ export class AudienceManager {
     const startY = 16 + (bubbleH - lines.length * lineH) / 2 + lineH / 2;
 
     for (let i = 0; i < lines.length; i++) {
+      // Delineado negro grueso para contraste 100% nítido
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.95)';
+      ctx.strokeText(lines[i], 192, startY + i * lineH);
+      ctx.fillStyle = textFill;
       ctx.fillText(lines[i], 192, startY + i * lineH);
     }
 

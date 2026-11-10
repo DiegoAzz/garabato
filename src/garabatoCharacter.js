@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 
 /**
  * GENERADOR DE PERSONAJES CARTOON STICKMAN ULTRA-LIGERO 3D
@@ -172,32 +172,59 @@ export function createStickman(isSinger = false, initialColor = null, customConf
   function showBubbleText(text, bgColor = '#ef4444', durationMs = 2500) {
     if (!speechBubbleSprite || !bubbleCtx) return;
     bubbleCtx.clearRect(0, 0, 256, 96);
+
+    // Calcular luminosidad para contraste perfecto (evita texto blanco sobre fondo amarillo o claro)
+    let isLightBg = false;
+    try {
+      const hex = String(bgColor || '').replace('#', '');
+      const fullHex = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+      const r = parseInt(fullHex.substring(0, 2), 16) || 0;
+      const g = parseInt(fullHex.substring(2, 4), 16) || 0;
+      const b = parseInt(fullHex.substring(4, 6), 16) || 0;
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      isLightBg = yiq >= 140; // Por ejemplo #facc15 (amarillo Bass Drop), #f59e0b, #00f0ff son claros
+    } catch (e) {
+      isLightBg = false;
+    }
+
+    const textColor = isLightBg ? '#090d16' : '#ffffff';
+    const borderColor = isLightBg ? '#090d16' : '#ffffff';
+
     bubbleCtx.fillStyle = bgColor;
     bubbleCtx.beginPath();
     bubbleCtx.roundRect(6, 6, 244, 84, 16);
     bubbleCtx.fill();
-    bubbleCtx.strokeStyle = '#ffffff';
-    bubbleCtx.lineWidth = 3.5;
+    bubbleCtx.strokeStyle = borderColor;
+    bubbleCtx.lineWidth = 4;
     bubbleCtx.stroke();
 
-    bubbleCtx.fillStyle = '#ffffff';
     const clean = String(text || '').trim();
     let fontSize = 20;
     if (clean.length > 28) fontSize = 14;
     else if (clean.length > 18) fontSize = 17;
-    bubbleCtx.font = `bold ${fontSize}px sans-serif`;
+    bubbleCtx.font = `900 ${fontSize}px sans-serif`;
     bubbleCtx.textAlign = 'center';
     bubbleCtx.textBaseline = 'middle';
+
+    const renderTextLine = (line, x, y) => {
+      if (textColor === '#ffffff') {
+        bubbleCtx.lineWidth = 3;
+        bubbleCtx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+        bubbleCtx.strokeText(line, x, y);
+      }
+      bubbleCtx.fillStyle = textColor;
+      bubbleCtx.fillText(line, x, y);
+    };
 
     if (clean.length > 22 && clean.includes(' ')) {
       const words = clean.split(' ');
       const mid = Math.ceil(words.length / 2);
       const line1 = words.slice(0, mid).join(' ');
       const line2 = words.slice(mid).join(' ');
-      bubbleCtx.fillText(line1, 128, 34);
-      bubbleCtx.fillText(line2, 128, 62);
+      renderTextLine(line1, 128, 34);
+      renderTextLine(line2, 128, 62);
     } else {
-      bubbleCtx.fillText(clean, 128, 48);
+      renderTextLine(clean, 128, 48);
     }
 
     bubbleTex.needsUpdate = true;

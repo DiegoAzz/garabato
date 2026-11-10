@@ -107,6 +107,7 @@ export class AudioEngine {
     this.bgMusicStep = 0;
     this.bgBpm = 82; // Tempo relajado, tranquilo y elegante para narración
     this.autoDuckingEnabled = true; // Baja el volumen automáticamente cuando habla el comediante
+    this.isVoiceMuted = false; // Control para desactivar la voz del DJ cuando el usuario lo desee
 
     this.initSpeech();
   }
@@ -475,10 +476,30 @@ export class AudioEngine {
     return stopFn;
   }
 
+  setVoiceMuted(muted) {
+    this.isVoiceMuted = !!muted;
+    if (this.isVoiceMuted) {
+      this.stopSpeech();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {}
+      }
+      console.info('[AudioEngine] Voz del DJ silenciada.');
+    } else {
+      console.info('[AudioEngine] Voz del DJ activada.');
+    }
+  }
+
   // ==========================================
   // MODO A: VOZ CÓMICA (Web Speech API + Chrome Fix)
   // ==========================================
   speakLyrics(text, options = {}, onEndCallback = null) {
+    if (this.isVoiceMuted) {
+      if (onEndCallback) onEndCallback();
+      return;
+    }
+
     this.initContext();
 
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -1765,6 +1786,11 @@ export class AudioEngine {
    * Utiliza división en fragmentos para que oraciones largas no se corten en Chrome.
    */
   speakActorLine(text, options = {}, onEndCallback = null) {
+    if (this.isVoiceMuted) {
+      if (onEndCallback) onEndCallback();
+      return;
+    }
+
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       if (onEndCallback) onEndCallback();
       return;
@@ -1901,19 +1927,39 @@ export class AudioEngine {
     this.startDiscoBeat();
   }
 
-  stopDjTrack() {
+  /**
+   * Pausa la pista actual sin perder la posición de tiempo (permite reanudar)
+   */
+  pauseDjTrack() {
     this.stopDiscoBeat();
     if (this.audioElement) {
       this.audioElement.pause();
       this.isPlayingImported = false;
+      this.isPlayingBeat = false;
+      console.info(`[AudioEngine] Pista pausada en ${this.audioElement.currentTime.toFixed(1)}s`);
+    }
+  }
+
+  /**
+   * Detiene la pista definitivamente y la reinicia a 0:00 (Stop definitivo)
+   */
+  stopDjTrack() {
+    this.stopDiscoBeat();
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement.currentTime = 0;
+      this.isPlayingImported = false;
+      this.isPlayingBeat = false;
+      console.info('[AudioEngine] Pista detenida definitivamente (0:00)');
     }
   }
 
   /**
    * Reproduce una canción personalizada (archivo MP3/WAV o URL de stream)
    * conectándola al analizador FFT para reactividad visual de tornamesas, luces y público.
+   * Si resume es true y la pista ya está cargada, continúa desde el segundo pausado.
    */
-  playCustomAudioTrack(srcUrl, title = 'Canción Personalizada') {
+  playCustomAudioTrack(srcUrl, title = 'Canción Personalizada', resume = false) {
     this.initContext();
     this.stopDiscoBeat();
     if (this.bgMusicPlaying) this.stopComedyLoungeMusic();
@@ -1932,16 +1978,24 @@ export class AudioEngine {
       }
     }
 
-    this.audioElement.src = srcUrl;
+    const currentSrc = this.audioElement.src || '';
+    const isSameSource = currentSrc.endsWith(srcUrl) || srcUrl.endsWith(currentSrc) || currentSrc === srcUrl;
+
+    if (!isSameSource) {
+      this.audioElement.src = srcUrl;
+      this.audioElement.currentTime = 0;
+    } else if (!resume) {
+      this.audioElement.currentTime = 0;
+    }
+
     this.audioElement.loop = true;
-    this.audioElement.currentTime = 0;
 
     const playPromise = this.audioElement.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
         this.isPlayingImported = true;
         this.isPlayingBeat = true;
-        console.info(`[AudioEngine] Reproduciendo audio personalizado: ${title}`);
+        console.info(`[AudioEngine] Reproduciendo audio (${resume && isSameSource ? 'Reanudado' : 'Desde 0:00'}): ${title}`);
       }).catch(err => {
         console.warn('[AudioEngine] Autoplay bloqueado o error en archivo de audio:', err);
       });
