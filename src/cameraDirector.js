@@ -11,8 +11,8 @@ export class CameraDirector {
     // Planos para formato Horizontal (Escritorio / Stream Pantalla Ancha)
     this.landscapeShots = {
       WIDE: {
-        pos: new THREE.Vector3(0.8, 6.5, 11.2),
-        target: new THREE.Vector3(0, 1.4, -1.8)
+        pos: new THREE.Vector3(0.6, 5.5, 9.0),
+        target: new THREE.Vector3(0, 1.3, -1.5)
       },
       SINGER: {
         pos: new THREE.Vector3(0, 2.4, 0.2),
@@ -23,26 +23,26 @@ export class CameraDirector {
         target: new THREE.Vector3(0, 1.7, -3.5)
       },
       CROWD: {
-        pos: new THREE.Vector3(2.5, 6.0, 9.8),
-        target: new THREE.Vector3(-0.5, 1.4, -1.2)
+        pos: new THREE.Vector3(2.0, 5.0, 7.8),
+        target: new THREE.Vector3(-0.3, 1.3, -0.8)
       },
       SIDE: {
-        pos: new THREE.Vector3(-4.5, 5.2, 6.5),
-        target: new THREE.Vector3(0.5, 1.5, -2.0)
+        pos: new THREE.Vector3(-3.8, 4.6, 5.5),
+        target: new THREE.Vector3(0.4, 1.4, -1.8)
       },
       DIVE: {
-        pos: new THREE.Vector3(2.2, 4.2, 6.8),
-        target: new THREE.Vector3(0, 1.3, -0.8)
+        pos: new THREE.Vector3(1.8, 3.8, 5.8),
+        target: new THREE.Vector3(0, 1.2, -0.8)
       }
     };
 
     // Planos para formato Vertical 9:16 (Celular / TikTok LIVE / mobile.html)
-    // Encuadre isométrico de discoteca real: el DJ en tarima se ve arriba nítido,
-    // y la pista de baile LED con hasta 200 personas se ve llena y vibrante abajo
+    // Encuadre nítido y cercano: el DJ en tarima y la pista de baile LED
+    // se ven gigantes y legibles con avatares y viñetas de chat grandes
     this.verticalShots = {
       WIDE: {
-        pos: new THREE.Vector3(0.4, 9.5, 12.4),
-        target: new THREE.Vector3(0, 1.3, -1.6)
+        pos: new THREE.Vector3(0.2, 6.6, 8.8),
+        target: new THREE.Vector3(0, 1.3, -1.2)
       },
       SINGER: {
         pos: new THREE.Vector3(0, 2.6, 0.6),
@@ -53,16 +53,16 @@ export class CameraDirector {
         target: new THREE.Vector3(0, 1.7, -3.5)
       },
       CROWD: {
-        pos: new THREE.Vector3(0.8, 8.8, 13.0),
-        target: new THREE.Vector3(-0.2, 1.2, -0.8)
+        pos: new THREE.Vector3(0.5, 5.8, 8.2),
+        target: new THREE.Vector3(-0.2, 1.2, -0.6)
       },
       SIDE: {
-        pos: new THREE.Vector3(-2.2, 8.2, 11.5),
-        target: new THREE.Vector3(0.4, 1.4, -1.8)
+        pos: new THREE.Vector3(-2.2, 5.4, 7.2),
+        target: new THREE.Vector3(0.3, 1.4, -1.6)
       },
       DIVE: {
-        pos: new THREE.Vector3(0, 5.5, 8.5),
-        target: new THREE.Vector3(0, 1.3, -1.0)
+        pos: new THREE.Vector3(0, 4.2, 6.2),
+        target: new THREE.Vector3(0, 1.2, -0.9)
       }
     };
 
@@ -80,21 +80,19 @@ export class CameraDirector {
 
   focusOnEvent(spectatorPos = null, durationMs = 4500) {
     this.isEventFocus = true;
-    const zDist = spectatorPos ? Math.max(spectatorPos.z, 4.0) : 6.0;
+    const targetX = spectatorPos ? spectatorPos.x * 0.5 : 0;
+    const targetZ = spectatorPos ? spectatorPos.z : 0;
 
     if (this.isVertical) {
-      // Encuadre 9:16 perfectamente centrado con altura suficiente para ver al cantante en tarima
-      // y al espectador en las filas de atrás simultáneamente
-      const camY = 6.5 + Math.min(zDist * 0.25, 3.5);
-      const camZ = 13.5 + Math.min(zDist * 0.45, 5.0);
+      // Encuadre 9:16 dinámico que enfoca al muñeco que habla y mantiene al DJ visible
       this.eventFocusShot = {
-        pos: new THREE.Vector3(0, camY, camZ),
-        target: new THREE.Vector3(0, 2.0, zDist * 0.25)
+        pos: new THREE.Vector3(targetX, 5.2, 7.5),
+        target: new THREE.Vector3(targetX * 0.6, 1.4, Math.min(targetZ, 1.5))
       };
     } else {
       this.eventFocusShot = {
-        pos: new THREE.Vector3(0, 5.8, 13.5),
-        target: new THREE.Vector3(0, 2.0, 0.5)
+        pos: new THREE.Vector3(targetX, 4.4, 7.2),
+        target: new THREE.Vector3(targetX * 0.6, 1.4, Math.min(targetZ, 1.0))
       };
     }
 

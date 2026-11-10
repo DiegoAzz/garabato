@@ -48,39 +48,42 @@ export class AudienceManager {
 
     // ==========================================
     // ZONA 1: PISTA DE BAILE CENTRAL LED (Hasta 120 personas)
-    // 8 Filas escalonadas para que ninguna cabeza tape a la otra
+    // Distribución armónica: llena la pista uniformemente desde el centro hacia afuera
     // ==========================================
     if (index < 120) {
       const rows = [
-        { count: 8,  z: -2.3, width: 5.4 },
-        { count: 10, z: -1.5, width: 6.2 },
-        { count: 12, z: -0.7, width: 6.8 },
-        { count: 14, z:  0.1, width: 7.2 },
-        { count: 16, z:  0.9, width: 7.6 },
-        { count: 18, z:  1.7, width: 8.0 },
-        { count: 20, z:  2.5, width: 8.4 },
-        { count: 22, z:  3.3, width: 8.8 }
+        { z: -1.7, width: 5.6 },
+        { z: -0.9, width: 6.0 },
+        { z: -0.1, width: 6.4 },
+        { z:  0.7, width: 6.8 },
+        { z:  1.5, width: 7.0 },
+        { z:  2.3, width: 7.2 },
+        { z:  3.1, width: 7.4 }
       ];
 
-      let rem = index;
-      let rIdx = 0;
-      while (rIdx < rows.length - 1 && rem >= rows[rIdx].count) {
-        rem -= rows[rIdx].count;
-        rIdx++;
+      const numRows = rows.length;
+      const rIdx = index % numRows;
+      const colIdx = Math.floor(index / numRows);
+      const row = rows[rIdx];
+
+      // Expansión radial simétrica desde el centro: 0, +step, -step, +2*step, -2*step...
+      const step = 0.68;
+      const sign = (colIdx % 2 === 1) ? 1 : -1;
+      const dist = Math.ceil(colIdx / 2);
+      const stagger = (rIdx % 2 === 1) ? 0.32 : 0;
+
+      let calcX = (colIdx === 0) ? 0 : (sign * dist * step) + (sign * stagger);
+      const maxHalfW = row.width / 2;
+      if (Math.abs(calcX) > maxHalfW) {
+        calcX = (calcX > 0 ? 1 : -1) * (maxHalfW - (index % 5) * 0.2);
       }
 
-      const row = rows[rIdx];
-      const countInRow = row.count;
-      const step = row.width / (countInRow - 1);
-      // Escalonado para que cada espectador quede exactamente en el hueco de la fila delantera
-      const staggerOffset = (rIdx % 2 === 1) ? (step * 0.5) : 0;
-      
-      posX = -row.width / 2 + rem * step + (staggerOffset * (rem % 2 === 0 ? 1 : -1) * 0.3);
+      posX = calcX;
       posZ = row.z;
 
       // Pasillo central frontal sutil para la cámara
-      if (Math.abs(posX) < 0.45 && posZ > 0.5) {
-        posX += (posX >= 0 ? 0.35 : -0.35);
+      if (Math.abs(posX) < 0.25 && posZ > 0.8) {
+        posX += (colIdx % 2 === 0 ? 0.35 : -0.35);
       }
 
       // Mirando hacia la cabina del DJ en tarima
@@ -231,59 +234,96 @@ export class AudienceManager {
 
   /**
   /**
-   * Crea una viñeta cómica de diálogo (Chat Bubble) 3D sobre la cabeza del espectador
-   * con soporte multilínea, cola de bocadillo y borde neón brillante.
+   * Crea una viñeta cómica de diálogo (Chat Bubble) 3D gigante y ultra contrastada
+   * directamente sobre la cabeza del espectador, visible desde cualquier ángulo y zoom.
    */
-  createChatBubbleSprite(text, isVip = false) {
+  createChatBubbleSprite(name, text, isVip = false) {
     const canvas = document.createElement('canvas');
-    canvas.width = 384;
-    canvas.height = 160;
+    canvas.width = 512;
+    canvas.height = 256;
     const ctx = canvas.getContext('2d');
 
-    // Fondo de la viñeta con colita apuntando al espectador
-    const bubbleW = 372;
-    const bubbleH = 126;
-    const radius = 18;
+    const bubbleX = 14;
+    const bubbleY = 12;
+    const bubbleW = 484;
+    const bubbleH = 168;
+    const radius = 24;
 
-    ctx.fillStyle = isVip ? 'rgba(30, 20, 50, 0.95)' : 'rgba(15, 23, 42, 0.94)';
-    ctx.strokeStyle = isVip ? '#facc15' : '#00f0ff';
-    ctx.lineWidth = 4;
+    ctx.save();
+
+    // Sombra exterior para despegar la viñeta del fondo 3D
+    ctx.shadowColor = isVip ? 'rgba(234, 179, 8, 0.6)' : 'rgba(0, 240, 255, 0.55)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 4;
+
+    // Fondo luminoso de alta visibilidad (Blanco puro cómic o Amarillo oro VIP)
+    const bgGrad = ctx.createLinearGradient(0, bubbleY, 0, bubbleY + bubbleH);
+    if (isVip) {
+      bgGrad.addColorStop(0, '#fef08a');
+      bgGrad.addColorStop(1, '#eab308');
+      ctx.strokeStyle = '#78350f';
+    } else {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(1, '#f1f5f9');
+      ctx.strokeStyle = '#090d16';
+    }
+
+    ctx.fillStyle = bgGrad;
+    ctx.lineWidth = 6;
 
     // Cuerpo redondeado de la burbuja
     ctx.beginPath();
     if (ctx.roundRect) {
-      ctx.roundRect(6, 6, bubbleW, bubbleH, radius);
+      ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, radius);
     } else {
-      ctx.rect(6, 6, bubbleW, bubbleH);
+      ctx.rect(bubbleX, bubbleY, bubbleW, bubbleH);
     }
     ctx.fill();
     ctx.stroke();
 
-    // Triangulito de la cola del bocadillo apuntando hacia la cabeza del muñeco
+    // Colita / Flecha cómica apuntando abajo hacia la cabeza del personaje
     ctx.beginPath();
-    ctx.moveTo(172, bubbleH + 6);
-    ctx.lineTo(192, 156);
-    ctx.lineTo(212, bubbleH + 6);
-    ctx.fillStyle = isVip ? 'rgba(30, 20, 50, 0.95)' : 'rgba(15, 23, 42, 0.94)';
+    ctx.moveTo(224, bubbleY + bubbleH);
+    ctx.lineTo(256, bubbleY + bubbleH + 46);
+    ctx.lineTo(288, bubbleY + bubbleH);
+    ctx.fillStyle = isVip ? '#eab308' : '#f1f5f9';
     ctx.fill();
     ctx.stroke();
 
-    // Texto del mensaje con ajuste de líneas y contraste ultra nítido
-    const textFill = isVip ? '#fde047' : '#ffffff';
-    let fontSize = 24;
-    const clean = String(text || '').trim();
-    if (clean.length > 50) fontSize = 17;
-    else if (clean.length > 30) fontSize = 20;
+    ctx.restore();
 
-    ctx.font = `900 ${fontSize}px sans-serif`;
+    // Cabecera: Nombre del espectador en píldora distintiva
+    const cleanUser = String(name || 'Espectador').replace(/^@+/, '').trim();
+    ctx.font = '900 24px "Montserrat", "Arial Black", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isVip ? '#9a3412' : '#0284c7';
+    ctx.fillText(`${isVip ? '👑' : '💬'} @${cleanUser}`, 256, bubbleY + 28);
+
+    // Separador sutil
+    ctx.beginPath();
+    ctx.moveTo(bubbleX + 30, bubbleY + 46);
+    ctx.lineTo(bubbleX + bubbleW - 30, bubbleY + 46);
+    ctx.strokeStyle = isVip ? 'rgba(120, 53, 15, 0.25)' : 'rgba(15, 23, 42, 0.15)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Texto del mensaje: Letra negra azabache extra gruesa para contraste total
+    const cleanMsg = String(text || '').trim();
+    let fontSize = 28;
+    if (cleanMsg.length > 55) fontSize = 20;
+    else if (cleanMsg.length > 35) fontSize = 23;
+
+    ctx.font = `900 ${fontSize}px "Arial Black", "Montserrat", "Impact", sans-serif`;
+    ctx.fillStyle = '#090d16';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     // Algoritmo de partición en líneas
-    const words = clean.split(' ');
+    const words = cleanMsg.split(/\s+/);
     const lines = [];
     let currentLine = '';
-    const maxLineW = bubbleW - 40;
+    const maxLineW = bubbleW - 50;
 
     for (let w of words) {
       const test = currentLine ? `${currentLine} ${w}` : w;
@@ -296,23 +336,27 @@ export class AudienceManager {
       }
     }
     if (currentLine && lines.length < 3) lines.push(currentLine);
+    if (lines.length > 2) lines[1] += '...';
 
     const lineH = fontSize * 1.35;
-    const startY = 16 + (bubbleH - lines.length * lineH) / 2 + lineH / 2;
+    const textStartY = bubbleY + 54 + (bubbleH - 58 - lines.length * lineH) / 2 + lineH / 2;
 
     for (let i = 0; i < lines.length; i++) {
-      // Delineado negro grueso para contraste 100% nítido
-      ctx.lineWidth = 3.5;
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.95)';
-      ctx.strokeText(lines[i], 192, startY + i * lineH);
-      ctx.fillStyle = textFill;
-      ctx.fillText(lines[i], 192, startY + i * lineH);
+      ctx.fillText(lines[i], 256, textStartY + i * lineH);
     }
 
     const texture = new THREE.CanvasTexture(canvas);
-    const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    const spriteMat = new THREE.SpriteMaterial({
+      map: texture,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true
+    });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(1.25, 0.52, 1);
+    sprite.renderOrder = 99999;
+    sprite.scale.set(2.6, 1.3, 1);
     return sprite;
   }
 
@@ -333,31 +377,46 @@ export class AudienceManager {
     // 2. Si ya tenía una viñeta activa, removerla limpiamente
     if (spec.chatBubble) {
       spec.mesh.remove(spec.chatBubble);
+      if (spec.chatBubble.material.map) spec.chatBubble.material.map.dispose();
+      spec.chatBubble.material.dispose();
       clearTimeout(spec.chatBubbleTimer);
       spec.chatBubble = null;
     }
+    if (spec.speechBubble) {
+      spec.mesh.remove(spec.speechBubble);
+      if (spec.speechBubble.material.map) spec.speechBubble.material.map.dispose();
+      spec.speechBubble.material.dispose();
+      clearTimeout(spec.bubbleTimer);
+      spec.speechBubble = null;
+    }
 
-    // 3. Crear nueva viñeta de diálogo 3D sobre su cabeza
-    const bubbleSprite = this.createChatBubbleSprite(cleanText, isVip);
-    bubbleSprite.position.set(0, 1.05, 0);
+    // 3. Crear nueva viñeta de diálogo 3D gigante y contrastada sobre su cabeza
+    const bubbleSprite = this.createChatBubbleSprite(cleanUser, cleanText, isVip);
+    bubbleSprite.position.set(0, 1.55, 0);
     spec.mesh.add(bubbleSprite);
     spec.chatBubble = bubbleSprite;
+    spec.speechBubble = bubbleSprite;
 
-    // 4. Animar al muñeco mientras habla (saltito o baile)
+    // 4. Animar al muñeco mientras habla (salto de fiesta y alegría)
     spec.mesh.animController.gesture = 'joy';
-    spec.mesh.animController.speedMultiplier = 1.8;
-    this.increaseEnergy(6);
+    spec.mesh.animController.danceMove = 'jump';
+    spec.mesh.animController.speedMultiplier = 2.4;
+    this.increaseEnergy(8);
 
-    // 5. Destacar con anillo de luz
-    this.highlightSpectator(cleanUser, 3000);
+    // 5. Destacar con anillo de luz en sus pies
+    this.highlightSpectator(cleanUser, 5500);
 
-    // 6. Temporizador para ocultar la burbuja suavemente a los 6.5 segundos
+    // 6. Temporizador para ocultar la burbuja a los 6.5 segundos
     spec.chatBubbleTimer = setTimeout(() => {
       if (spec.chatBubble === bubbleSprite) {
         spec.mesh.remove(bubbleSprite);
+        if (bubbleSprite.material.map) bubbleSprite.material.map.dispose();
+        bubbleSprite.material.dispose();
         spec.chatBubble = null;
+        spec.speechBubble = null;
         spec.mesh.animController.gesture = 'none';
         spec.mesh.animController.speedMultiplier = 1.0;
+        spec.mesh.animController.danceMove = this.danceMoves[Math.floor(Math.random() * this.danceMoves.length)];
       }
     }, 6500);
 
@@ -445,38 +504,8 @@ export class AudienceManager {
   }
 
   showSpeechBubble(spectator, text) {
-    if (!spectator || !spectator.mesh) return;
-
-    if (spectator.speechBubble) {
-      spectator.mesh.remove(spectator.speechBubble);
-      if (spectator.speechBubble.material.map) spectator.speechBubble.material.map.dispose();
-      spectator.speechBubble.material.dispose();
-      spectator.speechBubble = null;
-    }
-    if (spectator.bubbleTimer) {
-      clearTimeout(spectator.bubbleTimer);
-    }
-
-    const bubble = this.createSpeechBubbleSprite(text);
-    // Posición flotante sobre el nombre
-    bubble.position.set(0, 1.25, 0);
-    spectator.mesh.add(bubble);
-    spectator.speechBubble = bubble;
-
-    // Animación de hablar / salto
-    spectator.mesh.animController.gesture = 'joy';
-    spectator.mesh.animController.speedMultiplier = 1.8;
-
-    spectator.bubbleTimer = setTimeout(() => {
-      if (spectator.speechBubble) {
-        spectator.mesh.remove(spectator.speechBubble);
-        if (spectator.speechBubble.material.map) spectator.speechBubble.material.map.dispose();
-        spectator.speechBubble.material.dispose();
-        spectator.speechBubble = null;
-      }
-      spectator.mesh.animController.gesture = 'none';
-      spectator.mesh.animController.speedMultiplier = 1.0;
-    }, 5500);
+    if (!spectator || !spectator.name) return;
+    this.sayChatMessage(spectator.name, text, false);
   }
 
   /**

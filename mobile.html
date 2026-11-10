@@ -218,11 +218,27 @@
       padding: 2px 8px !important;
     }
 
-    /* Botón de desbloqueo de audio flotante y discreto */
+    /* Botón de desbloqueo de audio flotante y altamente visible si se requiere interacción */
     .btn-audio-unlock {
-      bottom: calc(var(--tiktok-safe-bottom) + 50px) !important;
-      font-size: 9px !important;
-      padding: 5px 12px !important;
+      position: absolute;
+      bottom: calc(var(--tiktok-safe-bottom) + 55px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99999;
+      font-size: 13px !important;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      padding: 10px 22px !important;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      border-radius: 9999px;
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.8), 0 4px 14px rgba(0,0,0,0.5);
+      cursor: pointer;
+      animation: pulse-glow 1.5s infinite;
+    }
+    .btn-audio-unlock.hidden {
+      display: none !important;
     }
 
     /* ========================================================

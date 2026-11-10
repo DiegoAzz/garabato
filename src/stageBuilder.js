@@ -104,12 +104,36 @@ export function buildDiscoStage(scene) {
     }
   }
 
-  // Borde exterior de neón brillante de toda la pista de baile LED
-  const borderPistaGeo = new THREE.BoxGeometry(gridW + 0.3, 0.06, gridD + 0.3);
+  // Marco exterior de neón brillante alrededor de la pista (4 barras finas en el perímetro)
+  const borderGroup = new THREE.Group();
   const borderPistaMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-  const borderPista = new THREE.Mesh(borderPistaGeo, borderPistaMat);
-  borderPista.position.set(0, 0.03, gridOriginZ + (gridD / 2) - (tileSize / 2));
-  stageGroup.add(borderPista);
+  const borderThick = 0.08;
+  const borderH = 0.05;
+  const minZ = gridOriginZ - (tileSize / 2);
+  const maxZ = gridOriginZ + gridD - (tileSize / 2);
+  const lenZ = maxZ - minZ;
+
+  // Borde Frontal
+  const borderFront = new THREE.Mesh(new THREE.BoxGeometry(gridW + borderThick * 2, borderH, borderThick), borderPistaMat);
+  borderFront.position.set(0, borderH / 2, maxZ + borderThick / 2);
+  borderGroup.add(borderFront);
+
+  // Borde Trasero
+  const borderBack = new THREE.Mesh(new THREE.BoxGeometry(gridW + borderThick * 2, borderH, borderThick), borderPistaMat);
+  borderBack.position.set(0, borderH / 2, minZ - borderThick / 2);
+  borderGroup.add(borderBack);
+
+  // Borde Izquierdo
+  const borderLeft = new THREE.Mesh(new THREE.BoxGeometry(borderThick, borderH, lenZ), borderPistaMat);
+  borderLeft.position.set(-gridW / 2 - borderThick / 2, borderH / 2, minZ + lenZ / 2);
+  borderGroup.add(borderLeft);
+
+  // Borde Derecho
+  const borderRight = new THREE.Mesh(new THREE.BoxGeometry(borderThick, borderH, lenZ), borderPistaMat);
+  borderRight.position.set(gridW / 2 + borderThick / 2, borderH / 2, minZ + lenZ / 2);
+  borderGroup.add(borderRight);
+
+  stageGroup.add(borderGroup);
 
   // ==========================================
   // 3. TARIMA ELEVADA DEL DJ CON BARANDAS METÁLICAS

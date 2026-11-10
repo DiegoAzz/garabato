@@ -445,9 +445,7 @@ export function initShowApp() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
-    if (!audioEngine.bgMusicPlaying && audioEngine.bgMusicPreset !== 'off') {
-      audioEngine.startComedyLoungeMusic(audioEngine.bgMusicPreset || 'lounge');
-    }
+    audioEngine.resumeCustomAudioIfPending();
     if (audioUnlockBtn) {
       audioUnlockBtn.classList.add('hidden');
     }
@@ -456,6 +454,14 @@ export function initShowApp() {
   if (audioUnlockBtn) audioUnlockBtn.addEventListener('click', unlockAudio);
   window.addEventListener('pointerdown', unlockAudio, { passive: true });
   window.addEventListener('click', unlockAudio, { passive: true });
+  window.addEventListener('touchstart', unlockAudio, { passive: true });
+
+  window.addEventListener('AUDIO_AUTOPLAY_BLOCKED', () => {
+    if (audioUnlockBtn) {
+      audioUnlockBtn.classList.remove('hidden');
+      audioUnlockBtn.innerHTML = '🔊 TOCA LA PANTALLA PARA ESCUCHAR LA MÚSICA 🎵';
+    }
+  });
 
   const btnToggleBgm = document.getElementById('btn-toggle-bgm');
   if (btnToggleBgm) {
@@ -579,7 +585,7 @@ export function initShowApp() {
 
   syncBridge.on('DJ_PLAY_CUSTOM_AUDIO', (payload) => {
     markActivity();
-    audioEngine.initContext();
+    unlockAudio();
     if (payload && payload.url) {
       audioEngine.playCustomAudioTrack(payload.url, payload.name || 'Canción DJ', payload.resume || false);
       singer.animController.triggerDjHandsUp(3500);
@@ -671,7 +677,10 @@ export function initShowApp() {
     const text = String(payload.text).trim();
     const isVip = Boolean(payload.isVip);
 
-    audience.sayChatMessage(cleanUser, text, isVip);
+    const spec = audience.sayChatMessage(cleanUser, text, isVip);
+    if (spec && spec.mesh && cameraDirector) {
+      cameraDirector.focusOnEvent(spec.mesh.position, 3800);
+    }
 
     if (!audioEngine.isSpeaking && !eventQueue.isBusy) {
       singer.animController.triggerDjScratch(1600);
@@ -794,6 +803,10 @@ export function initShowApp() {
       // Mostrar globo cómic 3D (Speech Bubble) sobre el personaje del espectador
       if (audience && user) {
         audience.speak(user, comment);
+        const spec = audience.findSpectator(user);
+        if (spec && spec.mesh && cameraDirector) {
+          cameraDirector.focusOnEvent(spec.mesh.position, 3800);
+        }
       }
     } else if (action === 'JOIN' || action === 'MEMBER') {
       handleViewerJoin(user);

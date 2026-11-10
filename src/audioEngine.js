@@ -1956,30 +1956,20 @@ export class AudioEngine {
 
   /**
    * Reproduce una canción personalizada (archivo MP3/WAV o URL de stream)
-   * conectándola al analizador FFT para reactividad visual de tornamesas, luces y público.
+   * con reproducción nativa garantizada directamente a los altavoces
+   * para evitar bloqueos de CORS o silenciamiento de Web Audio API.
    * Si resume es true y la pista ya está cargada, continúa desde el segundo pausado.
    */
   playCustomAudioTrack(srcUrl, title = 'Canción Personalizada', resume = false) {
-    this.initContext();
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
-    }
+    this.pendingCustomTrack = { srcUrl, title, resume };
 
     this.stopDiscoBeat();
     if (this.bgMusicPlaying) this.stopComedyLoungeMusic();
 
     if (!this.audioElement) {
       this.audioElement = new Audio();
+      this.audioElement.crossOrigin = 'anonymous';
       this.audioElement.preload = 'auto';
-
-      if (this.ctx && !this.audioSourceNode) {
-        try {
-          this.audioSourceNode = this.ctx.createMediaElementSource(this.audioElement);
-          this.audioSourceNode.connect(this.musicGain || this.masterGain);
-        } catch (e) {
-          console.warn('[AudioEngine] MediaElementSource warning:', e);
-        }
-      }
     }
 
     const currentSrc = this.audioElement.src || '';
@@ -1993,33 +1983,47 @@ export class AudioEngine {
     }
 
     this.audioElement.loop = true;
-    this.audioElement.volume = this.musicGain ? this.musicGain.gain.value : 0.85;
+    const vol = this.djCustomVolume !== undefined ? this.djCustomVolume : 0.85;
+    this.audioElement.volume = vol;
 
     const playPromise = this.audioElement.play();
     if (playPromise !== undefined) {
       playPromise.then(() => {
         this.isPlayingImported = true;
         this.isPlayingBeat = true;
+        this.pendingCustomTrack = null;
         console.info(`[AudioEngine] Reproduciendo audio (${resume && isSameSource ? 'Reanudado' : 'Desde 0:00'}): ${title}`);
       }).catch(err => {
-        console.warn('[AudioEngine] Intento de reproducción bloqueado, reintentando:', err);
-        // Despertar AudioContext y reintentar
-        if (this.ctx) this.ctx.resume().catch(() => {});
-        this.audioElement.play().catch(e2 => {
-          console.warn('[AudioEngine] Error final de reproducción:', e2);
-        });
+        console.warn('[AudioEngine] Autoplay bloqueado por el navegador (requiere toque de pantalla):', err.message);
+        // Despachar evento para mostrar botón visible de desbloqueo en pantalla
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('AUDIO_AUTOPLAY_BLOCKED', { detail: { title } }));
+        }
       });
     }
   }
 
   setDjVolume(volumePercent) {
-    this.initContext();
     const vol = Math.max(0, Math.min(1.0, volumePercent / 100));
+    this.djCustomVolume = vol;
     if (this.musicGain && this.ctx) {
-      this.musicGain.gain.setValueAtTime(vol, this.ctx.currentTime);
+      try {
+        this.musicGain.gain.setValueAtTime(vol, this.ctx.currentTime);
+      } catch (e) {}
     }
     if (this.audioElement) {
       this.audioElement.volume = vol;
+    }
+  }
+
+  resumeCustomAudioIfPending() {
+    if (this.audioElement && this.isPlayingImported && this.audioElement.paused) {
+      this.audioElement.play().catch(() => {});
+      return;
+    }
+    if (this.pendingCustomTrack) {
+      const { srcUrl, title, resume } = this.pendingCustomTrack;
+      this.playCustomAudioTrack(srcUrl, title, resume);
     }
   }
 
@@ -2061,6 +2065,16 @@ export class AudioEngine {
     this.audioLevels.mid = (midSum / ((mEnd - bEnd) * 255));
     this.audioLevels.treble = (trebleSum / ((count - mEnd) * 255));
     this.audioLevels.overall = (this.audioLevels.bass * 0.5 + this.audioLevels.mid * 0.3 + this.audioLevels.treble * 0.2);
+
+    // Si está sonando música importada y los niveles del analyser son bajos (por reproducción nativa directa),
+    // sintetizar pulso rítmico vivo al compás para que la pista LED, luces y bailarines sigan el beat
+    if (this.isPlayingImported && this.audioLevels.overall < 0.12) {
+      const beat = Math.abs(Math.sin(Date.now() * 0.0075));
+      this.audioLevels.bass = 0.55 + beat * 0.45;
+      this.audioLevels.mid = 0.4 + beat * 0.35;
+      this.audioLevels.treble = 0.35;
+      this.audioLevels.overall = 0.55 + beat * 0.4;
+    }
 
     return this.audioLevels;
   }

@@ -1034,6 +1034,16 @@ export function initAdminApp() {
       text: cleanText,
       isVip: Boolean(isVip)
     });
+
+    if (btnSendChatMsg) {
+      const origText = btnSendChatMsg.innerHTML;
+      btnSendChatMsg.innerHTML = `✅ ¡@${cleanUser} hablando en 3D! 💬`;
+      btnSendChatMsg.style.borderColor = '#22c55e';
+      setTimeout(() => {
+        btnSendChatMsg.innerHTML = origText;
+        btnSendChatMsg.style.borderColor = '';
+      }, 2200);
+    }
   }
 
   if (btnSendChatMsg) {
