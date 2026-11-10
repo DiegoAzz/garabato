@@ -11,6 +11,61 @@ export function initAdminApp() {
   const audioEngine = new AudioEngine();
 
   // ==========================================
+  // 1. ESTADO DE LOS DOS DECKS (CANAL A & CANAL B)
+  // Declarados al inicio para evitar cualquier ReferenceError TDZ
+  // ==========================================
+  const deckA = {
+    key: 'A',
+    title: 'Ninguna pista cargada',
+    type: 'none', // 'audio' | 'youtube'
+    url: null,
+    videoId: null,
+    audioEl: document.getElementById('admin-audio-deck-a') || new Audio(),
+    ytPlayer: null,
+    isPlaying: false,
+    isPaused: false,
+    bpm: 124.0,
+    pitch: 0,
+    volume: 0.85,
+    titleEl: document.getElementById('deck-a-title'),
+    bpmEl: document.getElementById('deck-a-bpm'),
+    timeEl: document.getElementById('deck-a-time'),
+    remainEl: document.getElementById('deck-a-remain'),
+    scrubFillEl: document.getElementById('deck-a-scrub-fill'),
+    jogEl: document.getElementById('deck-a-jog'),
+    playBtn: document.getElementById('btn-deck-a-play'),
+    playIcon: document.getElementById('deck-a-play-icon'),
+    playText: document.getElementById('deck-a-play-text')
+  };
+
+  const deckB = {
+    key: 'B',
+    title: 'Ninguna pista cargada',
+    type: 'none',
+    url: null,
+    videoId: null,
+    audioEl: document.getElementById('admin-audio-deck-b') || new Audio(),
+    ytPlayer: null,
+    isPlaying: false,
+    isPaused: false,
+    bpm: 128.0,
+    pitch: 0,
+    volume: 0.85,
+    titleEl: document.getElementById('deck-b-title'),
+    bpmEl: document.getElementById('deck-b-bpm'),
+    timeEl: document.getElementById('deck-b-time'),
+    remainEl: document.getElementById('deck-b-remain'),
+    scrubFillEl: document.getElementById('deck-b-scrub-fill'),
+    jogEl: document.getElementById('deck-b-jog'),
+    playBtn: document.getElementById('btn-deck-b-play'),
+    playIcon: document.getElementById('deck-b-play-icon'),
+    playText: document.getElementById('deck-b-play-text')
+  };
+
+  let adminYTPlayerA = null;
+  let adminYTPlayerB = null;
+
+  // ==========================================
   // ESTADO Y CONEXIÓN CON /SHOW
   // ==========================================
   const statusBadge = document.getElementById('status-show-connection');
@@ -47,6 +102,14 @@ export function initAdminApp() {
     }
     if (deckA.audioEl) deckA.audioEl.muted = isAdminAudioMuted;
     if (deckB.audioEl) deckB.audioEl.muted = isAdminAudioMuted;
+    if (adminYTPlayerA && adminYTPlayerA.mute) {
+      if (isAdminAudioMuted) adminYTPlayerA.mute();
+      else adminYTPlayerA.unMute();
+    }
+    if (adminYTPlayerB && adminYTPlayerB.mute) {
+      if (isAdminAudioMuted) adminYTPlayerB.mute();
+      else adminYTPlayerB.unMute();
+    }
   }
 
   if (btnToggleAdminAudioMute) {
@@ -59,55 +122,45 @@ export function initAdminApp() {
   }
 
   // ==========================================
-  // ESTADO DE LOS DOS DECKS (CANAL A & CANAL B)
+  // CONFIGURACIÓN DE AUDIO LOCAL PARA CADA DECK
   // ==========================================
-  const deckA = {
-    key: 'A',
-    title: 'Ninguna pista cargada',
-    type: 'none', // 'audio' | 'youtube'
-    url: null,
-    videoId: null,
-    audioEl: document.getElementById('admin-audio-deck-a') || new Audio(),
-    isPlaying: false,
-    isPaused: false,
-    bpm: 124.0,
-    pitch: 0,
-    volume: 0.85,
-    titleEl: document.getElementById('deck-a-title'),
-    bpmEl: document.getElementById('deck-a-bpm'),
-    timeEl: document.getElementById('deck-a-time'),
-    remainEl: document.getElementById('deck-a-remain'),
-    scrubFillEl: document.getElementById('deck-a-scrub-fill'),
-    jogEl: document.getElementById('deck-a-jog'),
-    playBtn: document.getElementById('btn-deck-a-play'),
-    playIcon: document.getElementById('deck-a-play-icon'),
-    playText: document.getElementById('deck-a-play-text')
-  };
+  function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) seconds = 0;
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    const d = Math.floor((seconds % 1) * 10);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${d}`;
+  }
 
-  const deckB = {
-    key: 'B',
-    title: 'Ninguna pista cargada',
-    type: 'none',
-    url: null,
-    videoId: null,
-    audioEl: document.getElementById('admin-audio-deck-b') || new Audio(),
-    isPlaying: false,
-    isPaused: false,
-    bpm: 128.0,
-    pitch: 0,
-    volume: 0.85,
-    titleEl: document.getElementById('deck-b-title'),
-    bpmEl: document.getElementById('deck-b-bpm'),
-    timeEl: document.getElementById('deck-b-time'),
-    remainEl: document.getElementById('deck-b-remain'),
-    scrubFillEl: document.getElementById('deck-b-scrub-fill'),
-    jogEl: document.getElementById('deck-b-jog'),
-    playBtn: document.getElementById('btn-deck-b-play'),
-    playIcon: document.getElementById('deck-b-play-icon'),
-    playText: document.getElementById('deck-b-play-text')
-  };
+  function updateDeckTimeDisplay(deck) {
+    const cur = deck.audioEl ? deck.audioEl.currentTime : 0;
+    const dur = deck.audioEl && deck.audioEl.duration ? deck.audioEl.duration : 0;
+    if (deck.timeEl) deck.timeEl.textContent = formatTime(cur);
+    if (deck.remainEl) deck.remainEl.textContent = dur > 0 ? `-${formatTime(dur - cur)}` : '-00:00.0';
+    if (deck.scrubFillEl && dur > 0) {
+      deck.scrubFillEl.style.width = `${(cur / dur) * 100}%`;
+    }
+  }
 
-  // Configuración de elementos de audio locales
+  function updateDeckUI(deck) {
+    if (deck.titleEl) deck.titleEl.textContent = deck.title;
+    if (deck.jogEl) {
+      if (deck.isPlaying) deck.jogEl.classList.add('is-spinning');
+      else deck.jogEl.classList.remove('is-spinning');
+    }
+    if (deck.playBtn) {
+      if (deck.isPlaying) {
+        deck.playBtn.classList.add('is-playing');
+        if (deck.playIcon) deck.playIcon.textContent = '⏸';
+        if (deck.playText) deck.playText.textContent = 'PAUSE';
+      } else {
+        deck.playBtn.classList.remove('is-playing');
+        if (deck.playIcon) deck.playIcon.textContent = '▶';
+        if (deck.playText) deck.playText.textContent = 'PLAY';
+      }
+    }
+  }
+
   [deckA, deckB].forEach(d => {
     d.audioEl.loop = true;
     d.audioEl.addEventListener('timeupdate', () => updateDeckTimeDisplay(d));
@@ -118,6 +171,71 @@ export function initAdminApp() {
       syncBridge.send('DJ_DECK_STOP', { deck: d.key });
     });
   });
+
+  // ==========================================
+  // REPRODUCTOR YOUTUBE API PARA DECKS EN ADMIN
+  // ==========================================
+  function loadYouTubeToAdminDeck(deck, videoId) {
+    const slotId = deck.key === 'A' ? 'admin-yt-iframe-slot-a' : 'admin-yt-iframe-slot-b';
+
+    const loadAPI = () => {
+      if (window.YT && window.YT.Player) {
+        if (deck.key === 'A') {
+          if (adminYTPlayerA && adminYTPlayerA.loadVideoById) {
+            adminYTPlayerA.loadVideoById(videoId);
+            deck.ytPlayer = adminYTPlayerA;
+            return;
+          }
+          adminYTPlayerA = new window.YT.Player(slotId, {
+            width: '1',
+            height: '1',
+            videoId: videoId,
+            playerVars: { autoplay: 1, controls: 0, playsinline: 1 },
+            events: {
+              onReady: (e) => {
+                const { effA } = calculateEffectiveVolumes();
+                e.target.setVolume(Math.round(effA * 100));
+                if (isAdminAudioMuted) e.target.mute();
+                e.target.playVideo();
+                deck.ytPlayer = e.target;
+              }
+            }
+          });
+        } else {
+          if (adminYTPlayerB && adminYTPlayerB.loadVideoById) {
+            adminYTPlayerB.loadVideoById(videoId);
+            deck.ytPlayer = adminYTPlayerB;
+            return;
+          }
+          adminYTPlayerB = new window.YT.Player(slotId, {
+            width: '1',
+            height: '1',
+            videoId: videoId,
+            playerVars: { autoplay: 1, controls: 0, playsinline: 1 },
+            events: {
+              onReady: (e) => {
+                const { effB } = calculateEffectiveVolumes();
+                e.target.setVolume(Math.round(effB * 100));
+                if (isAdminAudioMuted) e.target.mute();
+                e.target.playVideo();
+                deck.ytPlayer = e.target;
+              }
+            }
+          });
+        }
+      } else {
+        setTimeout(loadAPI, 200);
+      }
+    };
+
+    if (!document.getElementById('yt-iframe-api-script')) {
+      const tag = document.createElement('script');
+      tag.id = 'yt-iframe-api-script';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+    loadAPI();
+  }
 
   // ==========================================
   // MEZCLADOR CENTRAL PIONEER & CROSSFADER
@@ -150,11 +268,26 @@ export function initAdminApp() {
   function applyMixerVolumes() {
     const { effA, effB, cf, master } = calculateEffectiveVolumes();
 
-    if (deckA.audioEl) {
+    // Deck A
+    if (deckA.type === 'youtube') {
+      if (adminYTPlayerA && adminYTPlayerA.setVolume) {
+        adminYTPlayerA.setVolume(Math.round(effA * 100));
+        if (isAdminAudioMuted) adminYTPlayerA.mute();
+        else adminYTPlayerA.unMute();
+      }
+    } else if (deckA.audioEl) {
       deckA.audioEl.volume = Math.max(0, Math.min(1, effA));
       deckA.audioEl.muted = isAdminAudioMuted;
     }
-    if (deckB.audioEl) {
+
+    // Deck B
+    if (deckB.type === 'youtube') {
+      if (adminYTPlayerB && adminYTPlayerB.setVolume) {
+        adminYTPlayerB.setVolume(Math.round(effB * 100));
+        if (isAdminAudioMuted) adminYTPlayerB.mute();
+        else adminYTPlayerB.unMute();
+      }
+    } else if (deckB.audioEl) {
       deckB.audioEl.volume = Math.max(0, Math.min(1, effB));
       deckB.audioEl.muted = isAdminAudioMuted;
     }
@@ -290,54 +423,21 @@ export function initAdminApp() {
   renderRunningWaveforms();
 
   // ==========================================
-  // CONTROLADORES DE TRANSPORTE DE DECKS
+  // OPERACIONES DE CARGA, PLAY, PAUSE Y STOP
   // ==========================================
-  function formatTime(seconds) {
-    if (isNaN(seconds) || seconds < 0) seconds = 0;
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    const d = Math.floor((seconds % 1) * 10);
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${d}`;
-  }
-
-  function updateDeckTimeDisplay(deck) {
-    const cur = deck.audioEl ? deck.audioEl.currentTime : 0;
-    const dur = deck.audioEl && deck.audioEl.duration ? deck.audioEl.duration : 0;
-    if (deck.timeEl) deck.timeEl.textContent = formatTime(cur);
-    if (deck.remainEl) deck.remainEl.textContent = dur > 0 ? `-${formatTime(dur - cur)}` : '-00:00.0';
-    if (deck.scrubFillEl && dur > 0) {
-      deck.scrubFillEl.style.width = `${(cur / dur) * 100}%`;
-    }
-  }
-
-  function updateDeckUI(deck) {
-    if (deck.titleEl) deck.titleEl.textContent = deck.title;
-    if (deck.jogEl) {
-      if (deck.isPlaying) deck.jogEl.classList.add('is-spinning');
-      else deck.jogEl.classList.remove('is-spinning');
-    }
-    if (deck.playBtn) {
-      if (deck.isPlaying) {
-        deck.playBtn.classList.add('is-playing');
-        if (deck.playIcon) deck.playIcon.textContent = '⏸';
-        if (deck.playText) deck.playText.textContent = 'PAUSE';
-      } else {
-        deck.playBtn.classList.remove('is-playing');
-        if (deck.playIcon) deck.playIcon.textContent = '▶';
-        if (deck.playText) deck.playText.textContent = 'PLAY';
-      }
-    }
-  }
-
-  function loadTrackToDeck(deck, track, autoPlay = false) {
+  function loadTrackToDeck(deck, track, autoPlay = true) {
     deck.title = track.name || track.title || 'Canción DJ';
     deck.type = track.videoId ? 'youtube' : 'audio';
     deck.url = track.url || null;
     deck.videoId = track.videoId || null;
 
-    if (deck.audioEl) {
-      deck.audioEl.pause();
-      if (deck.url) {
+    if (deck.type === 'youtube') {
+      if (deck.audioEl) deck.audioEl.pause();
+      loadYouTubeToAdminDeck(deck, deck.videoId);
+    } else {
+      const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
+      if (player && player.stopVideo) player.stopVideo();
+      if (deck.audioEl && deck.url) {
         deck.audioEl.src = deck.url;
         deck.audioEl.load();
       }
@@ -363,7 +463,7 @@ export function initAdminApp() {
 
   function playDeck(deck) {
     if (!deck.url && !deck.videoId) {
-      alert(`Por favor carga una canción en el Deck ${deck.key} primero desde la lista inferior.`);
+      alert(`Por favor carga una canción en el Deck ${deck.key} primero desde la biblioteca inferior.`);
       return;
     }
 
@@ -371,7 +471,14 @@ export function initAdminApp() {
     deck.isPaused = false;
     applyMixerVolumes();
 
-    if (deck.audioEl && deck.url) {
+    if (deck.type === 'youtube' && deck.videoId) {
+      const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
+      if (player && player.playVideo) {
+        player.playVideo();
+      } else {
+        loadYouTubeToAdminDeck(deck, deck.videoId);
+      }
+    } else if (deck.audioEl && deck.url) {
       deck.audioEl.play().catch(e => console.warn(`[Deck ${deck.key}] Play:`, e.message));
     }
 
@@ -391,7 +498,10 @@ export function initAdminApp() {
     deck.isPlaying = false;
     deck.isPaused = true;
 
-    if (deck.audioEl) {
+    if (deck.type === 'youtube') {
+      const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
+      if (player && player.pauseVideo) player.pauseVideo();
+    } else if (deck.audioEl) {
       deck.audioEl.pause();
     }
 
@@ -403,7 +513,10 @@ export function initAdminApp() {
     deck.isPlaying = false;
     deck.isPaused = false;
 
-    if (deck.audioEl) {
+    if (deck.type === 'youtube') {
+      const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
+      if (player && player.stopVideo) player.stopVideo();
+    } else if (deck.audioEl) {
       deck.audioEl.pause();
       deck.audioEl.currentTime = 0;
     }
@@ -417,6 +530,10 @@ export function initAdminApp() {
     if (deck.audioEl) {
       deck.audioEl.pause();
       deck.audioEl.currentTime = 0;
+    }
+    if (deck.type === 'youtube') {
+      const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
+      if (player && player.seekTo) player.seekTo(0);
     }
     deck.isPlaying = false;
     deck.isPaused = false;
@@ -464,7 +581,7 @@ export function initAdminApp() {
     });
   }
 
-  // Scrubbing (Avanzar/retroceder canción con clic en barra)
+  // Scrubbing
   document.getElementById('deck-a-scrub')?.addEventListener('click', (e) => {
     if (!deckA.audioEl || !deckA.audioEl.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -820,7 +937,6 @@ export function initAdminApp() {
       if (data.success && data.track) {
         showUploadStatus(`¡Pista importada: "${data.track.name}"!`, false);
         await fetchMusicPlaylist();
-        // Cargar en el Deck que esté libre
         if (!deckA.isPlaying) loadTrackToDeck(deckA, data.track, true);
         else loadTrackToDeck(deckB, data.track, true);
       } else {
@@ -879,7 +995,6 @@ export function initAdminApp() {
   let micAnalyser = null;
   let micAnimFrame = null;
   let micGainNode = null;
-  let adminRtcPeer = null;
 
   const btnQuickMicHead = document.getElementById('btn-quick-mic-head');
   const quickMicDot = document.getElementById('quick-mic-dot');
@@ -889,7 +1004,6 @@ export function initAdminApp() {
   const micVuFill = document.getElementById('mic-vu-fill');
   const micDbLabel = document.getElementById('mic-db-label');
   const micGainSlider = document.getElementById('mic-gain-slider');
-  const micGainLabel = document.getElementById('mic-gain-label');
   const micModeSelect = document.getElementById('mic-mode-select');
 
   function updateMicUI(active) {
@@ -1128,14 +1242,12 @@ export function initAdminApp() {
   const tiktokLiveBadge = document.getElementById('tiktok-live-badge');
   const tiktokStatusPill = document.getElementById('tiktok-status-pill');
   const tiktokStatusText = document.getElementById('tiktok-status-text');
-  const tiktokLiveMsg = document.getElementById('tiktok-live-msg');
   let currentTikTokConnected = false;
 
   function updateTikTokUI(state) {
     if (!state) return;
     const isConn = state.status === 'connected';
     const isConnecting = state.status === 'connecting';
-    const isErr = state.status === 'error';
     currentTikTokConnected = isConn;
 
     if (tiktokLiveBadge) {

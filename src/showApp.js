@@ -636,9 +636,13 @@ export function initShowApp() {
   });
 
   // ==========================================
-  // REPRODUCTOR YOUTUBE SINCRONIZADO EN /SHOW
+  // REPRODUCTORES YOUTUBE SINCRONIZADOS EN /SHOW (DECK A & DECK B)
   // ==========================================
-  let showYTPlayer = null;
+  let showYTPlayerA = null;
+  let showYTPlayerB = null;
+  let deckAVolume = 0.85;
+  let deckBVolume = 0.85;
+
   const ytShowWrapper = document.getElementById('yt-show-wrapper');
   const btnToggleYtScreen = document.getElementById('btn-toggle-yt-screen');
 
@@ -648,42 +652,77 @@ export function initShowApp() {
     });
   }
 
-  function initOrLoadShowYTPlayer(videoId, onReadyCallback) {
-    if (showYTPlayer && showYTPlayer.loadVideoById) {
-      showYTPlayer.loadVideoById(videoId);
-      if (onReadyCallback) onReadyCallback();
-      return;
-    }
+  function initOrLoadShowYTPlayer(deckKey, videoId, onReadyCallback) {
+    const isA = deckKey === 'A';
+    const slotId = isA ? 'yt-show-iframe-slot-a' : 'yt-show-iframe-slot-b';
 
     const loadAPI = () => {
       if (window.YT && window.YT.Player) {
-        showYTPlayer = new window.YT.Player('yt-show-iframe-slot', {
-          width: '100%',
-          height: '100%',
-          videoId: videoId,
-          playerVars: {
-            autoplay: 1,
-            controls: 1,
-            modestbranding: 1,
-            rel: 0,
-            playsinline: 1
-          },
-          events: {
-            onReady: (event) => {
-              const currentVol = audioEngine.djCustomVolume !== undefined ? Math.round(audioEngine.djCustomVolume * 100) : 85;
-              event.target.setVolume(currentVol);
-              if (isMasterMuted) event.target.mute();
-              else event.target.unMute();
-              event.target.playVideo();
-              if (onReadyCallback) onReadyCallback();
-            },
-            onStateChange: (event) => {
-              if (event.data === 1) {
-                singer.animController.triggerDjHandsUp(5000);
+        if (isA) {
+          if (showYTPlayerA && showYTPlayerA.loadVideoById) {
+            showYTPlayerA.loadVideoById(videoId);
+            if (onReadyCallback) onReadyCallback(showYTPlayerA);
+            return;
+          }
+          showYTPlayerA = new window.YT.Player(slotId, {
+            width: '100%',
+            height: '100%',
+            videoId: videoId,
+            playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+            events: {
+              onReady: (event) => {
+                const vol = Math.round(deckAVolume * 100);
+                event.target.setVolume(vol);
+                if (isMasterMuted) event.target.mute();
+                else event.target.unMute();
+                event.target.playVideo();
+                if (onReadyCallback) onReadyCallback(event.target);
+              },
+              onStateChange: (event) => {
+                if (event.data === 1) {
+                  audioEngine.isYTPlaying = true;
+                  singer.animController.triggerDjHandsUp(5000);
+                } else if (event.data === 2 || event.data === 0) {
+                  if (!showYTPlayerB || showYTPlayerB.getPlayerState?.() !== 1) {
+                    audioEngine.isYTPlaying = false;
+                  }
+                }
               }
             }
+          });
+        } else {
+          if (showYTPlayerB && showYTPlayerB.loadVideoById) {
+            showYTPlayerB.loadVideoById(videoId);
+            if (onReadyCallback) onReadyCallback(showYTPlayerB);
+            return;
           }
-        });
+          showYTPlayerB = new window.YT.Player(slotId, {
+            width: '100%',
+            height: '100%',
+            videoId: videoId,
+            playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+            events: {
+              onReady: (event) => {
+                const vol = Math.round(deckBVolume * 100);
+                event.target.setVolume(vol);
+                if (isMasterMuted) event.target.mute();
+                else event.target.unMute();
+                event.target.playVideo();
+                if (onReadyCallback) onReadyCallback(event.target);
+              },
+              onStateChange: (event) => {
+                if (event.data === 1) {
+                  audioEngine.isYTPlaying = true;
+                  singer.animController.triggerDjHandsUp(5000);
+                } else if (event.data === 2 || event.data === 0) {
+                  if (!showYTPlayerA || showYTPlayerA.getPlayerState?.() !== 1) {
+                    audioEngine.isYTPlaying = false;
+                  }
+                }
+              }
+            }
+          });
+        }
       } else {
         setTimeout(loadAPI, 200);
       }
@@ -704,21 +743,15 @@ export function initShowApp() {
     if (!payload || !payload.videoId) return;
 
     audioEngine.stopDjTrack();
-
-    // El video se mantiene 100% invisible en pantalla para máxima discreción y cero detección de copyright
-    initOrLoadShowYTPlayer(payload.videoId, () => {
-      if (showYTPlayer && showYTPlayer.playVideo) {
-        showYTPlayer.playVideo();
-      }
+    initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
+      if (p && p.playVideo) p.playVideo();
     });
 
     singer.animController.triggerDjHandsUp(5000);
     stage.triggerExtremeDisco(6.0);
-
-    // MODO ANTI-COPYRIGHT: En pantalla pública nunca se muestra el título comercial ni artista de YouTube
-    if (queueStatusText) queueStatusText.textContent = `🎧 DJ Live Club 3D`;
+    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Live Club 3D';
     if (subtitlesEl) {
-      showSubtitlePhrase(`🔥 EN VIVO: Mezcla Especial del Club`, '🎧', false);
+      showSubtitlePhrase('🔥 EN VIVO: Mezcla Especial del Club', '🎧', false);
     }
   });
 
@@ -735,9 +768,9 @@ export function initShowApp() {
       deckBAudio.pause();
       deckBAudio.currentTime = 0;
     }
-    if (showYTPlayer && showYTPlayer.stopVideo) {
-      try { showYTPlayer.stopVideo(); } catch (e) {}
-    }
+    if (showYTPlayerA && showYTPlayerA.stopVideo) try { showYTPlayerA.stopVideo(); } catch (e) {}
+    if (showYTPlayerB && showYTPlayerB.stopVideo) try { showYTPlayerB.stopVideo(); } catch (e) {}
+    audioEngine.isYTPlaying = false;
     singer.animController.resetToIdle();
     if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
     if (subtitlesEl) {
@@ -752,14 +785,24 @@ export function initShowApp() {
 
     if (payload.deck === 'A') {
       if (payload.type === 'youtube' && payload.videoId) {
-        initOrLoadShowYTPlayer(payload.videoId, () => {
-          if (showYTPlayer && showYTPlayer.playVideo) showYTPlayer.playVideo();
+        audioEngine.stopDjTrack();
+        audioEngine.isYTPlaying = true;
+        initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
+          if (p && p.playVideo) p.playVideo();
         });
       } else if (payload.url) {
+        if (showYTPlayerA && showYTPlayerA.stopVideo) showYTPlayerA.stopVideo();
         audioEngine.playCustomAudioTrack(payload.url, payload.title || 'Deck A', payload.resume || false);
       }
     } else if (payload.deck === 'B') {
-      if (payload.url) {
+      if (payload.type === 'youtube' && payload.videoId) {
+        if (deckBAudio) deckBAudio.pause();
+        audioEngine.isYTPlaying = true;
+        initOrLoadShowYTPlayer('B', payload.videoId, (p) => {
+          if (p && p.playVideo) p.playVideo();
+        });
+      } else if (payload.url) {
+        if (showYTPlayerB && showYTPlayerB.stopVideo) showYTPlayerB.stopVideo();
         if (!deckBAudio.src.endsWith(payload.url)) {
           deckBAudio.src = payload.url;
           deckBAudio.load();
@@ -780,9 +823,10 @@ export function initShowApp() {
     if (!payload) return;
     if (payload.deck === 'A') {
       audioEngine.pauseDjTrack();
-      if (showYTPlayer && showYTPlayer.pauseVideo) showYTPlayer.pauseVideo();
+      if (showYTPlayerA && showYTPlayerA.pauseVideo) showYTPlayerA.pauseVideo();
     } else if (payload.deck === 'B') {
       deckBAudio.pause();
+      if (showYTPlayerB && showYTPlayerB.pauseVideo) showYTPlayerB.pauseVideo();
     }
     singer.animController.resetToIdle();
     if (queueStatusText) queueStatusText.textContent = '⏸️ DJ en Pausa';
@@ -795,10 +839,11 @@ export function initShowApp() {
     if (!payload) return;
     if (payload.deck === 'A') {
       audioEngine.stopDjTrack();
-      if (showYTPlayer && showYTPlayer.stopVideo) showYTPlayer.stopVideo();
+      if (showYTPlayerA && showYTPlayerA.stopVideo) showYTPlayerA.stopVideo();
     } else if (payload.deck === 'B') {
       deckBAudio.pause();
       deckBAudio.currentTime = 0;
+      if (showYTPlayerB && showYTPlayerB.stopVideo) showYTPlayerB.stopVideo();
     }
     singer.animController.resetToIdle();
   });
@@ -808,33 +853,47 @@ export function initShowApp() {
     if (payload.deck === 'A') {
       audioEngine.pauseDjTrack();
       if (audioEngine.audioElement) audioEngine.audioElement.currentTime = 0;
+      if (showYTPlayerA && showYTPlayerA.seekTo) showYTPlayerA.seekTo(0);
     } else if (payload.deck === 'B') {
       deckBAudio.pause();
       deckBAudio.currentTime = 0;
+      if (showYTPlayerB && showYTPlayerB.seekTo) showYTPlayerB.seekTo(0);
     }
   });
 
   syncBridge.on('DJ_DECK_SEEK', (payload) => {
     if (!payload || payload.time === undefined) return;
-    if (payload.deck === 'A' && audioEngine.audioElement) {
-      audioEngine.audioElement.currentTime = payload.time;
-    } else if (payload.deck === 'B' && deckBAudio) {
-      deckBAudio.currentTime = payload.time;
+    if (payload.deck === 'A') {
+      if (audioEngine.audioElement) audioEngine.audioElement.currentTime = payload.time;
+      if (showYTPlayerA && showYTPlayerA.seekTo) showYTPlayerA.seekTo(payload.time);
+    } else if (payload.deck === 'B') {
+      if (deckBAudio) deckBAudio.currentTime = payload.time;
+      if (showYTPlayerB && showYTPlayerB.seekTo) showYTPlayerB.seekTo(payload.time);
     }
   });
 
   syncBridge.on('DJ_MIXER_UPDATE', (payload) => {
     if (!payload) return;
-    if (payload.volA !== undefined) {
-      audioEngine.setDjVolume(payload.volA);
-      if (showYTPlayer && showYTPlayer.setVolume) {
-        showYTPlayer.setVolume(Math.round(payload.volA * 100));
-      }
+    deckAVolume = payload.volA !== undefined ? payload.volA : 0.85;
+    deckBVolume = payload.volB !== undefined ? payload.volB : 0.85;
+
+    // Actualizar Deck A
+    audioEngine.setDjVolume(deckAVolume);
+    if (showYTPlayerA && showYTPlayerA.setVolume) {
+      showYTPlayerA.setVolume(Math.round(deckAVolume * 100));
+      if (isMasterMuted) showYTPlayerA.mute();
+      else showYTPlayerA.unMute();
     }
-    if (payload.volB !== undefined && deckBAudio) {
-      deckBAudio.volume = Math.max(0, Math.min(1, payload.volB));
-      if (isMasterMuted) deckBAudio.muted = true;
-      else deckBAudio.muted = false;
+
+    // Actualizar Deck B
+    if (deckBAudio) {
+      deckBAudio.volume = Math.max(0, Math.min(1, deckBVolume));
+      deckBAudio.muted = isMasterMuted;
+    }
+    if (showYTPlayerB && showYTPlayerB.setVolume) {
+      showYTPlayerB.setVolume(Math.round(deckBVolume * 100));
+      if (isMasterMuted) showYTPlayerB.mute();
+      else showYTPlayerB.unMute();
     }
   });
 
@@ -844,12 +903,14 @@ export function initShowApp() {
   syncBridge.on('DJ_PAUSE_TRACK', () => {
     audioEngine.pauseDjTrack();
     deckBAudio.pause();
-    if (showYTPlayer && showYTPlayer.pauseVideo) showYTPlayer.pauseVideo();
+    if (showYTPlayerA && showYTPlayerA.pauseVideo) showYTPlayerA.pauseVideo();
+    if (showYTPlayerB && showYTPlayerB.pauseVideo) showYTPlayerB.pauseVideo();
   });
   syncBridge.on('DJ_PAUSE_YOUTUBE', () => {
     audioEngine.pauseDjTrack();
     deckBAudio.pause();
-    if (showYTPlayer && showYTPlayer.pauseVideo) showYTPlayer.pauseVideo();
+    if (showYTPlayerA && showYTPlayerA.pauseVideo) showYTPlayerA.pauseVideo();
+    if (showYTPlayerB && showYTPlayerB.pauseVideo) showYTPlayerB.pauseVideo();
   });
 
   syncBridge.on('DJ_TOGGLE_VOICE', (payload) => {
