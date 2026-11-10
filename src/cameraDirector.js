@@ -40,8 +40,8 @@ export class CameraDirector {
     // Siempre frontales y perfectamente centrados (X = 0) para no perder nunca al cantante ni la tarima
     this.verticalShots = {
       WIDE: {
-        pos: new THREE.Vector3(0, 7.8, 16.0),
-        target: new THREE.Vector3(0, 2.0, -1.8)
+        pos: new THREE.Vector3(0, 8.2, 11.8),
+        target: new THREE.Vector3(0, 0.8, -0.4)
       },
       SINGER: {
         pos: new THREE.Vector3(0, 3.2, 3.8),

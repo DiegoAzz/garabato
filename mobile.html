@@ -105,12 +105,185 @@
       font-size: 9px !important;
       padding: 5px 12px !important;
     }
+
+    /* ========================================================
+       WIDGET CIRCULAR DE RITMO / TEMPO & AUDIENCIA (TOP RIGHT)
+       ======================================================== */
+    .tempo-circle-widget {
+      position: absolute;
+      top: calc(var(--tiktok-safe-top) + 2px);
+      right: 10px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      pointer-events: auto;
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .tempo-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .tempo-bg-circle {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.15);
+      stroke-width: 4.5;
+    }
+
+    .tempo-progress-circle {
+      fill: none;
+      stroke: #22c55e;
+      stroke-width: 4.5;
+      stroke-dasharray: 188.5;
+      stroke-dashoffset: 130;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+    }
+
+    .tempo-inner-content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .tempo-icon {
+      font-size: 10px;
+    }
+
+    .tempo-speed-text {
+      font-size: 9px;
+      font-weight: 900;
+      color: #22c55e;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .tempo-viewers-count {
+      font-size: 8px;
+      font-weight: 800;
+      color: #cbd5e1;
+    }
+
+    /* Leyenda inferior izquierda de roles VIP por regalo */
+    .bottom-roles-legend {
+      position: absolute;
+      bottom: calc(var(--tiktok-safe-bottom) + 8px);
+      left: 8px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 5px 9px;
+      z-index: 50;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 130px;
+    }
+
+    .role-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 8px;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+
+    .role-legend-icon {
+      font-size: 10px;
+    }
+
+    /* Ticker inferior de instrucciones de chat */
+    .bottom-chat-instruction-banner {
+      position: absolute;
+      bottom: calc(var(--tiktok-safe-bottom) - 24px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 94%;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 8px;
+      font-weight: 700;
+      color: #cbd5e1;
+      z-index: 50;
+    }
+
+    .chat-cmd-highlight {
+      color: #facc15;
+      font-weight: 900;
+    }
+
+    /* Indicador flotante cuando el streamer habla por el micrófono */
+    .streamer-mic-badge {
+      position: absolute;
+      top: calc(var(--tiktok-safe-top) + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #ffffff;
+      font-size: 8.5px;
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 120;
+      animation: pulse-streamer-mic 1s infinite alternate;
+    }
+
+    @keyframes pulse-streamer-mic {
+      0% { transform: translateX(-50%) scale(1); }
+      100% { transform: translateX(-50%) scale(1.05); }
+    }
   </style>
 </head>
 <body class="show-page tiktok-vertical-mode clean-stream-mode">
   <div id="canvas-container"></div>
 
   <div id="show-hud">
+    <!-- WIDGET CIRCULAR DE RITMO / TEMPO & AUDIENCIA (TOP RIGHT) -->
+    <div id="tempo-circle-widget" class="tempo-circle-widget">
+      <svg class="tempo-svg" viewBox="0 0 72 72">
+        <circle class="tempo-bg-circle" cx="36" cy="36" r="30"></circle>
+        <circle id="tempo-progress-circle" class="tempo-progress-circle" cx="36" cy="36" r="30"></circle>
+      </svg>
+      <div class="tempo-inner-content">
+        <span class="tempo-icon">🎵</span>
+        <span id="tempo-speed-text" class="tempo-speed-text">Lento</span>
+        <span id="tempo-viewers-count" class="tempo-viewers-count">👥 1</span>
+      </div>
+    </div>
+
+    <!-- Indicador de Micrófono del Streamer en Directo -->
+    <div id="streamer-mic-badge" class="streamer-mic-badge hidden">
+      <span class="pulse-dot"></span>
+      <span>🎙️ STREAMER EN VIVO</span>
+    </div>
+
     <!-- Header Superior Adaptado -->
     <header class="show-header">
       <div class="concert-badge">
@@ -193,6 +366,28 @@
     <!-- Letrero / Subtítulos del Chiste Actual -->
     <div id="live-subtitles" class="subtitles-banner hidden">
       ¡Bienvenidos a Garabato Comedy Club 3D!
+    </div>
+
+    <!-- LEYENDA INFERIOR IZQUIERDA DE ROLES VIP POR REGALO -->
+    <div class="bottom-roles-legend">
+      <div class="role-legend-item">
+        <span class="role-legend-icon">🌹</span>
+        <span class="role-legend-name">Acordeonista / Músico</span>
+      </div>
+      <div class="role-legend-item">
+        <span class="role-legend-icon">🎁</span>
+        <span class="role-legend-name">Novia / Novio VIP</span>
+      </div>
+      <div class="role-legend-item">
+        <span class="role-legend-icon">👑</span>
+        <span class="role-legend-name">Rey de la Noche</span>
+      </div>
+    </div>
+
+    <!-- INSTRUCCIONES DEL CHAT INFERIOR -->
+    <div class="bottom-chat-instruction-banner">
+      <span class="chat-cmd-highlight">Escribe "entrar" / "yo"</span> para salir en el público • 
+      <span class="chat-cmd-highlight">Escribe "chica" / "chico"</span> para cambiar tu ropa
     </div>
 
     <!-- Llamado a la acción inferior -->

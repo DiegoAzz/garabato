@@ -115,7 +115,8 @@
         <div class="form-group">
           <label for="bgm-preset-select">Estilo Musical de Fondo</label>
           <select id="bgm-preset-select">
-            <option value="lounge" selected>🎷 Stand-Up Lounge (Jazz Suave & Escobillas)</option>
+            <option value="merengue" selected>🪗 Merengue Típico / Ripiao (Acordeón, Güira y Tambora)</option>
+            <option value="lounge">🎷 Stand-Up Lounge (Jazz Suave & Escobillas)</option>
             <option value="bossa">☕ Bossa Café (Guitarra Nylon Acústica & Chill)</option>
             <option value="piano">🎭 Monólogo Íntimo (Pianito Suave Solo)</option>
             <option value="off">🔇 Silenciar Música de Fondo</option>
@@ -396,6 +397,42 @@
             <span id="tiktok-status-text">Conectado al LIVE de @CreandoConIA</span>
           </div>
           <div id="tiktok-live-msg" style="margin-top: 8px; font-size: 11px; color: #94a3b8; display: none;"></div>
+          
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+            <button type="button" id="btn-quick-simulation" class="btn-sim-gift" style="width: 100%; background: linear-gradient(135deg, #10b981, #059669); font-weight: 800; padding: 9px; font-size: 11px; border: none; border-radius: 8px; color: #fff; cursor: pointer;">
+              🎮 Probar Público 3D (Simular 10 Personajes, Chat y Globos)
+            </button>
+          </div>
+        </div>
+
+        <!-- MICRÓFONO EN VIVO DEL STREAMER -->
+        <h2 class="card-title mt-4" style="color: #38bdf8;">🎙️ Micrófono en Vivo (Hablar en Directo)</h2>
+        <div class="mic-stream-card" style="background: rgba(14, 165, 233, 0.08); border: 1.5px solid #0284c7; border-radius: 12px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="color: #38bdf8; font-size: 13px;">Transmisión de Voz</strong>
+            <span id="mic-status-badge" class="counter" style="background: #334155; color: #cbd5e1; font-size: 9px; padding: 2px 8px; border-radius: 10px;">Apagado</span>
+          </div>
+          <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
+            Habla desde este panel administrativo: tu voz sonará en tiempo real en la pantalla móvil y el comediante 3D moverá la boca.
+          </p>
+          <button type="button" id="btn-toggle-mic" style="width: 100%; padding: 11px; font-weight: 800; font-size: 12px; border-radius: 8px; border: none; cursor: pointer; background: linear-gradient(135deg, #0284c7, #2563eb); color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);">
+            <span id="mic-btn-icon">🎙️</span>
+            <span id="mic-btn-text">ACTIVAR MICRÓFONO EN VIVO</span>
+          </button>
+          
+          <div style="margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-bottom: 3px;">
+              <span>Vúmetro de Voz</span>
+              <span id="mic-volume-label">0%</span>
+            </div>
+            <div style="height: 6px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden;">
+              <div id="mic-level-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #22c55e, #eab308, #ef4444); transition: width 0.08s ease;"></div>
+            </div>
+          </div>
+          <div id="mic-live-notice" class="hidden" style="margin-top: 8px; font-size: 10.5px; color: #4ade80; display: flex; align-items: center; gap: 6px;">
+            <span class="pulse-dot-green"></span>
+            <span>🔴 Transmitiendo tu voz en vivo al público del show</span>
+          </div>
         </div>
 
         <h2 class="card-title mt-4">🧪 Simulador de Eventos TikTok</h2>

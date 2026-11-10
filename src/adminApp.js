@@ -1035,13 +1035,179 @@ export function initAdminApp() {
 
     if (tiktokLiveMsg) {
       if (state.message) {
-        tiktokLiveMsg.textContent = state.message;
+        let msg = state.message;
+        if (typeof msg === 'string' && msg.toLowerCase().includes('live has ended')) {
+          msg = `⚠️ El usuario @${state.username || 'indicado'} no está transmitiendo en vivo en TikTok en este momento. Inicia tu LIVE en la app de TikTok y vuelve a pulsar Conectar.`;
+        }
+        tiktokLiveMsg.textContent = msg;
         tiktokLiveMsg.style.display = 'block';
         tiktokLiveMsg.style.color = isConn ? '#4ade80' : isErr ? '#f87171' : '#94a3b8';
       } else {
         tiktokLiveMsg.style.display = 'none';
       }
     }
+  }
+
+  // BOTÓN DE PRUEBA RÁPIDA DE PÚBLICO 3D & GLOBOS DE TEXTO
+  const btnQuickSimulation = document.getElementById('btn-quick-simulation');
+  if (btnQuickSimulation) {
+    btnQuickSimulation.addEventListener('click', () => {
+      const demoUsers = [
+        { name: 'Andrea', text: '¡Hola a todos en el club! 👋' },
+        { name: 'Chema', text: 'ponte un perreo intenzo' },
+        { name: 'Sofi', text: 'chica' },
+        { name: 'Carlos', text: 'chico' },
+        { name: 'David', text: '¡Excelente comediante! 😂' },
+        { name: 'Gerson', text: '¡Que cuente el chiste del loro!' }
+      ];
+
+      // 1. Simular espectadores entrando y comentando escalonadamente
+      demoUsers.forEach((item, idx) => {
+        setTimeout(() => {
+          syncBridge.send('TIKTOK_EVENT', {
+            action: 'CHAT',
+            user: item.name,
+            comment: item.text
+          });
+        }, idx * 700);
+      });
+
+      // 2. Simular regalo de Rosa -> Asignar Músico VIP
+      setTimeout(() => {
+        syncBridge.send('TIKTOK_EVENT', {
+          action: 'GIFT',
+          user: 'Gerson',
+          gift: 'Rosa',
+          giftId: 5655,
+          diamondCount: 1
+        });
+      }, 4500);
+
+      // 3. Simular ráfaga de Taps
+      setTimeout(() => {
+        syncBridge.send('TIKTOK_EVENT', {
+          action: 'LIKE',
+          count: 25,
+          user: 'Andrea'
+        });
+      }, 5500);
+    });
+  }
+
+  // 15. MICRÓFONO EN VIVO DEL STREAMER (HABLAR EN TIEMPO REAL DESDE ADMIN)
+  const btnToggleMic = document.getElementById('btn-toggle-mic');
+  const micStatusBadge = document.getElementById('mic-status-badge');
+  const micBtnIcon = document.getElementById('mic-btn-icon');
+  const micBtnText = document.getElementById('mic-btn-text');
+  const micLevelBar = document.getElementById('mic-level-bar');
+  const micVolumeLabel = document.getElementById('mic-volume-label');
+  const micLiveNotice = document.getElementById('mic-live-notice');
+
+  let isMicActive = false;
+  let micStream = null;
+  let micAudioCtx = null;
+  let micScriptNode = null;
+
+  async function toggleMicrophone() {
+    if (isMicActive) {
+      isMicActive = false;
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      if (micScriptNode) {
+        micScriptNode.disconnect();
+        micScriptNode = null;
+      }
+      if (micAudioCtx) {
+        try { await micAudioCtx.close(); } catch (e) {}
+        micAudioCtx = null;
+      }
+
+      if (micStatusBadge) {
+        micStatusBadge.textContent = 'Apagado';
+        micStatusBadge.style.background = '#334155';
+        micStatusBadge.style.color = '#cbd5e1';
+      }
+      if (btnToggleMic) {
+        btnToggleMic.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
+      }
+      if (micBtnText) micBtnText.textContent = 'ACTIVAR MICRÓFONO EN VIVO';
+      if (micBtnIcon) micBtnIcon.textContent = '🎙️';
+      if (micLevelBar) micLevelBar.style.width = '0%';
+      if (micVolumeLabel) micVolumeLabel.textContent = '0%';
+      if (micLiveNotice) micLiveNotice.classList.add('hidden');
+
+      syncBridge.send('STREAMER_MIC_STATUS', { active: false });
+    } else {
+      try {
+        micAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        await micAudioCtx.resume();
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+
+        const source = micAudioCtx.createMediaStreamSource(micStream);
+        micScriptNode = micAudioCtx.createScriptProcessor(2048, 1, 1);
+
+        micScriptNode.onaudioprocess = (e) => {
+          if (!isMicActive) return;
+          const input = e.inputBuffer.getChannelData(0);
+
+          let sum = 0;
+          for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+          const rms = Math.sqrt(sum / input.length);
+          const pct = Math.min(100, Math.round(rms * 450));
+          if (micLevelBar) micLevelBar.style.width = `${pct}%`;
+          if (micVolumeLabel) micVolumeLabel.textContent = `${pct}%`;
+
+          const int16 = new Int16Array(input.length);
+          let hasAudio = false;
+          for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            if (Math.abs(int16[i]) > 350) hasAudio = true;
+          }
+
+          if (hasAudio || Math.random() < 0.08) {
+            syncBridge.send('STREAMER_MIC_PCM', {
+              pcm: Array.from(int16),
+              sampleRate: micAudioCtx.sampleRate,
+              ts: Date.now()
+            });
+          }
+        };
+
+        source.connect(micScriptNode);
+        micScriptNode.connect(micAudioCtx.destination);
+
+        isMicActive = true;
+        if (micStatusBadge) {
+          micStatusBadge.textContent = '🔴 EN DIRECTO';
+          micStatusBadge.style.background = '#22c55e';
+          micStatusBadge.style.color = '#000';
+        }
+        if (btnToggleMic) {
+          btnToggleMic.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        }
+        if (micBtnText) micBtnText.textContent = 'SILENCIAR MICRÓFONO';
+        if (micBtnIcon) micBtnIcon.textContent = '⏹️';
+        if (micLiveNotice) micLiveNotice.classList.remove('hidden');
+
+        syncBridge.send('STREAMER_MIC_STATUS', { active: true });
+      } catch (err) {
+        console.error('[Admin] Error al acceder al micrófono:', err);
+        alert('No se pudo acceder al micrófono. Por favor permite los permisos de audio en tu navegador.');
+      }
+    }
+  }
+
+  if (btnToggleMic) {
+    btnToggleMic.addEventListener('click', toggleMicrophone);
   }
 
   // Escuchar estado enviado por WebSocket

@@ -848,8 +848,19 @@ export function initShowApp() {
       const cleanGift = giftName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
       if (cleanGift.includes('rosa')) {
+        if (audience) audience.promoteToVIP(user, 'musico');
         enqueueActorAction('TOMATE', user, true, giftName);
         return;
+      }
+
+      if (audience) {
+        if (cleanGift.includes('corazon') || cleanGift.includes('dona') || cleanGift.includes('novia')) {
+          audience.promoteToVIP(user, 'novia');
+        } else if (cleanGift.includes('novio')) {
+          audience.promoteToVIP(user, 'novio');
+        } else {
+          audience.promoteToVIP(user, 'rey');
+        }
       }
 
       if (cleanGift.includes('corazon coreano')) {
@@ -904,6 +915,12 @@ export function initShowApp() {
       }
     } else if (action === 'CHAT') {
       const comment = (evt.comment || '').trim();
+
+      // Mostrar globo cómic 3D (Speech Bubble) sobre el personaje del espectador
+      if (audience && user) {
+        audience.speak(user, comment);
+      }
+
       // Detectar si el espectador escribió un número del 1 al 50 para elegir el chiste
       const match = comment.match(/(?:#|chiste\s*|el\s*)?(\b[1-9]\b|\b[1-4][0-9]\b|\b50\b)/i);
       if (match) {
@@ -926,6 +943,79 @@ export function initShowApp() {
       enqueueActorAction('TOMATE', user, false);
     } else if (action === 'JOIN' || action === 'MEMBER') {
       handleViewerJoin(user);
+    }
+  });
+
+  // RECEPTOR DE AUDIO EN VIVO DEL STREAMER (MICRÓFONO DESDE /admin)
+  let streamerAudioCtx = null;
+  let nextAudioTime = 0;
+  let micActiveTimer = null;
+  const streamerMicBadge = document.getElementById('streamer-mic-badge');
+
+  syncBridge.on('STREAMER_MIC_STATUS', (payload) => {
+    if (!payload) return;
+    if (streamerMicBadge) {
+      if (payload.active) {
+        streamerMicBadge.classList.remove('hidden');
+      } else {
+        streamerMicBadge.classList.add('hidden');
+      }
+    }
+  });
+
+  syncBridge.on('STREAMER_MIC_PCM', (data) => {
+    if (!data || !data.pcm || !data.pcm.length) return;
+    try {
+      if (!streamerAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        streamerAudioCtx = new AudioCtx({ sampleRate: data.sampleRate || 24000 });
+      }
+      if (streamerAudioCtx.state === 'suspended') {
+        streamerAudioCtx.resume();
+      }
+
+      const pcm16 = new Int16Array(data.pcm);
+      const float32 = new Float32Array(pcm16.length);
+      for (let i = 0; i < pcm16.length; i++) {
+        float32[i] = pcm16[i] / (pcm16[i] < 0 ? 0x8000 : 0x7FFF);
+      }
+
+      const buffer = streamerAudioCtx.createBuffer(1, float32.length, data.sampleRate || 24000);
+      buffer.getChannelData(0).set(float32);
+
+      const src = streamerAudioCtx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(streamerAudioCtx.destination);
+
+      const curTime = streamerAudioCtx.currentTime;
+      if (nextAudioTime < curTime) {
+        nextAudioTime = curTime + 0.025;
+      }
+      src.start(nextAudioTime);
+      nextAudioTime += buffer.duration;
+
+      // Animar boca y gesticulación del comediante 3D
+      if (singer && singer.animController) {
+        singer.animController.gesture = 'joy';
+        singer.animController.speedMultiplier = 1.7;
+      }
+
+      if (streamerMicBadge) {
+        streamerMicBadge.classList.remove('hidden');
+      }
+
+      clearTimeout(micActiveTimer);
+      micActiveTimer = setTimeout(() => {
+        if (singer && singer.animController && !eventQueue.isBusy) {
+          singer.animController.gesture = 'none';
+          singer.animController.speedMultiplier = 1.0;
+        }
+        if (streamerMicBadge) {
+          streamerMicBadge.classList.add('hidden');
+        }
+      }, 650);
+    } catch (e) {
+      console.warn('[Show] Error reproduciendo audio PCM del streamer:', e);
     }
   });
 
@@ -1164,6 +1254,32 @@ export function initShowApp() {
       if (energyFill && Math.abs(lastRenderedEnergy - audience.collectiveEnergy) > 1.2) {
         lastRenderedEnergy = audience.collectiveEnergy;
         energyFill.style.width = `${Math.round(lastRenderedEnergy)}%`;
+      }
+
+      // Widget Circular de Ritmo / Tempo & Audiencia (Esquina Superior Derecha)
+      const tempoCircle = document.getElementById('tempo-progress-circle');
+      const tempoText = document.getElementById('tempo-speed-text');
+      const tempoCount = document.getElementById('tempo-viewers-count');
+
+      if (tempoCircle) {
+        const energy = audience.collectiveEnergy; // 0 a 100
+        const circumference = 188.5; // 2 * PI * 30
+        const offset = circumference - (energy / 100) * circumference;
+        tempoCircle.style.strokeDashoffset = offset;
+
+        if (energy < 35) {
+          tempoCircle.style.stroke = '#22c55e';
+          if (tempoText) { tempoText.textContent = 'Lento'; tempoText.style.color = '#22c55e'; }
+        } else if (energy < 70) {
+          tempoCircle.style.stroke = '#facc15';
+          if (tempoText) { tempoText.textContent = 'Medio'; tempoText.style.color = '#facc15'; }
+        } else {
+          tempoCircle.style.stroke = '#ef4444';
+          if (tempoText) { tempoText.textContent = '¡Fiesta!'; tempoText.style.color = '#ef4444'; }
+        }
+      }
+      if (tempoCount && audience) {
+        tempoCount.textContent = `👥 ${audience.crowd.length}`;
       }
 
       renderer.render(scene, camera);
