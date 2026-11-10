@@ -3,7 +3,9 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { TikTokLiveConnection } from 'tiktok-live-connector';
+import pkgTikTok from 'tiktok-live-connector';
+
+const WebcastPushConnection = pkgTikTok.WebcastPushConnection || pkgTikTok.default?.WebcastPushConnection || pkgTikTok;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,11 +73,18 @@ async function connectToTikTok(rawUsername) {
   broadcastTikTokStatus();
 
   try {
-    tiktokConnection = new TikTokLiveConnection(username, {
+    tiktokConnection = new WebcastPushConnection(username, {
       enableExtendedGiftInfo: true,
       requestOptions: {
         timeout: 10000
       }
+    });
+
+    tiktokConnection.on('error', (err) => {
+      console.warn(`[TikTok] Error de conexión: ${err?.message || err}`);
+      connectionStatus = 'error';
+      statusMessage = `Error: ${err?.message || 'Error de conexión con TikTok'}`;
+      broadcastTikTokStatus();
     });
 
     // 1. Taps / Likes
@@ -270,10 +279,26 @@ app.get('*', (_req, res) => {
 httpServer.listen(PORT, HOST, () => {
   console.log(`\n======================================================`);
   console.log(`🎙️ GARABATO COMEDY CLUB 3D — Servidor Coolify Listo`);
-  console.log(`🌐 Puerto: ${PORT} | Host: ${HOST}`);
-  console.log(`📱 Enlace Móvil: http://${HOST}:${PORT}/mobile.html`);
-  console.log(`🎛️ Panel Admin:  http://${HOST}:${PORT}/admin.html`);
-  console.log(`🖥️ Show PC:      http://${HOST}:${PORT}/show.html`);
-  console.log(`🩺 Healthcheck:  http://${HOST}:${PORT}/health`);
+  console.log(`🌐 Puerto Principal: ${PORT} | Host: ${HOST}`);
+  console.log(`📱 Enlace Móvil:     http://${HOST}:${PORT}/mobile.html`);
+  console.log(`🎛️ Panel Admin:      http://${HOST}:${PORT}/admin.html`);
+  console.log(`🖥️ Show PC:          http://${HOST}:${PORT}/show.html`);
+  console.log(`🩺 Healthcheck:      http://${HOST}:${PORT}/health`);
   console.log(`======================================================\n`);
 });
+
+// Soporte automático para Coolify: si Traefik está configurado en el puerto 80 y PORT=3000 (o viceversa),
+// abrimos también el puerto alternativo para garantizar 100% que el proxy de Coolify nunca dé 503.
+const ALT_PORT = PORT === 80 ? 3000 : 80;
+try {
+  const altServer = createServer(app);
+  io.attach(altServer);
+  altServer.listen(ALT_PORT, HOST, () => {
+    console.log(`🌐 Puerto Alternativo Coolify activo en http://${HOST}:${ALT_PORT}`);
+  }).on('error', (err) => {
+    // Si el puerto está en uso o no hay permisos suficientes (ej. Windows sin admin), no detiene el servidor
+    console.log(`(Puerto alternativo ${ALT_PORT} no enlazado: ${err.message})`);
+  });
+} catch (e) {
+  // Ignorar en entornos restringidos
+}
