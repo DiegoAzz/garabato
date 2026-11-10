@@ -967,6 +967,7 @@ export function initAdminApp() {
   // 14. GESTIÓN DE CONEXIÓN CON TIKTOK LIVE
   // ==========================================
   const tiktokUserInput = document.getElementById('tiktok-user-input');
+  const tiktokSessionInput = document.getElementById('tiktok-session-input');
   const btnTiktokConnect = document.getElementById('btn-tiktok-connect');
   const tiktokLiveBadge = document.getElementById('tiktok-live-badge');
   const tiktokStatusPill = document.getElementById('tiktok-status-pill');
@@ -978,6 +979,8 @@ export function initAdminApp() {
   if (tiktokUserInput) {
     const savedUser = localStorage.getItem('garabato_tiktok_user');
     if (savedUser) tiktokUserInput.value = savedUser;
+    const savedSession = localStorage.getItem('garabato_tiktok_session');
+    if (savedSession && tiktokSessionInput) tiktokSessionInput.value = savedSession;
   }
 
   function updateTikTokUI(state) {
@@ -1230,13 +1233,15 @@ export function initAdminApp() {
         updateTikTokUI({ status: 'disconnected', message: 'Desconectado de TikTok LIVE.' });
       } else {
         const username = (tiktokUserInput && tiktokUserInput.value || '').trim();
+        const sessionId = (tiktokSessionInput && tiktokSessionInput.value || '').trim();
         if (!username) {
           alert('Por favor ingresa tu nombre de usuario de TikTok (ej: CreandoConIA)');
           return;
         }
         localStorage.setItem('garabato_tiktok_user', username);
+        if (sessionId) localStorage.setItem('garabato_tiktok_session', sessionId);
         updateTikTokUI({ status: 'connecting', username, message: `Conectando con @${username}...` });
-        syncBridge.connectTikTok(username);
+        syncBridge.connectTikTok(username, sessionId);
       }
     });
   }

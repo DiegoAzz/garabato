@@ -667,6 +667,100 @@ export function initShowApp() {
   });
 
   // ==========================================
+  // SLIDER / CARRUSEL AUTOMÁTICO DE CHISTES Y REGALOS
+  // ==========================================
+  const sliderEl = document.getElementById('jokes-auto-slider');
+  const sliderCardWrap = document.getElementById('slider-card-wrap');
+  const sliderIndexPill = document.getElementById('slider-index-pill');
+  const sliderJokeNumber = document.getElementById('slider-joke-number');
+  const sliderJokeTitle = document.getElementById('slider-joke-title');
+  const sliderTriggerText = document.getElementById('slider-trigger-text');
+  const sliderInstructionNum = document.getElementById('slider-instruction-num');
+  const sliderTimerBar = document.getElementById('slider-timer-bar');
+
+  let currentSliderIdx = 0;
+  let sliderTimer = null;
+  let sliderProgressInterval = null;
+  const SLIDE_DURATION_MS = 5500;
+
+  function getAllJokesList() {
+    const free = jokeManager.getFreeJokes() || [];
+    const vip = jokeManager.getVipJokes() || [];
+    return [...free, ...vip];
+  }
+
+  function displaySlide(index, isManual = false) {
+    const all = getAllJokesList();
+    if (!all.length) return;
+
+    currentSliderIdx = (index + all.length) % all.length;
+    const joke = all[currentSliderIdx];
+    const displayNum = currentSliderIdx + 1;
+
+    if (sliderCardWrap) {
+      sliderCardWrap.classList.add('sliding-out');
+      setTimeout(() => {
+        if (sliderIndexPill) sliderIndexPill.textContent = `#${displayNum} / ${all.length}`;
+        if (sliderJokeNumber) sliderJokeNumber.textContent = `#${displayNum}`;
+        if (sliderJokeTitle) sliderJokeTitle.textContent = joke.title || 'Chiste';
+        if (sliderInstructionNum) sliderInstructionNum.textContent = `#${displayNum}`;
+
+        if (sliderTriggerText) {
+          if (joke.giftName) {
+            sliderTriggerText.innerHTML = `🎁 Regalo: <strong>${joke.giftName}</strong>`;
+          } else {
+            const cur = joke.currentTaps || 0;
+            const req = joke.requiredTaps || 30;
+            sliderTriggerText.innerHTML = `👆 Gratis con Taps: <strong>${cur}/${req}</strong>`;
+          }
+        }
+
+        sliderCardWrap.classList.remove('sliding-out');
+        sliderCardWrap.classList.add('sliding-in');
+        setTimeout(() => sliderCardWrap.classList.remove('sliding-in'), 250);
+      }, 200);
+    }
+
+    resetSliderTimer();
+  }
+
+  function resetSliderTimer() {
+    clearInterval(sliderProgressInterval);
+    clearTimeout(sliderTimer);
+
+    if (!sliderTimerBar) return;
+    let elapsed = 0;
+    const intervalMs = 100;
+    sliderTimerBar.style.width = '0%';
+
+    sliderProgressInterval = setInterval(() => {
+      elapsed += intervalMs;
+      const pct = Math.min(100, (elapsed / SLIDE_DURATION_MS) * 100);
+      sliderTimerBar.style.width = `${pct}%`;
+    }, intervalMs);
+
+    sliderTimer = setTimeout(() => {
+      displaySlide(currentSliderIdx + 1);
+    }, SLIDE_DURATION_MS);
+  }
+
+  if (sliderEl) {
+    sliderEl.addEventListener('click', () => {
+      unlockAudio();
+      displaySlide(currentSliderIdx + 1, true);
+    });
+    // Iniciar primer slide
+    displaySlide(0);
+  }
+
+  function jumpSliderToJoke(num) {
+    const all = getAllJokesList();
+    if (num >= 1 && num <= all.length) {
+      displaySlide(num - 1, true);
+    }
+  }
+
+  // ==========================================
   // SISTEMA DE TAPS Y CORAZONES FLOTANTES REALES TIKTOK LIVE
   // ==========================================
   const TIKTOK_HEARTS = ['❤️', '💖', '💕', '💓', '💗', '🧡', '💜', '💙'];
@@ -925,6 +1019,7 @@ export function initShowApp() {
       const match = comment.match(/(?:#|chiste\s*|el\s*)?(\b[1-9]\b|\b[1-4][0-9]\b|\b50\b)/i);
       if (match) {
         const jokeNumber = parseInt(match[1], 10);
+        jumpSliderToJoke(jokeNumber);
         const freeJokes = jokeManager.getFreeJokes();
         if (jokeNumber >= 1 && jokeNumber <= freeJokes.length) {
           const selectedJoke = freeJokes[jokeNumber - 1];

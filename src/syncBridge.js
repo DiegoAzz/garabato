@@ -122,16 +122,16 @@ export class SyncBridge {
     return message;
   }
 
-  connectTikTok(username) {
+  connectTikTok(username, sessionId = null) {
     if (this.socket) {
-      this.socket.emit('TIKTOK_CONNECT_REQUEST', { username });
+      this.socket.emit('TIKTOK_CONNECT_REQUEST', { username, sessionId });
     }
     // También llamar al endpoint REST como respaldo
     if (typeof fetch !== 'undefined') {
       fetch('/api/tiktok/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
+        body: JSON.stringify({ username, sessionId })
       }).catch(() => {});
     }
   }

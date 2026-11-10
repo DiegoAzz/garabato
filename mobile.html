@@ -64,25 +64,144 @@
       font-size: 7.5px !important;
     }
 
-    /* Paneles laterales ultra-compactos para dejar libre al comediante */
+    /* Paneles laterales reemplazados por el Slider Automático en móvil */
     .jokes-side-panel {
-      top: calc(var(--tiktok-safe-top) + 95px) !important;
-      width: 104px !important;
-      max-height: 175px !important;
-      padding: 3px !important;
-      opacity: 0.9;
+      display: none !important;
     }
 
-    .jokes-scroll-list {
-      max-height: 140px !important;
+    /* ========================================================
+       SLIDER / CARRUSEL AUTOMÁTICO DE CHISTES Y REGALOS
+       ======================================================== */
+    .jokes-auto-slider {
+      position: absolute;
+      top: calc(var(--tiktok-safe-top) + 86px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 20px);
+      max-width: 390px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92));
+      backdrop-filter: blur(10px);
+      border: 1.5px solid rgba(236, 72, 153, 0.5);
+      border-radius: 14px;
+      padding: 8px 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(236, 72, 153, 0.25);
+      z-index: 60;
+      pointer-events: auto;
+      transition: border-color 0.3s ease;
     }
 
-    .vip-side {
-      left: 4px !important;
+    .slider-badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
     }
 
-    .free-side {
-      right: 4px !important;
+    .slider-live-label {
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #ec4899;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .slider-index-pill {
+      font-size: 8px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 1px 7px;
+      border-radius: 8px;
+    }
+
+    .slider-card-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .slider-card-wrap.sliding-out {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    .slider-card-wrap.sliding-in {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+
+    .slider-number-box {
+      background: linear-gradient(135deg, #f43f5e, #ec4899);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      box-shadow: 0 3px 8px rgba(244, 63, 94, 0.4);
+    }
+
+    .slider-big-num {
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    .slider-info-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .slider-joke-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slider-joke-trigger {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9px;
+      font-weight: 800;
+      color: #facc15;
+    }
+
+    .slider-footer-row {
+      margin-top: 5px;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8px;
+      color: #cbd5e1;
+    }
+
+    .slider-progress-track {
+      width: 50px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .slider-timer-bar {
+      height: 100%;
+      width: 0%;
+      background: #ec4899;
+      transition: width 0.1s linear;
     }
 
     /* Subtítulos dinámicos ubicados justo sobre el chat de TikTok */
@@ -318,6 +437,36 @@
       <div class="energy-label">RISÓMETRO DEL PÚBLICO</div>
       <div class="energy-track">
         <div id="energy-fill" class="energy-fill" style="width: 50%;"></div>
+      </div>
+    </div>
+
+    <!-- SLIDER / CARRUSEL AUTOMÁTICO DE CHISTES EN VIVO (CON NÚMERO Y REGALO) -->
+    <div id="jokes-auto-slider" class="jokes-auto-slider">
+      <div class="slider-badge-row">
+        <span class="slider-live-label">🎡 ELIGE TU CHISTE EN EL CHAT</span>
+        <span id="slider-index-pill" class="slider-index-pill">#1 / 50</span>
+      </div>
+
+      <div class="slider-body">
+        <div id="slider-card-wrap" class="slider-card-wrap">
+          <div class="slider-number-box">
+            <span id="slider-joke-number" class="slider-big-num">#1</span>
+          </div>
+          <div class="slider-info-box">
+            <strong id="slider-joke-title" class="slider-joke-title">El calor costeño</strong>
+            <div id="slider-joke-trigger" class="slider-joke-trigger">
+              <span class="trigger-icon">🎁</span>
+              <span id="slider-trigger-text">Regalo: 🌹 Rosa o 30 Taps</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-footer-row">
+        <span class="slider-instruction">💬 Escribe <strong id="slider-instruction-num" style="color: #facc15;">#1</strong> en el chat para pedirlo</span>
+        <div class="slider-progress-track">
+          <div id="slider-timer-bar" class="slider-timer-bar"></div>
+        </div>
       </div>
     </div>
 
