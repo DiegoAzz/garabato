@@ -494,8 +494,8 @@ export function initShowApp() {
         } else if (act === 'CUENTO' || act === 'STORY') {
           cameraDirector.lockShot('PRIMERA_PLANA', 8000);
           singer.animController.triggerWelcomeReaction(cleanU, 4000);
-          showSubtitlePhrase(`💌 ¡Manda un regalo y cuéntame tu historia por chat @${cleanU}!`, '💌', false);
-          audioEngine.speakActorLine(`¡Atención mi gente! Si mandas cualquier regalo y me escribes tu chiste en el chat o por el interno, ¡lo cuento aquí mismo en la tarima para todo el público!`, {
+          showSubtitlePhrase(`💌 ¡Un saludo especial para @${cleanU}!`, '💌', false);
+          audioEngine.speakActorLine(`¡Atención mi gente! ¡Un saludo especial para ${cleanU} que está prendiendo la pista de baile hoy!`, {
             pitch: 1.0,
             rate: 1.04
           });
@@ -518,248 +518,165 @@ export function initShowApp() {
   // ==========================================
   // RENDERIZADO INTELIGENTE DE CHISTES PARA TIKTOK LIVE
   // ==========================================
-  let vipCarouselPage = 0;
-  const VIP_ITEMS_PER_PAGE = 4;
+  // PANELES LATERALES 100% DJ Y PISTA DE BAILE (SIN CHISTES)
+  // ==========================================
+  const sliderEl = document.getElementById('jokes-auto-slider');
+  if (sliderEl) {
+    sliderEl.style.display = 'none';
+  }
 
-  // Auto-carrusel suave para los regalos VIP cada 7 segundos
-  setInterval(() => {
-    const vipJokes = jokeManager.getVipJokes();
-    if (vipJokes.length > VIP_ITEMS_PER_PAGE) {
-      vipCarouselPage = (vipCarouselPage + 1) % Math.ceil(vipJokes.length / VIP_ITEMS_PER_PAGE);
-      renderJokesOnScreen();
+  const DJ_VIP_EFFECTS = [
+    {
+      id: 'fx_scratch',
+      icon: '💿',
+      title: 'Scratch en Tornamesa',
+      gift: '🎮 Control',
+      action: () => {
+        singer.animController.triggerDjScratch(4500);
+        audioEngine.playVinylScratch();
+        showSubtitlePhrase('💿 ¡SCRATCH EN TORNAMESA! 🔥', '💿', true);
+      }
+    },
+    {
+      id: 'fx_drop',
+      icon: '💣',
+      title: 'Bass Drop Explosivo',
+      gift: '💥 Super GG',
+      action: () => {
+        singer.animController.triggerDjDrop(5000);
+        audioEngine.playBassDrop();
+        cameraDirector.shake(0.5, 800);
+        stage.burstConfetti();
+        showSubtitlePhrase('💣 ¡BASS DROP EN LA PISTA! 💥', '💣', true);
+      }
+    },
+    {
+      id: 'fx_dance',
+      icon: '💃',
+      title: 'Baile Loco en Tarima',
+      gift: '💖 Corazón',
+      action: () => {
+        enqueueActorAction('BAILAR', 'EspectadorVIP', true, '💖 Corazón');
+      }
+    },
+    {
+      id: 'fx_king',
+      icon: '👑',
+      title: 'Rey de la Noche VIP',
+      gift: '👑 Corona',
+      action: () => {
+        enqueueActorAction('CORONAR', 'EspectadorVIP', true, '👑 Corona');
+        stage.burstConfetti();
+        audioEngine.playCheer();
+      }
+    },
+    {
+      id: 'fx_confetti',
+      icon: '🎉',
+      title: 'Lluvia de Confeti',
+      gift: '🍩 Dona',
+      action: () => {
+        stage.burstConfetti();
+        audioEngine.playCheer();
+        audioEngine.playCrowdApplause(4.0);
+        showSubtitlePhrase('🎉 ¡FIESTA TOTAL EN EL CLUB! 🎉', '🎉', true);
+      }
+    },
+    {
+      id: 'fx_tomato',
+      icon: '🍅',
+      title: 'Tomatazo al DJ',
+      gift: '🌹 Rosa',
+      action: () => {
+        enqueueActorAction('TOMATE', 'EspectadorVIP', true, '🌹 Rosa');
+      }
     }
-  }, 7000);
+  ];
 
-  function renderJokesOnScreen() {
-    const vipJokes = jokeManager.getVipJokes();
-    const freeJokes = jokeManager.getFreeJokes();
-    const activeFreeJoke = jokeManager.getActiveFreeJoke();
-    const activeIndex = freeJokes.findIndex(j => j.id === activeFreeJoke?.id);
+  const DJ_CLUB_MODES = [
+    {
+      icon: '💬',
+      title: 'Bocadillo 3D sobre tu cabeza',
+      meta: 'Escribe en el chat para salir',
+      badge: 'CHAT ACTIVO'
+    },
+    {
+      icon: '👗',
+      title: 'Cambiar a Chica o Chico',
+      meta: 'Escribe "chica" o "chico"',
+      badge: 'COMANDO'
+    },
+    {
+      icon: '💃',
+      title: 'Paso de Salsa o Perreo',
+      meta: 'Escribe "salsa" o "perreo"',
+      badge: 'BAILE'
+    },
+    {
+      icon: '🔥',
+      title: 'Subir Energía del Club',
+      meta: 'Toca la pantalla o manda likes',
+      badge: 'FIESTÓMETRO'
+    }
+  ];
 
-    // 1. COLUMNA IZQUIERDA: MENÚ DE REGALOS VIP (Rotativo suave)
+  function renderDjPanels() {
+    // 1. COLUMNA IZQUIERDA: EFECTOS VIP DE DJ POR REGALO
     if (jokesVipListEl) {
       jokesVipListEl.innerHTML = '';
-      const startIdx = vipCarouselPage * VIP_ITEMS_PER_PAGE;
-      const visibleVip = vipJokes.slice(startIdx, startIdx + VIP_ITEMS_PER_PAGE);
-
-      visibleVip.forEach(joke => {
+      DJ_VIP_EFFECTS.forEach(fx => {
         const item = document.createElement('div');
         item.className = 'joke-card-item vip-item';
         item.innerHTML = `
           <div class="joke-card-top">
-            <span class="joke-card-icon">${joke.giftName?.slice(0, 2) || '👑'}</span>
-            <span class="joke-card-title">${joke.title}</span>
+            <span class="joke-card-icon">${fx.icon}</span>
+            <span class="joke-card-title">${fx.title}</span>
           </div>
           <div class="joke-card-meta">
             <span>Regalo:</span>
-            <strong>${joke.giftName || 'VIP'}</strong>
+            <strong>${fx.gift}</strong>
           </div>
         `;
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           unlockAudio();
           item.classList.add('active-target');
-          setTimeout(() => item.classList.remove('active-target'), 200);
-          if (joke.action) {
-            enqueueActorAction(joke.action, 'EspectadorVIP', true, joke.giftName);
-          } else if (joke.id === 'vip_tomate' || joke.title?.toLowerCase().includes('tomate') || joke.giftName?.toLowerCase().includes('rosa')) {
-            enqueueActorAction('TOMATE', 'EspectadorVIP', true, joke.giftName || '🌹 Rosa');
-          } else if (joke.title?.toLowerCase().includes('bailar')) {
-            enqueueActorAction('BAILAR', 'EspectadorVIP', true, joke.giftName || '🎵 TikTok');
-          } else if (joke.title?.toLowerCase().includes('cantar')) {
-            enqueueActorAction('CANTAR', 'EspectadorVIP', true, joke.giftName || '🎤 Micrófono de Oro');
-          } else if (joke.title?.toLowerCase().includes('llorar')) {
-            enqueueActorAction('LLORAR', 'EspectadorVIP', true, joke.giftName || '💖 Corazón coreano');
-          } else if (joke.title?.toLowerCase().includes('flexion')) {
-            enqueueActorAction('FLEXIONES', 'EspectadorVIP', true, joke.giftName || '🎮 Control Retro');
-          } else if (joke.title?.toLowerCase().includes('estatua')) {
-            enqueueActorAction('ESTATUA', 'EspectadorVIP', true, joke.giftName || '🦖 Pequeño dino');
-          } else if (joke.title?.toLowerCase().includes('rabia')) {
-            enqueueActorAction('RABIA', 'EspectadorVIP', true, joke.giftName || '💥 Super GG');
-          } else {
-            enqueueJoke(joke, 'EspectadorVIP', true, joke.giftName);
-          }
+          setTimeout(() => item.classList.remove('active-target'), 250);
+          fx.action();
         });
         jokesVipListEl.appendChild(item);
       });
     }
 
-    // 2. COLUMNA DERECHA: META DE TAPS DESTACADA + 2 PRÓXIMOS
+    // 2. COLUMNA DERECHA: MODOS DE PISTA Y COMANDOS DE BAILE
     if (jokesFreeListEl) {
       jokesFreeListEl.innerHTML = '';
-      if (!activeFreeJoke) return;
-
-      const currentTaps = activeFreeJoke.currentTaps || 0;
-      const reqTaps = activeFreeJoke.requiredTaps || 30;
-      const pct = Math.min(100, Math.round((currentTaps / reqTaps) * 100));
-      const displayIndex = (activeIndex >= 0 ? activeIndex : 0) + 1;
-
-      // TARJETA DE CHISTE ACTIVO GRANDE Y DESTACADO
-      const activeCard = document.createElement('div');
-      activeCard.className = 'joke-card-item free-item active-target';
-      activeCard.style.padding = '6px 8px';
-      activeCard.style.background = 'rgba(236, 72, 153, 0.25)';
-      activeCard.style.border = '2px solid #ec4899';
-      activeCard.style.boxShadow = '0 0 14px rgba(236, 72, 153, 0.6)';
-      activeCard.innerHTML = `
-        <div class="joke-card-top" style="margin-bottom: 2px;">
-          <span class="joke-card-icon" style="font-size: 13px;">🎯</span>
-          <strong class="joke-card-title" style="font-size: 9px; color: #fff;">#${displayIndex} ${activeFreeJoke.title}</strong>
-        </div>
-        <div class="joke-card-meta" style="margin-bottom: 3px;">
-          <span style="color: #ec4899; font-weight: 800; font-size: 8px;">🔥 META EN JUEGO</span>
-          <strong style="font-size: 9px; color: #f43f5e;">${currentTaps}/${reqTaps} Risas 😂</strong>
-        </div>
-        <div class="joke-progress-track" style="height: 5px;">
-          <div class="joke-progress-fill" style="width: ${pct}%;"></div>
-        </div>
-        <div style="margin-top: 4px; font-size: 7px; color: #cbd5e1; text-align: center; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 3px;">
-          💬 Escribe <strong>#${displayIndex}</strong> o cualquier número en el chat
-        </div>
-      `;
-      jokesFreeListEl.appendChild(activeCard);
-
-      // Mostrar los siguientes 2 chistes en la lista (próximos en fila)
-      for (let offset = 1; offset <= 2; offset++) {
-        const nextIdx = ((activeIndex >= 0 ? activeIndex : 0) + offset) % freeJokes.length;
-        const nextJoke = freeJokes[nextIdx];
-        if (!nextJoke) continue;
-
-        const nextCard = document.createElement('div');
-        nextCard.className = 'joke-card-item free-item';
-        nextCard.style.opacity = '0.75';
-        nextCard.innerHTML = `
+      DJ_CLUB_MODES.forEach(mode => {
+        const card = document.createElement('div');
+        card.className = 'joke-card-item free-item';
+        card.innerHTML = `
           <div class="joke-card-top">
-            <span class="joke-card-icon" style="font-size: 8px;">🔜</span>
-            <span class="joke-card-title" style="font-size: 7.5px;">#${nextIdx + 1} ${nextJoke.title}</span>
+            <span class="joke-card-icon">${mode.icon}</span>
+            <span class="joke-card-title">${mode.title}</span>
           </div>
           <div class="joke-card-meta">
-            <span style="font-size: 6.5px;">Siguiente</span>
-            <span style="font-size: 6.5px; color: #94a3b8;">${nextJoke.requiredTaps || 30} Risas</span>
+            <span>${mode.meta}</span>
+            <strong style="color: #38bdf8;">${mode.badge}</strong>
           </div>
         `;
-        nextCard.addEventListener('click', (e) => {
+        card.addEventListener('click', (e) => {
           e.stopPropagation();
           unlockAudio();
-          jokeManager.setActiveFreeJoke(nextJoke.id);
-          renderJokesOnScreen();
+          audience.triggerFrenzy(3.5);
+          audience.increaseEnergy(8);
         });
-        jokesFreeListEl.appendChild(nextCard);
-      }
+        jokesFreeListEl.appendChild(card);
+      });
     }
   }
 
   // Render inicial
-  renderJokesOnScreen();
-
-  // Escuchar si el catálogo de chistes cambió en /admin
-  syncBridge.on('JOKES_CATALOG_UPDATE', (payload) => {
-    if (payload && payload.jokes) {
-      jokeManager.jokes = payload.jokes;
-      renderJokesOnScreen();
-    }
-  });
-
-  syncBridge.on('SET_ACTIVE_FREE_JOKE', (payload) => {
-    if (payload && payload.jokeId) {
-      jokeManager.activeFreeJokeId = payload.jokeId;
-      renderJokesOnScreen();
-    }
-  });
-
-  // ==========================================
-  // SLIDER / CARRUSEL AUTOMÁTICO DE CHISTES Y REGALOS
-  // ==========================================
-  const sliderEl = document.getElementById('jokes-auto-slider');
-  const sliderCardWrap = document.getElementById('slider-card-wrap');
-  const sliderIndexPill = document.getElementById('slider-index-pill');
-  const sliderJokeNumber = document.getElementById('slider-joke-number');
-  const sliderJokeTitle = document.getElementById('slider-joke-title');
-  const sliderTriggerText = document.getElementById('slider-trigger-text');
-  const sliderInstructionNum = document.getElementById('slider-instruction-num');
-  const sliderTimerBar = document.getElementById('slider-timer-bar');
-
-  let currentSliderIdx = 0;
-  let sliderTimer = null;
-  let sliderProgressInterval = null;
-  const SLIDE_DURATION_MS = 5500;
-
-  function getAllJokesList() {
-    const free = jokeManager.getFreeJokes() || [];
-    const vip = jokeManager.getVipJokes() || [];
-    return [...free, ...vip];
-  }
-
-  function displaySlide(index, isManual = false) {
-    const all = getAllJokesList();
-    if (!all.length) return;
-
-    currentSliderIdx = (index + all.length) % all.length;
-    const joke = all[currentSliderIdx];
-    const displayNum = currentSliderIdx + 1;
-
-    if (sliderCardWrap) {
-      sliderCardWrap.classList.add('sliding-out');
-      setTimeout(() => {
-        if (sliderIndexPill) sliderIndexPill.textContent = `#${displayNum} / ${all.length}`;
-        if (sliderJokeNumber) sliderJokeNumber.textContent = `#${displayNum}`;
-        if (sliderJokeTitle) sliderJokeTitle.textContent = joke.title || 'Chiste';
-        if (sliderInstructionNum) sliderInstructionNum.textContent = `#${displayNum}`;
-
-        if (sliderTriggerText) {
-          if (joke.giftName) {
-            sliderTriggerText.innerHTML = `🎁 Regalo: <strong>${joke.giftName}</strong>`;
-          } else {
-            const cur = joke.currentTaps || 0;
-            const req = joke.requiredTaps || 30;
-            sliderTriggerText.innerHTML = `😂 Gratis con Risas: <strong>${cur}/${req}</strong>`;
-          }
-        }
-
-        sliderCardWrap.classList.remove('sliding-out');
-        sliderCardWrap.classList.add('sliding-in');
-        setTimeout(() => sliderCardWrap.classList.remove('sliding-in'), 250);
-      }, 200);
-    }
-
-    resetSliderTimer();
-  }
-
-  function resetSliderTimer() {
-    clearInterval(sliderProgressInterval);
-    clearTimeout(sliderTimer);
-
-    if (!sliderTimerBar) return;
-    let elapsed = 0;
-    const intervalMs = 100;
-    sliderTimerBar.style.width = '0%';
-
-    sliderProgressInterval = setInterval(() => {
-      elapsed += intervalMs;
-      const pct = Math.min(100, (elapsed / SLIDE_DURATION_MS) * 100);
-      sliderTimerBar.style.width = `${pct}%`;
-    }, intervalMs);
-
-    sliderTimer = setTimeout(() => {
-      displaySlide(currentSliderIdx + 1);
-    }, SLIDE_DURATION_MS);
-  }
-
-  if (sliderEl) {
-    sliderEl.addEventListener('click', () => {
-      unlockAudio();
-      displaySlide(currentSliderIdx + 1, true);
-    });
-    // Iniciar primer slide
-    displaySlide(0);
-  }
-
-  function jumpSliderToJoke(num) {
-    const all = getAllJokesList();
-    if (num >= 1 && num <= all.length) {
-      displaySlide(num - 1, true);
-    }
-  }
+  renderDjPanels();
 
   // ==========================================
   // SISTEMA DE TAPS Y CORAZONES FLOTANTES REALES TIKTOK LIVE
@@ -786,21 +703,7 @@ export function initShowApp() {
     markActivity();
     unlockAudio();
     spawnFloatingHeart(e.clientX, e.clientY);
-
-    // Sumar taps al chiste gratis activo con avance automático
-    const result = jokeManager.addTapsToActiveJoke(1);
-    if (result) {
-      renderJokesOnScreen();
-      if (result.isCompleted) {
-        enqueueJoke(result.joke, 'Comunidad de Risas 😂', false);
-        // Avanzar automáticamente al siguiente chiste en el repertorio
-        const freeJokes = jokeManager.getFreeJokes();
-        const currentIdx = freeJokes.findIndex(j => j.id === result.joke.id);
-        const nextIdx = (currentIdx + 1) % freeJokes.length;
-        jokeManager.setActiveFreeJoke(freeJokes[nextIdx].id);
-        renderJokesOnScreen();
-      }
-    }
+    audience.increaseEnergy(2);
   });
 
   // Desbloqueo universal de audio
@@ -1123,26 +1026,27 @@ export function initShowApp() {
         }
       }
 
-      if (cleanGift.includes('corazon coreano')) {
-        enqueueActorAction('LLORAR', user, true, giftName);
+      if (cleanGift.includes('corazon') || cleanGift.includes('dance') || cleanGift.includes('baile')) {
+        enqueueActorAction('BAILAR', user, true, giftName);
         return;
-      } else if (cleanGift.includes('control retro') || cleanGift.includes('pesa')) {
-        enqueueActorAction('FLEXIONES', user, true, giftName);
+      } else if (cleanGift.includes('control') || cleanGift.includes('retro') || cleanGift.includes('dino')) {
+        singer.animController.triggerDjScratch(4500);
+        audioEngine.playVinylScratch();
+        showSubtitlePhrase(`💿 ¡@${user} ACTIVÓ EL SCRATCH! 🔥`, '💿', true);
         return;
-      } else if (cleanGift.includes('eres increible')) {
-        enqueueActorAction('RABIA', user, true, giftName);
+      } else if (cleanGift.includes('gg') || cleanGift.includes('bomba') || cleanGift.includes('drop')) {
+        singer.animController.triggerDjDrop(5000);
+        audioEngine.playBassDrop();
+        cameraDirector.shake(0.5, 800);
+        stage.burstConfetti();
+        showSubtitlePhrase(`💣 ¡@${user} SOLTÓ EL BASS DROP! 💥`, '💣', true);
         return;
-      } else if (cleanGift.includes('helado')) {
-        enqueueActorAction('ESTATUA', user, true, giftName);
-        return;
-      }
-
-      const matchedJoke = jokeManager.findVipJokeByGift(giftName);
-      if (matchedJoke) {
-        enqueueJoke(matchedJoke, user, true, giftName);
       } else {
-        const defaultVip = jokeManager.getVipJokes()[0];
-        if (defaultVip) enqueueJoke(defaultVip, user, true, giftName);
+        stage.burstConfetti();
+        audioEngine.playCheer();
+        singer.animController.triggerDjScratch(3500);
+        showSubtitlePhrase(`🎁 ¡GRACIAS @${user} POR EL REGALO! 🎉`, '🎁', true);
+        return;
       }
     } else if (action === 'LLORAR' || action === 'CRY') {
       enqueueActorAction('LLORAR', user, false);
@@ -1160,19 +1064,7 @@ export function initShowApp() {
       for (let i = 0; i < numHearts; i++) {
         setTimeout(() => spawnFloatingHeart(), i * 110);
       }
-      const result = jokeManager.addTapsToActiveJoke(count);
-      if (result) {
-        renderJokesOnScreen();
-        if (result.isCompleted) {
-          enqueueJoke(result.joke, user, false);
-          // Avance automático al siguiente chiste
-          const freeJokes = jokeManager.getFreeJokes();
-          const currentIdx = freeJokes.findIndex(j => j.id === result.joke.id);
-          const nextIdx = (currentIdx + 1) % freeJokes.length;
-          jokeManager.setActiveFreeJoke(freeJokes[nextIdx].id);
-          renderJokesOnScreen();
-        }
-      }
+      audience.increaseEnergy(count);
     } else if (action === 'CHAT') {
       const comment = (evt.comment || '').trim();
 
@@ -1266,7 +1158,7 @@ export function initShowApp() {
     (u) => `¡Ojo que llegó ${u}! Mira esa cara de jefe que tiene... ¡Bienvenido, tú tienes el control de la tarima!`,
     (u) => `¡Atención todos, aplausos para ${u} que acaba de entrar! ¡Tú mandas compadre, si quieres ponerme a llorar solo dilo!`,
     (u) => `¡Llegó ${u}! Ya me estaba quedando sin aire, pero como tú mandas, ¡aquí estoy a tu entera disposición!`,
-    (u) => `¡Qué hubo ${u}! Bienvenido al show. Tira una Rosa para un tomatazo o manda risas y buena vibra para chistes gratis.`
+    (u) => `¡Qué hubo ${u}! Bienvenido a la fiesta. Escribe en el chat para salir en la pista o tira una Rosa para un tomatazo al DJ.`
   ];
 
   function handleViewerJoin(user) {
@@ -1302,17 +1194,20 @@ export function initShowApp() {
   const missionTextEl = document.getElementById('mission-text');
   const ctaDynamicTextEl = document.getElementById('cta-dynamic-text');
   const LIVE_MISSION_TIPS = [
-    '🎯 ¡Chiste en juego! Manda risas para completarlo o escribe su número en el chat',
-    '🌹 1 Rosa = Lluvia de Tomates en la cara del actor en la tarima',
-    '👑 Regalos VIP dirigen cada movimiento del actor en tarima',
-    '💬 Escribe un número del 1 al 50 en el chat para elegir el siguiente chiste',
-    '💌 Manda un regalo y escribe tu chiste en el chat/interno ¡lo cuenta en vivo!'
+    '🎧 ¡FIESTA EN VIVO! Sube el volumen y disfruta de la música en tiempo real',
+    '💬 Escribe en el chat y aparecerá tu mensaje bailando sobre tu cabeza',
+    '🌹 1 Rosa = Lluvia de Tomates al DJ en la cabina',
+    '🎮 1 Control = Rayar tornamesas (Scratch en vivo)',
+    '👑 Corona = Coronar al rey de la fiesta con fuegos artificiales',
+    '💣 Regalos VIP sueltan el Bass Drop y pirotecnia en la pista'
   ];
   const LIVE_RULES_TIPS = [
-    '💡 <strong>¿Cómo jugar?</strong> ❤️ Risas = Chiste en Juego | 💬 Escribe un número (1-50) | 🎁 Regalos = Órdenes',
-    '👑 <strong>¡El Público Manda!</strong> Los regalos de TikTok dirigen cada movimiento del actor en tarima.',
-    '🍅 <strong>¡Castigo Cómico!</strong> Manda 1 Rosa y el público lo llena de tomates en vivo.',
-    '💬 <strong>Elige tu Chiste:</strong> Escribe cualquier número del 1 al 50 en el chat para cambiar de chiste.'
+    '💡 <strong>¿Cómo jugar?</strong> 💬 Habla en el chat | 👗 Escribe "chica" o "chico" | 🎁 Regalos = Efectos DJ',
+    '🎧 <strong>¡El DJ en Vivo!</strong> Sube el volumen y disfruta de la música en la pista de baile.',
+    '💬 <strong>Bocadillo 3D:</strong> Cada mensaje que envíes flotará en un cómic sobre tu cabeza.',
+    '💃 <strong>Estilos de Baile:</strong> Escribe "salsa" o "perreo" para cambiar tus pasos en la tarima.',
+    '👑 <strong>Rey del Club:</strong> Envía una Corona para coronarte como el rey de la fiesta.',
+    '🔥 <strong>Fiestómetro:</strong> Toca la pantalla o envía likes para subir la energía al 100%.'
   ];
   let tipIdx = 0;
   setInterval(() => {
@@ -1386,16 +1281,14 @@ export function initShowApp() {
   // ==========================================
   const IDLE_STORAGE_KEY = 'garabato_idle_config';
   const DEFAULT_IDLE_PHRASES = [
-    "¡Oigan! ¿Se durmieron todos o qué? ¡Manden risas y corazones al chat que los chistes son gratis!",
-    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Dejen su buena vibra en el chat!",
-    "¿Dónde está el público más alegre de TikTok? ¡Manden sus risas que el show está que arde!",
-    "¡Epa! ¿Están congelados como estatuas? ¡Manden risas al chat que quiero contar el chiste de los paisas!",
-    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o dejen sus risas en el chat.",
-    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Hagan ruido en el chat con sus risas!",
-    "¡Oigan, una Rosa cuesta una monedita y me ponen a llorar o a bailar! ¡Anímense!",
-    "¡El show de humor interactivo más prendido de TikTok! ¡Desbloqueen chistes gratis con sus risas!",
-    "¡Mueve los dedos, mi rey! ¡Manda corazones y risas para que la fiesta no pare!",
-    "¡Si llegamos a la meta de risas suelto un chiste bomba! ¡A reírse todo el mundo!"
+    "¡A ver mi gente! ¿Dónde está el público de la discoteca? ¡Manden fuego y corazones al chat!",
+    "¡Suelten esos likes mi gente que la fiesta está prendida! ¡A bailar todo el mundo!",
+    "¡Qué energía tan brutal! ¡Escriban en el chat para ver su mensaje bailando en la pista!",
+    "¡DJ Garabato en vivo! ¡Manden sus reacciones para soltar el siguiente temazo!",
+    "¡Arriba las manos los que vinieron a rumbear hoy!",
+    "¡Si llegamos a la meta de likes suelto el Bass Drop con todo el poder!",
+    "¡Manda una Rosa para tirarle tomates al DJ o manda fuego en el chat!",
+    "¡Bienvenidos al Garabato DJ Club 3D! ¡La mejor fiesta interactiva de TikTok LIVE!"
   ];
 
   let idleConfig = {
