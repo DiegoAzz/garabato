@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 
@@ -20,7 +21,16 @@ const io = new Server(httpServer, {
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
-app.use(express.json());
+// Aumentar límite de payload para subida de canciones de audio en base64 (hasta 50MB)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Directorio para almacenar canciones subidas por el DJ
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
 
 // Servir la carpeta dist compilada por Vite
 const distPath = path.join(__dirname, 'dist');
@@ -31,6 +41,81 @@ app.get('/health', (_req, res) => res.status(200).send('OK'));
 app.get('/mobile', (_req, res) => res.sendFile(path.join(distPath, 'mobile.html')));
 app.get('/show', (_req, res) => res.sendFile(path.join(distPath, 'show.html')));
 app.get('/admin', (_req, res) => res.sendFile(path.join(distPath, 'admin.html')));
+
+// ==========================================
+// API REST: SUBIDA Y LISTADO DE MÚSICA PARA DJ
+// ==========================================
+app.get('/api/music/list', (_req, res) => {
+  try {
+    const files = fs.readdirSync(uploadsDir);
+    const musicFiles = files
+      .filter(f => /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(f))
+      .map(f => {
+        const stats = fs.statSync(path.join(uploadsDir, f));
+        return {
+          id: f,
+          name: f.replace(/^\d+[-_]/, '').replace(/\.[^/.]+$/, ''),
+          url: `/uploads/${encodeURIComponent(f)}`,
+          size: stats.size,
+          createdAt: stats.birthtimeMs
+        };
+      })
+      .sort((a, b) => b.createdAt - a.createdAt);
+
+    res.json({ success: true, tracks: musicFiles });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message, tracks: [] });
+  }
+});
+
+app.post('/api/music/upload', (req, res) => {
+  try {
+    const { filename, base64Data } = req.body;
+    if (!filename || !base64Data) {
+      return res.status(400).json({ success: false, error: 'Faltan datos de la canción' });
+    }
+
+    const cleanBase64 = base64Data.replace(/^data:audio\/[a-zA-Z0-9.-]+;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+
+    // Nombre seguro
+    const safeName = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const filePath = path.join(uploadsDir, safeName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const track = {
+      id: safeName,
+      name: filename.replace(/\.[^/.]+$/, ''),
+      url: `/uploads/${encodeURIComponent(safeName)}`,
+      size: buffer.length,
+      createdAt: Date.now()
+    };
+
+    // Notificar a todos los navegadores conectados (Show y Admin)
+    io.emit('MUSIC_TRACK_ADDED', track);
+
+    res.json({ success: true, track });
+  } catch (err) {
+    console.error('[Music Upload Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.delete('/api/music/:id', (req, res) => {
+  try {
+    const safeId = path.basename(req.params.id);
+    const targetPath = path.join(uploadsDir, safeId);
+    if (fs.existsSync(targetPath)) {
+      fs.unlinkSync(targetPath);
+      io.emit('MUSIC_TRACK_DELETED', { id: safeId });
+      return res.json({ success: true });
+    }
+    res.status(404).json({ success: false, error: 'Pista no encontrada' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // Estado global de la conexión con TikTok LIVE
 let tiktokConnection = null;

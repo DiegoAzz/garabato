@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GARABATO DJ & LIVE CLUB 3D — Panel de Control Administrativo</title>
+  <title>GARABATO DJ & LIVE CLUB 3D — Panel Maestro de Control</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body class="admin-page">
@@ -11,8 +11,8 @@
     <!-- Encabezado del Panel -->
     <header class="admin-header">
       <div class="admin-title-box">
-        <h1>GARABATO DJ <span class="highlight">3D</span></h1>
-        <span class="admin-sub">PANEL DE CONTROL DE FIESTA Y DJ EN VIVO</span>
+        <h1>GARABATO DJ <span class="highlight">CLUB 3D</span></h1>
+        <span class="admin-sub">PLATAFORMA MAESTRA DE DJ EN VIVO • MÚSICA PROPIA & CHAT 3D</span>
       </div>
       <div class="admin-header-right">
         <span id="status-show-connection" class="status-badge">● Esperando /show</span>
@@ -23,9 +23,133 @@
     </header>
 
     <main class="admin-grid">
-      <!-- COLUMNA 1: MICRÓFONO EN VIVO & CONSOLA DJ -->
+      <!-- ==========================================
+           COLUMNA 1: DECK DE MÚSICA PERSONALIZADA & PLAYLIST
+           ========================================== -->
       <section class="admin-card">
-        <!-- MÓDULO 1: MICRÓFONO EN VIVO (VOZ HUMANA - ANTI-BAN TIKTOK) -->
+        <div class="card-header-row">
+          <h2 class="card-title" style="color: #c084fc;">🎧 Deck & Música del DJ</h2>
+          <span id="music-count-badge" class="counter">0 pistas</span>
+        </div>
+        <p class="card-desc">
+          Sube tus propias canciones (MP3, WAV, OGG) o pega una URL de transmisión. La música se reproduce en <strong>/show</strong> y el público bailará automáticamente al ritmo de los bajos y BPM.
+        </p>
+
+        <!-- Subida de Música Personalizada -->
+        <div class="dj-music-deck-card">
+          <!-- Dropzone para arrastrar o hacer clic -->
+          <div id="dj-upload-dropzone" class="dj-upload-dropzone">
+            <span class="dj-upload-icon">📁</span>
+            <strong style="color: #38bdf8; font-size: 13px;">Arrastra tus canciones MP3 / WAV aquí</strong>
+            <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 8px 0;">o haz clic para seleccionar archivo desde tu dispositivo</p>
+            <input type="file" id="dj-file-input" accept="audio/*" style="display: none;" />
+            <button type="button" id="btn-select-file" class="btn-action-small" style="background: #6366f1; color: #fff; font-weight: 700; padding: 6px 14px; border-radius: 8px;">
+              Seleccionar Audio
+            </button>
+          </div>
+
+          <!-- Estado de Subida -->
+          <div id="dj-upload-status" style="display: none; font-size: 11px; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; text-align: center;"></div>
+
+          <!-- O pegar URL de transmisión externa -->
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="dj-stream-url" style="font-size: 11px;">O reproducir desde URL directa (MP3 / Radio Web)</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="url" id="dj-stream-url" placeholder="https://ejemplo.com/audio.mp3" style="flex: 1; padding: 7px; font-size: 11px;" />
+              <button type="button" id="btn-play-stream-url" class="btn-action-small" style="background: #10b981; color: #fff; font-weight: 800; white-space: nowrap;">
+                ▶ Cargar URL
+              </button>
+            </div>
+          </div>
+
+          <!-- Banner de Pista Sonando Ahora Mismo -->
+          <div id="dj-now-playing-banner" class="dj-now-playing-banner">
+            <div style="overflow: hidden; margin-right: 8px;">
+              <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85;">▶ SONANDO EN VIVO</div>
+              <strong id="dj-now-playing-title" style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">Ninguna pista sonando</strong>
+            </div>
+            <div class="dj-equalizer-bars">
+              <span class="dj-eq-bar"></span>
+              <span class="dj-eq-bar"></span>
+              <span class="dj-eq-bar"></span>
+              <span class="dj-eq-bar"></span>
+            </div>
+          </div>
+
+          <!-- Control de Volumen Maestro de Música -->
+          <div class="form-group" style="margin-bottom: 12px;">
+            <div class="label-with-counter">
+              <label for="dj-master-volume" style="font-size: 11px;">Volumen de Música en /show</label>
+              <span id="dj-volume-label" class="counter">85%</span>
+            </div>
+            <input type="range" id="dj-master-volume" min="0" max="100" value="85" />
+          </div>
+
+          <!-- Lista de Canciones Subidas -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">
+              BIBLIOTECA DE PISTAS SUBIDAS
+            </label>
+            <button type="button" id="btn-refresh-playlist" class="btn-text-action" style="font-size: 10px;">
+              🔄 Actualizar
+            </button>
+          </div>
+
+          <div id="dj-playlist-list" class="dj-playlist-container">
+            <div style="padding: 18px; text-align: center; color: #64748b; font-size: 11px;">
+              Cargando pistas de música...
+            </div>
+          </div>
+
+          <button type="button" id="btn-stop-all-music" class="btn-dj-stop" style="width: 100%; margin-top: 4px; padding: 8px;">
+            ⏹ DETENER TODA LA MÚSICA
+          </button>
+        </div>
+
+        <!-- Sintetizador de Ritmos Procedurales de Club -->
+        <h2 class="card-title mt-4" style="color: #38bdf8;">⚡ Ritmos Electrónicos del Club</h2>
+        <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
+          Activa ritmos bailables sintetizados al vuelo si no tienes canciones a mano.
+        </p>
+
+        <div class="dj-genre-grid">
+          <button type="button" class="btn-dj-genre is-active" data-genre="EDM">
+            <span>🔥 EDM Festival</span>
+            <span class="genre-bpm">128 BPM</span>
+          </button>
+          <button type="button" class="btn-dj-genre" data-genre="GUARACHA">
+            <span>🌴 Guaracha Tribal</span>
+            <span class="genre-bpm">130 BPM</span>
+          </button>
+          <button type="button" class="btn-dj-genre" data-genre="REGGAETON">
+            <span>💃 Reggaetón Dembow</span>
+            <span class="genre-bpm">96 BPM</span>
+          </button>
+          <button type="button" class="btn-dj-genre" data-genre="DISCO">
+            <span>🕺 Nu-Disco Funk</span>
+            <span class="genre-bpm">122 BPM</span>
+          </button>
+          <button type="button" class="btn-dj-genre" data-genre="TECH_HOUSE" style="grid-column: span 2;">
+            <span>⚡ Tech House Club</span>
+            <span class="genre-bpm">126 BPM</span>
+          </button>
+        </div>
+
+        <div class="dj-transport-row">
+          <button type="button" id="btn-dj-play-synth" class="btn-dj-play">
+            <span>▶ REPRODUCIR RITMO</span>
+          </button>
+          <button type="button" id="btn-dj-stop-synth" class="btn-dj-stop">
+            <span>⏹ DETENER</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           COLUMNA 2: MICRÓFONO EN VIVO & CONSOLA DE EFECTOS DJ
+           ========================================== -->
+      <section class="admin-card">
+        <!-- MÓDULO: MICRÓFONO EN VIVO (VOZ HUMANA - ANTI-BAN TIKTOK) -->
         <div id="card-human-mic" class="mic-control-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h2 style="font-size: 15px; font-weight: 900; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
@@ -36,7 +160,7 @@
             </span>
           </div>
           <p class="card-desc" style="font-size: 11px; margin-bottom: 10px;">
-            Habla por tu micrófono cuando desees: TikTok detectará voz humana real en vivo, el muñeco 3D abrirá la boca a tu ritmo y la música bajará automáticamente (auto-ducking).
+            Habla cuando desees: TikTok detectará voz humana real en vivo, el muñeco DJ moverá la boca a tu ritmo y la música bajará automáticamente (auto-ducking).
           </p>
 
           <button type="button" id="btn-toggle-mic" class="btn-mic-main">
@@ -79,440 +203,88 @@
           </div>
         </div>
 
-        <!-- MÓDULO 2: CONSOLA MAESTRA DE DJ (PISTAS & SOUNDBOARD) -->
-        <div class="dj-console-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h2 style="font-size: 15px; font-weight: 900; color: #c084fc; display: flex; align-items: center; gap: 8px;">
-              🎧 Consola Maestra de DJ (Pistas & Soundboard)
-            </h2>
-            <span id="dj-track-status" class="status-badge" style="background: #1e1b4b; color: #a78bfa; font-size: 10px;">
-              ⏹ En Pausa
-            </span>
-          </div>
+        <!-- Launchpads de Efectos DJ (Soundboard) -->
+        <h2 class="card-title mt-4" style="color: #facc15;">🎛️ Launchpad de Efectos DJ en Vivo</h2>
+        <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
+          Lanza efectos de festival en directo para prender la transmisión de TikTok.
+        </p>
 
-          <!-- Géneros Musicales -->
-          <label style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 6px; display: block;">
-            SELECCIONAR GÉNERO BAILABLE
-          </label>
-          <div class="dj-genre-grid">
-            <button type="button" class="btn-dj-genre is-active" data-genre="EDM">
-              <span>🔥 EDM Festival</span>
-              <span class="genre-bpm">128 BPM</span>
-            </button>
-            <button type="button" class="btn-dj-genre" data-genre="GUARACHA">
-              <span>🌴 Guaracha Tribal</span>
-              <span class="genre-bpm">130 BPM</span>
-            </button>
-            <button type="button" class="btn-dj-genre" data-genre="REGGAETON">
-              <span>💃 Reggaetón Dembow</span>
-              <span class="genre-bpm">96 BPM</span>
-            </button>
-            <button type="button" class="btn-dj-genre" data-genre="DISCO">
-              <span>🕺 Nu-Disco Funk</span>
-              <span class="genre-bpm">122 BPM</span>
-            </button>
-            <button type="button" class="btn-dj-genre" data-genre="TECH_HOUSE" style="grid-column: span 2;">
-              <span>⚡ Tech House Club</span>
-              <span class="genre-bpm">126 BPM</span>
-            </button>
-          </div>
-
-          <!-- Reproducción / Transporte -->
-          <div class="dj-transport-row">
-            <button type="button" id="btn-dj-play" class="btn-dj-play">
-              <span>▶ REPRODUCIR PISTA DJ</span>
-            </button>
-            <button type="button" id="btn-dj-stop" class="btn-dj-stop">
-              <span>⏹ DETENER</span>
-            </button>
-          </div>
-
-          <!-- Launchpads de Efectos DJ (Soundboard) -->
-          <label style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-top: 10px; margin-bottom: 6px; display: block;">
-            PADS DE EFECTOS DJ EN VIVO
-          </label>
-          <div class="dj-soundboard-pads">
-            <button type="button" class="btn-dj-pad" data-fx="horn">
-              <span class="pad-icon">📢</span>
-              <span>Air Horn</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="siren">
-              <span class="pad-icon">🚨</span>
-              <span>Sirena Rave</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="scratch">
-              <span class="pad-icon">💿</span>
-              <span>Scratch</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="drop">
-              <span class="pad-icon">💣</span>
-              <span>Bass Drop</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="confetti">
-              <span class="pad-icon">🎉</span>
-              <span>Confeti</span>
-            </button>
-            <button type="button" class="btn-dj-pad" id="btn-dj-hype-hands">
-              <span class="pad-icon">🙌</span>
-              <span>Manos Arriba</span>
-            </button>
-          </div>
+        <div class="dj-soundboard-pads">
+          <button type="button" class="btn-dj-pad" data-fx="horn">
+            <span class="pad-icon">📢</span>
+            <span>Air Horn</span>
+          </button>
+          <button type="button" class="btn-dj-pad" data-fx="siren">
+            <span class="pad-icon">🚨</span>
+            <span>Sirena Rave</span>
+          </button>
+          <button type="button" class="btn-dj-pad" data-fx="scratch">
+            <span class="pad-icon">💿</span>
+            <span>Scratch</span>
+          </button>
+          <button type="button" class="btn-dj-pad" data-fx="drop">
+            <span class="pad-icon">💣</span>
+            <span>Bass Drop</span>
+          </button>
+          <button type="button" class="btn-dj-pad" data-fx="confetti">
+            <span class="pad-icon">🎉</span>
+            <span>Confeti</span>
+          </button>
+          <button type="button" class="btn-dj-pad" data-fx="applause">
+            <span class="pad-icon">👏</span>
+            <span>Ovación</span>
+          </button>
+          <button type="button" class="btn-dj-pad" id="btn-dj-hype-hands" style="grid-column: span 1.5; background: linear-gradient(135deg, #a855f7, #6366f1);">
+            <span class="pad-icon">🙌</span>
+            <span>¡Manos Arriba!</span>
+          </button>
+          <button type="button" class="btn-dj-pad" id="btn-dj-dance-move" style="grid-column: span 1.5; background: linear-gradient(135deg, #ec4899, #f43f5e);">
+            <span class="pad-icon">💃</span>
+            <span>¡Paso de Baile!</span>
+          </button>
         </div>
 
-        <h2 class="card-title">🎙️ Configuración del DJ</h2>
+        <!-- Configuración del DJ & Escenario -->
+        <h2 class="card-title mt-4">🎧 Configuración del DJ & Luces</h2>
         <div class="form-group">
-          <label for="singer-name">Nombre del Comediante</label>
-          <input type="text" id="singer-name" value="EL GARABATO" placeholder="Ej: Garabatox, El Tío Franco, etc." />
-          <span class="input-hint">Se sincroniza al instante en la pantalla LED del club</span>
-        </div>
-
-        <div class="form-group">
-          <label for="singer-personality">Estilo Humorístico</label>
-          <select id="singer-personality">
-            <option value="Comediante Stand-Up Pro">⚡ Stand-Up Profesional y Rápido</option>
-            <option value="Humor Negro Absurdo">🕶️ Humor Ácido y Absurdo</option>
-            <option value="Comedia Blanca y Familiar">🧁 Chistes Blancos y Familiares</option>
-            <option value="Sarcástico y Cínico">😏 Sarcástico y Cínico</option>
-            <option value="Exagerado Teatral">🎭 Exagerado y Expresivo</option>
-          </select>
+          <label for="singer-name">Nombre del DJ en Pantalla</label>
+          <input type="text" id="singer-name" value="DJ GARABATO" placeholder="Ej: DJ Garabato, DJ Master, etc." />
+          <span class="input-hint">Aparece en letras de neón gigante en la pantalla LED del club</span>
         </div>
 
         <div class="form-row">
           <div class="form-group flex-1">
-            <label for="singer-color">Color del Personaje</label>
-            <input type="color" id="singer-color" value="#ffffff" />
+            <label for="singer-color">Color Neón del Club</label>
+            <input type="color" id="singer-color" value="#00f0ff" />
           </div>
           <div class="form-group flex-2">
-            <label for="singer-dance">Postura en Escenario</label>
+            <label for="singer-dance">Postura en Cabina</label>
             <select id="singer-dance">
-              <option value="standup">🎙️ Con Micrófono en Mano</option>
-              <option value="wave">👋 Saludando al Público</option>
+              <option value="standup" selected>🎧 Mezclando en Cabina</option>
+              <option value="wave">👋 Saludando a la Multitud</option>
               <option value="robot">🤖 Paso Robótico</option>
-              <option value="jump">🦘 Celebración Eufórica</option>
-              <option value="salsa">💃 Baile Triunfal</option>
+              <option value="jump">🦘 Brinco de Euforia</option>
+              <option value="salsa">💃 Baile Latino</option>
             </select>
           </div>
         </div>
 
+        <!-- Cámaras del Club -->
         <h2 class="card-title mt-4">🎥 Cámaras del Club</h2>
         <div class="button-group">
           <button class="btn-camera active" data-shot="AUTO">🎬 Automático</button>
-          <button class="btn-camera" data-shot="SINGER">🎙️ Comediante</button>
-          <button class="btn-camera" data-shot="CROWD">👥 Público Riendo</button>
+          <button class="btn-camera" data-shot="SINGER">🎧 Cabina DJ</button>
+          <button class="btn-camera" data-shot="CROWD">👥 Pista de Baile</button>
           <button class="btn-camera" data-shot="WIDE">🏟️ Vista General</button>
-          <button class="btn-camera" data-shot="SIDE">🎧 Ángulo Lateral</button>
-        </div>
-
-        <h2 class="card-title mt-4">🎭 Órdenes al Actor (El Público Manda)</h2>
-        <div class="soundboard-grid">
-          <button id="btn-act-cry" class="btn-soundboard highlight-blue">
-            😭 Ponerlo a Llorar (Drama)
-          </button>
-          <button id="btn-act-dance" class="btn-soundboard highlight-gold">
-            💃 Ponerlo a Bailar Loco
-          </button>
-          <button id="btn-act-rage" class="btn-soundboard highlight-red">
-            😡 Rabieta Cómica (Pataleta)
-          </button>
-          <button id="btn-act-pushups" class="btn-soundboard">
-            🏋️ Hacer Flexiones (Castigo)
-          </button>
-          <button id="btn-act-freeze" class="btn-soundboard">
-            🥶 Modo Estatua (Congelado)
-          </button>
-          <button id="btn-sound-tomato" class="btn-soundboard">
-            🍅 Lanzar Tomate a Tarima
-          </button>
-        </div>
-
-        <h2 class="card-title mt-4">🔊 Soundboard de Comedia</h2>
-        <div class="soundboard-grid">
-          <button id="btn-sound-rimshot" class="btn-soundboard">
-            🥁 Ba-dum-tss! (Remate)
-          </button>
-          <button id="btn-sound-laughs" class="btn-soundboard">
-            😂 Risas Enlatadas (Sitcom)
-          </button>
-          <button id="btn-sound-applause" class="btn-soundboard highlight-gold">
-            👏 Aplausos 5 Segundos
-          </button>
-          <button id="btn-sound-boo" class="btn-soundboard">
-            📢 Buuuu (Abucheo Cómico)
-          </button>
-          <button id="btn-sound-confetti" class="btn-soundboard">
-            🎉 Confeti de Victoria
-          </button>
-        </div>
-
-        <h2 class="card-title mt-4">🎶 Música de Fondo (Stand-Up & Cuentos)</h2>
-        <p class="card-desc">Ambiente suave, agradable y acorde para acompañar los chistes sin saturar.</p>
-        <div class="form-group">
-          <label for="bgm-preset-select">Estilo Musical de Fondo</label>
-          <select id="bgm-preset-select">
-            <option value="merengue" selected>🪗 Merengue Típico / Ripiao (Acordeón, Güira y Tambora)</option>
-            <option value="lounge">🎷 Stand-Up Lounge (Jazz Suave & Escobillas)</option>
-            <option value="bossa">☕ Bossa Café (Guitarra Nylon Acústica & Chill)</option>
-            <option value="piano">🎭 Monólogo Íntimo (Pianito Suave Solo)</option>
-            <option value="off">🔇 Silenciar Música de Fondo</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <div class="label-with-counter">
-            <label for="bgm-volume-slider">Volumen de Fondo</label>
-            <span id="bgm-volume-label" class="counter">28% (Suave)</span>
-          </div>
-          <input type="range" id="bgm-volume-slider" min="0" max="100" value="28" />
-        </div>
-        <div class="form-group">
-          <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input type="checkbox" id="bgm-ducking-check" checked />
-            <span>Auto-Ducking: Bajar música automáticamente cuando hable el actor</span>
-          </label>
-        </div>
-
-        <h2 class="card-title mt-4">🎙️ Voz Humana del Comediante (TTS)</h2>
-        <p class="card-desc">Selecciona la voz en español que más te guste y ajústala para que suene como un comediante real (sin voz de ardilla ni robot).</p>
-
-        <div class="form-group">
-          <label for="voice-select">Voz en Español Detectada</label>
-          <div style="display: flex; gap: 6px;">
-            <select id="voice-select" style="flex: 1; padding: 7px; font-size: 12px; background: #0f172a; color: #fff; border: 1px solid #334155; border-radius: 6px;">
-              <option value="">Cargando voces del sistema...</option>
-            </select>
-            <button type="button" id="btn-test-voice" class="btn-primary" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">🔊 Probar Voz</button>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group flex-1">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-              <label for="voice-pitch-slider" style="font-size: 11px;">Tono: <span id="voice-pitch-label" style="color: #38bdf8;">1.00 (Humano)</span></label>
-            </div>
-            <input type="range" id="voice-pitch-slider" min="0.80" max="1.20" step="0.02" value="1.00" />
-          </div>
-          <div class="form-group flex-1">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-              <label for="voice-rate-slider" style="font-size: 11px;">Velocidad: <span id="voice-rate-label" style="color: #38bdf8;">1.02 (Natural)</span></label>
-            </div>
-            <input type="range" id="voice-rate-slider" min="0.80" max="1.30" step="0.02" value="1.02" />
-          </div>
-        </div>
-
-        <h2 class="card-title mt-4">📢 Anti-Inactividad TikTok (Llamados Jocosos)</h2>
-        <p class="card-desc">Si pasan más de 10 segundos sin actividad (ni risas ni comentarios ni regalos), el actor hablará para animar al público y evitar que TikTok baje el alcance del live.</p>
-
-        <div class="form-row">
-          <div class="form-group flex-1">
-            <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 4px;">
-              <input type="checkbox" id="idle-system-toggle" checked />
-              <strong style="color: #22c55e;">Activar Llamados</strong>
-            </label>
-          </div>
-          <div class="form-group flex-1">
-            <label for="idle-timeout-select">Tiempo sin Actividad</label>
-            <select id="idle-timeout-select">
-              <option value="8">⚡ 8 Segundos</option>
-              <option value="10" selected>⏱️ 10 Segundos (Recomendado)</option>
-              <option value="15">⏱️ 15 Segundos</option>
-              <option value="20">⏱️ 20 Segundos</option>
-              <option value="30">⏱️ 30 Segundos</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Formulario para agregar / editar frases de inactividad -->
-        <form id="idle-phrase-form" class="mt-2">
-          <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <label for="idle-phrase-input" style="font-size: 11px;">Programar Frase Jocosa</label>
-              <button type="button" id="btn-reset-idle-phrases" class="btn-text-action" style="font-size: 10px;">🔄 Cargar Predeterminadas</button>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              <input type="text" id="idle-phrase-input" placeholder="Ej: ¡Oigan! ¿Se durmieron todos? ¡Risas y corazones que es gratis!" required style="flex: 1; padding: 7px; font-size: 12px;" />
-              <button type="submit" id="btn-save-idle-phrase" class="btn-save-primary" style="padding: 7px 12px; font-size: 11px; white-space: nowrap;">➕ Agregar</button>
-              <button type="button" id="btn-cancel-idle-phrase" class="btn-secondary hidden" style="padding: 7px 10px; font-size: 11px;">Cancelar</button>
-            </div>
-          </div>
-        </form>
-
-        <!-- Lista de Frases Programadas -->
-        <div class="idle-phrases-box mt-2">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-size: 11px; font-weight: 800; color: #94a3b8;">FRASES ACTIVAS (<span id="idle-phrases-count">0</span>)</span>
-            <span style="font-size: 10px; color: #f59e0b;">🎲 Se eligen al azar</span>
-          </div>
-          <ul id="idle-phrases-list" class="admin-jokes-list" style="max-height: 170px; overflow-y: auto;">
-            <!-- Rellenado dinámicamente -->
-          </ul>
+          <button class="btn-camera" data-shot="SIDE">⚡ Ángulo Lateral</button>
         </div>
       </section>
 
-      <!-- COLUMNA 2: GESTOR DE CHISTES (VIP & GRATIS) -->
+      <!-- ==========================================
+           COLUMNA 3: CHAT 3D DE ESPECTADORES & TIKTOK LIVE
+           ========================================== -->
       <section class="admin-card">
-        <div class="card-header-row">
-          <h2 class="card-title">📝 Creador & Gestor de Chistes</h2>
-          <button type="button" id="btn-reset-jokes" class="btn-action-small">🔄 Cargar Predeterminados</button>
-        </div>
-        <p class="card-desc">Configura los chistes que aparecerán en la lista izquierda (VIP por Regalo) y derecha (Gratis por Risas) en el show.</p>
-
-        <!-- Formulario para agregar / editar chistes -->
-        <form id="joke-form" class="joke-editor-form">
-          <div class="form-row">
-            <div class="form-group flex-2">
-              <label for="joke-title">Título Corto del Chiste</label>
-              <input type="text" id="joke-title" placeholder="Ej: Jaimito en la Escuela" required />
-            </div>
-            <div class="form-group flex-1">
-              <label for="joke-category">Tipo de Desbloqueo</label>
-              <select id="joke-category">
-                <option value="VIP_GIFT">👑 VIP por Regalo</option>
-                <option value="FREE_TAPS">😂 Gratis por Risas</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Selector Condicional: Si es VIP, elegir Regalo de TikTok -->
-          <div id="group-joke-gift" class="form-group">
-            <div class="label-with-counter">
-              <label for="joke-gift-select">Regalo de TikTok que lo Desbloquea</label>
-              <span id="gifts-total-count" class="counter">40 regalos disponibles</span>
-            </div>
-            <!-- Buscador en tiempo real de regalos -->
-            <input type="text" id="gift-search-input" placeholder="🔍 Escribe para buscar (ej: Capibara, GG, Dino, Rosa, León...)" class="search-mini-input" />
-            <select id="joke-gift-select">
-              <!-- Opciones cargadas dinámicamente desde TIKTOK_GIFTS -->
-            </select>
-            <div class="custom-gift-toggle-row">
-              <button type="button" id="btn-toggle-custom-gift" class="btn-text-action">➕ ¿Regalo nuevo o no listado? Escribir personalizado</button>
-            </div>
-            <div id="group-custom-gift" class="form-group hidden">
-              <input type="text" id="custom-gift-input" placeholder="Nombre exacto del regalo en TikTok (ej: 🍕 Pizza, 🕶️ Gafas)" />
-            </div>
-            <span class="input-hint">Cuando un espectador mande este regalo en tu LIVE, el comediante contará este chiste con máxima prioridad.</span>
-          </div>
-
-          <!-- Selector Condicional: Si es Gratis, elegir meta de Risas -->
-          <div id="group-joke-taps" class="form-group hidden">
-            <label for="joke-taps-input">Risas / Reacciones Requeridas</label>
-            <input type="number" id="joke-taps-input" min="5" max="1000" step="5" value="30" />
-            <span class="input-hint">Meta de reacciones de los espectadores para disparar el chiste.</span>
-          </div>
-
-          <div class="form-group">
-            <label for="joke-setup">Planteamiento / Pregunta del Chiste</label>
-            <textarea id="joke-setup" rows="2" placeholder="¿Qué le dice un pez a otro pez en el cine?" required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="joke-punch">Remate / Punchline (Viene con Ba-dum-tss y Aplausos)</label>
-            <textarea id="joke-punch" rows="2" placeholder="¡Nada, nada, concéntrate en la película!" required></textarea>
-          </div>
-
-          <div class="form-actions-row">
-            <button type="submit" id="btn-save-joke" class="btn-save-primary">➕ Guardar en la Lista</button>
-            <button type="button" id="btn-cancel-edit" class="btn-secondary hidden">Cancelar Edición</button>
-          </div>
-        </form>
-
-        <!-- Listas de Chistes Registrados -->
-        <div class="jokes-admin-lists mt-4">
-          <div class="subtabs-header">
-            <button type="button" class="subtab-btn active" data-tab="tab-vip">👑 Chistes VIP (<span id="vip-count-badge">0</span>)</button>
-            <button type="button" class="subtab-btn" data-tab="tab-free">🆓 Chistes Gratis (<span id="free-count-badge">0</span>)</button>
-          </div>
-
-          <div id="tab-vip" class="subtab-content active">
-            <ul id="admin-vip-jokes-list" class="admin-jokes-list">
-              <!-- Rellenado por adminApp.js -->
-            </ul>
-          </div>
-
-          <div id="tab-free" class="subtab-content">
-            <ul id="admin-free-jokes-list" class="admin-jokes-list">
-              <!-- Rellenado por adminApp.js -->
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- COLUMNA 3: MONITOR DE COLA & SIMULADOR TIKTOK -->
-      <section class="admin-card">
-        <h2 class="card-title">🚥 Monitor de Cola en Vivo</h2>
-        <p class="card-desc">Los chistes de regalo van a la cola VIP (prioridad alta). Los gratis suenan cuando la cola VIP está despejada.</p>
-
-        <!-- Tarjeta de Chiste Sonando Ahora Mismo -->
-        <div class="now-playing-card">
-          <div class="now-playing-tag">🎙️ EN ESCENARIO AHORA</div>
-          <div id="admin-active-joke-title" class="active-title">Ningún chiste en reproducción</div>
-          <div id="admin-active-joke-meta" class="active-meta">El comediante está esperando a la audiencia...</div>
-          <button id="btn-skip-current-joke" class="btn-action-small mt-2" disabled>⏭️ Saltar Chiste Actual</button>
-        </div>
-
-        <!-- Estado de las Colas -->
-        <div class="queues-summary mt-3">
-          <div class="queue-col vip-col">
-            <div class="queue-col-header">
-              <span>👑 Cola VIP (Regalos)</span>
-              <span id="queue-vip-badge" class="counter">0</span>
-            </div>
-            <ul id="queue-vip-items" class="queue-preview-list">
-              <li class="empty-hint">Sin regalos en cola</li>
-            </ul>
-          </div>
-
-          <div class="queue-col free-col">
-            <div class="queue-col-header">
-              <span>😂 Cola Gratis (Risas)</span>
-              <span id="queue-free-badge" class="counter">0</span>
-            </div>
-            <ul id="queue-free-items" class="queue-preview-list">
-              <li class="empty-hint">Sin chistes gratis en cola</li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- BUZÓN DE CUENTOS ENVIADOS POR EL INTERNO TRAS REGALO -->
-        <div class="audience-story-box mt-4" style="background: rgba(124, 58, 237, 0.12); border: 1.5px solid #a855f7; border-radius: 12px; padding: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <strong style="color: #facc15; font-size: 13px;">💌 Cuento del Público (Por el Interno)</strong>
-            <span style="background: #a855f7; color: #fff; font-size: 9px; padding: 2px 7px; border-radius: 8px; font-weight: 800;">👑 PRIORIDAD VIP</span>
-          </div>
-          <p class="card-desc" style="margin-bottom: 8px; font-size: 11px;">
-            Si un espectador donó un regalo y te envió su propio cuento por el chat o mensaje interno, pégalo aquí para que el actor lo cuente en vivo mencionando su autoría.
-          </p>
-          <div class="form-row">
-            <div class="form-group flex-2">
-              <label for="story-user-input" style="font-size: 11px;">Nombre del usuario que donó</label>
-              <input type="text" id="story-user-input" placeholder="Ej: Lady o Carlos (Sin arroba)" style="padding: 6px;" />
-            </div>
-            <div class="form-group flex-1">
-              <label for="story-gift-select" style="font-size: 11px;">Regalo donado</label>
-              <select id="story-gift-select" style="padding: 6px;">
-                <option value="🌹 Rosa">🌹 Rosa</option>
-                <option value="👑 Corona VIP">👑 Corona</option>
-                <option value="🍩 Dona">🍩 Dona</option>
-                <option value="💖 Corazón coreano">💖 Corazón</option>
-                <option value="🦖 Pequeño dino">🦖 Dino</option>
-                <option value="🎮 Control Retro">🎮 Control</option>
-                <option value="🎁 Regalo VIP">🎁 Regalo</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="story-text-input" style="font-size: 11px;">Cuento o Chiste enviado por el usuario</label>
-            <textarea id="story-text-input" rows="2" placeholder="Pega aquí el chiste o historia que te mandó por interno..." style="width: 100%; border-radius: 8px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid #334155; padding: 6px; font-size: 12px; resize: vertical;"></textarea>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" id="btn-send-audience-story" class="btn-sim-gift" style="flex: 2; background: linear-gradient(135deg, #a855f7, #ec4899); font-weight: 800; cursor: pointer; padding: 8px;">
-              🚀 Lanzar Cuento a Tarima (Mención en Vivo)
-            </button>
-            <button type="button" id="btn-save-as-vip-joke" class="btn-action-small" style="flex: 1; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; padding: 8px; border-radius: 8px; border: none; font-size: 11px;" title="Pasar al editor para corregir o guardar en la lista permanente">
-              ✏️ Editar en el Creador
-            </button>
-          </div>
-        </div>
-
-        <!-- MÓDULO 3: SIMULADOR DE CHAT EN VIVO DE ESPECTADORES (BOCADILLO 3D) -->
+        <!-- MÓDULO: CHAT EN VIVO DE ESPECTADORES (BOCADILLO 3D) -->
         <div class="chat-sim-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <h2 style="font-size: 14px; font-weight: 900; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
@@ -523,17 +295,17 @@
             </span>
           </div>
           <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
-            Cada espectador que habla en el chat aparece en la pista de baile 3D con su mensaje flotando en una viñeta cómica arriba de su cabeza.
+            Cada espectador que habla en el chat aparece en la pista de baile 3D con su mensaje flotando en una viñeta cómica arriba de su cabeza mientras baila.
           </p>
 
           <div class="form-row">
             <div class="form-group flex-1">
               <label for="chat-user-input" style="font-size: 11px;">Nombre Espectador</label>
-              <input type="text" id="chat-user-input" placeholder="Ej: Carlos (Sin arroba)" value="Carlos" style="padding: 7px; font-size: 12px;" />
+              <input type="text" id="chat-user-input" placeholder="Ej: Carlos" value="Carlos" style="padding: 7px; font-size: 12px;" />
             </div>
             <div class="form-group flex-2">
               <label for="chat-text-input" style="font-size: 11px;">Mensaje que dice en el chat</label>
-              <input type="text" id="chat-text-input" placeholder="Ej: ¡Sube el bajo DJ! 🔥" value="¡Suelte el bajo DJ! 🔥" style="padding: 7px; font-size: 12px;" />
+              <input type="text" id="chat-text-input" placeholder="Ej: ¡Suelte el bajo DJ! 🔥" value="¡Suelte el bajo DJ! 🔥" style="padding: 7px; font-size: 12px;" />
             </div>
           </div>
 
@@ -543,7 +315,7 @@
             </button>
             <label class="checkbox-label" style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; white-space: nowrap;">
               <input type="checkbox" id="chat-is-vip" />
-              <span style="color: #facc15;">👑 Donador VIP</span>
+              <span style="color: #facc15;">👑 VIP</span>
             </label>
           </div>
 
@@ -558,6 +330,10 @@
             <button type="button" class="btn-chat-pill" data-msg="¡Arriba las manos todos! 🙌">🙌 ¡Manos arriba!</button>
             <button type="button" class="btn-chat-pill" data-msg="¡DJ pon reggaetón! 🎵">🎵 ¡Pon reggaetón!</button>
           </div>
+
+          <button type="button" id="btn-quick-simulation" class="btn-action-small" style="width: 100%; margin-top: 10px; background: #1e293b; border: 1px solid #38bdf8; color: #38bdf8; font-weight: 800; padding: 7px;">
+            ✨ Simular Entrada de 5 Espectadores Hablando en la Pista
+          </button>
         </div>
 
         <!-- CONEXIÓN REAL TIKTOK LIVE -->
@@ -568,7 +344,7 @@
             <span id="tiktok-live-badge" class="counter" style="background: #334155; color: #cbd5e1; font-size: 9px; padding: 2px 8px; border-radius: 10px;">Desconectado</span>
           </div>
           <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
-            Ingresa tu usuario de TikTok para leer en tiempo real los comentarios, regalos y eventos de la audiencia.
+            Ingresa tu usuario de TikTok para leer en tiempo real comentarios (bocadillos 3D), regalos y espectadores de tu LIVE.
           </p>
           <div class="tiktok-input-row" style="display: flex; gap: 8px;">
             <input type="text" id="tiktok-user-input" value="CreandoConIA" placeholder="Ej: @CreandoConIA" style="flex: 1; padding: 7px; font-size: 12px;" />
@@ -585,36 +361,36 @@
           <div id="tiktok-live-msg" style="margin-top: 8px; font-size: 11px; color: #94a3b8; display: none;"></div>
         </div>
 
-        <h2 class="card-title mt-4">🧪 Simulador de Eventos TikTok</h2>
+        <!-- SIMULADOR DE EVENTOS TIKTOK -->
+        <h2 class="card-title mt-4">🧪 Simulador de Eventos de Fiesta</h2>
         <div class="simulator-box">
           <div class="form-row">
             <div class="form-group flex-1">
               <label for="sim-user">Nombre Espectador</label>
-              <input type="text" id="sim-user" value="ComedianteFan" />
+              <input type="text" id="sim-user" value="DancerFan" />
             </div>
             <div class="form-group flex-2">
               <label for="sim-gift-select">Regalo a Simular</label>
               <select id="sim-gift-select">
-                <!-- Rellenado con TIKTOK_GIFTS -->
+                <option value="🌹 Rosa">🌹 Rosa (1 Moneda)</option>
+                <option value="💖 Corazón">💖 Corazón (5 Monedas)</option>
+                <option value="🍩 Dona">🍩 Dona (30 Monedas)</option>
+                <option value="🎮 Control Retro">🎮 Control Retro (100 Monedas)</option>
+                <option value="👑 Corona VIP">👑 Corona VIP (199 Monedas)</option>
+                <option value="🦁 León del Club">🦁 León del Club (1000 Monedas)</option>
               </select>
             </div>
           </div>
 
           <div class="sim-buttons-grid">
             <button id="btn-sim-join" class="btn-sim-gift" style="background: linear-gradient(135deg, #7c3aed, #4f46e5); grid-column: span 2;">
-              👋 Simular Nuevo Espectador (Saludar con Humor)
+              👋 Simular Nuevo Espectador en la Pista
             </button>
             <button id="btn-sim-gift" class="btn-sim-gift">
-              🎁 Simular Regalo Elegido
+              🎁 Simular Regalo VIP
             </button>
             <button id="btn-sim-taps" class="btn-sim-taps">
-              😂 Simular +15 Risas
-            </button>
-            <button id="btn-sim-tomato" class="btn-sim-tomato">
-              🍅 Simular Tomatazo
-            </button>
-            <button id="btn-sim-clear-queue" class="btn-sim-clear">
-              🧹 Vaciar Toda la Cola
+              🔥 Simular +20 Likes (Fuego)
             </button>
           </div>
         </div>

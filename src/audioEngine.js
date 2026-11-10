@@ -1881,6 +1881,11 @@ export class AudioEngine {
   startDjTrack(genre = 'EDM') {
     this.initContext();
     if (this.bgMusicPlaying) this.stopComedyLoungeMusic();
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.isPlayingImported = false;
+    }
+
     const g = String(genre).toUpperCase();
     if (g.includes('GUARA')) {
       this.bpm = 130;
@@ -1898,6 +1903,60 @@ export class AudioEngine {
 
   stopDjTrack() {
     this.stopDiscoBeat();
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.isPlayingImported = false;
+    }
+  }
+
+  /**
+   * Reproduce una canción personalizada (archivo MP3/WAV o URL de stream)
+   * conectándola al analizador FFT para reactividad visual de tornamesas, luces y público.
+   */
+  playCustomAudioTrack(srcUrl, title = 'Canción Personalizada') {
+    this.initContext();
+    this.stopDiscoBeat();
+    if (this.bgMusicPlaying) this.stopComedyLoungeMusic();
+
+    if (!this.audioElement) {
+      this.audioElement = new Audio();
+      this.audioElement.crossOrigin = 'anonymous';
+
+      if (this.ctx && !this.audioSourceNode) {
+        try {
+          this.audioSourceNode = this.ctx.createMediaElementSource(this.audioElement);
+          this.audioSourceNode.connect(this.musicGain || this.masterGain);
+        } catch (e) {
+          console.warn('[AudioEngine] MediaElementSource warning:', e);
+        }
+      }
+    }
+
+    this.audioElement.src = srcUrl;
+    this.audioElement.loop = true;
+    this.audioElement.currentTime = 0;
+
+    const playPromise = this.audioElement.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        this.isPlayingImported = true;
+        this.isPlayingBeat = true;
+        console.info(`[AudioEngine] Reproduciendo audio personalizado: ${title}`);
+      }).catch(err => {
+        console.warn('[AudioEngine] Autoplay bloqueado o error en archivo de audio:', err);
+      });
+    }
+  }
+
+  setDjVolume(volumePercent) {
+    this.initContext();
+    const vol = Math.max(0, Math.min(1.0, volumePercent / 100));
+    if (this.musicGain && this.ctx) {
+      this.musicGain.gain.setValueAtTime(vol, this.ctx.currentTime);
+    }
+    if (this.audioElement) {
+      this.audioElement.volume = vol;
+    }
   }
 
   // ==========================================

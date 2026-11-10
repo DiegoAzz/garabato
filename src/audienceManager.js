@@ -739,8 +739,16 @@ export class AudienceManager {
   update(time, delta, audioLevels = { bass: 0, mid: 0, overall: 0 }) {
     this.collectiveEnergy = Math.max(10, this.collectiveEnergy - delta * 1.5);
 
+    // Ajustar la velocidad y energía colectiva de baile al ritmo de la música y del bajo del DJ
+    const beatEnergy = (audioLevels.bass || 0) * 1.8 + (audioLevels.overall || 0) * 1.2;
+    const dynamicDanceSpeed = 1.0 + Math.min(2.0, beatEnergy * 1.6);
+
     for (let i = 0; i < this.crowd.length; i++) {
       const s = this.crowd[i];
+      // Si el personaje no está en una animación bloqueada, bailar al compás del DJ
+      if (s.mesh.animController.gesture === 'none') {
+        s.mesh.animController.speedMultiplier = dynamicDanceSpeed;
+      }
       s.mesh.animController.update(time, delta, audioLevels);
     }
 

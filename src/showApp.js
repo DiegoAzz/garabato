@@ -944,6 +944,25 @@ export function initShowApp() {
     if (queueStatusText) queueStatusText.textContent = `🎧 DJ Mix: ${genre}`;
   });
 
+  syncBridge.on('DJ_PLAY_CUSTOM_AUDIO', (payload) => {
+    markActivity();
+    audioEngine.initContext();
+    if (payload && payload.url) {
+      audioEngine.playCustomAudioTrack(payload.url, payload.name || 'Canción DJ');
+      singer.animController.triggerDjHandsUp(3500);
+      if (queueStatusText) queueStatusText.textContent = `🎧 Pista: ${payload.name || 'Personalizada'}`;
+      if (subtitlesEl) {
+        showSubtitlePhrase(`🎵 Reproduciendo: ${payload.name || 'Pista de Audio'}`, '🎧', false);
+      }
+    }
+  });
+
+  syncBridge.on('DJ_SET_VOLUME', (payload) => {
+    if (payload && payload.volume !== undefined) {
+      audioEngine.setDjVolume(payload.volume);
+    }
+  });
+
   syncBridge.on('DJ_STOP_TRACK', () => {
     audioEngine.stopDjTrack();
     singer.animController.resetToIdle();
@@ -1160,26 +1179,6 @@ export function initShowApp() {
       // Mostrar globo cómic 3D (Speech Bubble) sobre el personaje del espectador
       if (audience && user) {
         audience.speak(user, comment);
-      }
-
-      // Detectar si el espectador escribió un número del 1 al 50 para elegir el chiste
-      const match = comment.match(/(?:#|chiste\s*|el\s*)?(\b[1-9]\b|\b[1-4][0-9]\b|\b50\b)/i);
-      if (match) {
-        const jokeNumber = parseInt(match[1], 10);
-        jumpSliderToJoke(jokeNumber);
-        const freeJokes = jokeManager.getFreeJokes();
-        if (jokeNumber >= 1 && jokeNumber <= freeJokes.length) {
-          const selectedJoke = freeJokes[jokeNumber - 1];
-          jokeManager.setActiveFreeJoke(selectedJoke.id);
-          renderJokesOnScreen();
-
-          cancelIdleInvitation();
-          markActivity();
-          audioEngine.speakActorLine(`¡Atención mi gente! ${user} eligió el chiste número ${jokeNumber}: ${selectedJoke.title}. ¡Risas y corazones en el chat para escucharlo!`, {
-            pitch: 1.0,
-            rate: 1.05
-          });
-        }
       }
     } else if (action === 'TOMATE') {
       enqueueActorAction('TOMATE', user, false);
