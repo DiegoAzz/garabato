@@ -515,13 +515,9 @@
       <span id="cta-dynamic-text">🔥 Pista en Vivo | 🎁 Regalos = Efectos DJ & Drops</span>
     </div>
 
-    <!-- Contenedor del Reproductor YouTube Sincronizado para Móvil -->
-    <div id="yt-show-wrapper" class="yt-show-wrapper" style="position: absolute; top: var(--tiktok-safe-top); right: 12px; width: 180px; height: 104px; border-radius: 10px; overflow: hidden; border: 1.5px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); z-index: 30; pointer-events: auto; display: none; background: #000;">
-      <div style="background: rgba(15, 23, 42, 0.95); padding: 3px 6px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #7f1d1d;">
-        <span style="font-size: 9px; font-weight: 800; color: #fca5a5;">🔴 YouTube DJ</span>
-        <button type="button" id="btn-toggle-yt-screen" style="background: transparent; border: none; color: #94a3b8; font-size: 10px; cursor: pointer;">✕</button>
-      </div>
-      <div id="yt-show-iframe-slot" style="width: 100%; height: calc(100% - 18px);"></div>
+    <!-- Reproductor de Audio YouTube en Segundo Plano (100% Invisible para Cero Copyright en Pantalla) -->
+    <div id="yt-show-wrapper" style="position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden;">
+      <div id="yt-show-iframe-slot"></div>
     </div>
 
     <!-- Botón para Desbloquear Audio -->

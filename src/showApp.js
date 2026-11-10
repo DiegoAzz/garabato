@@ -589,9 +589,10 @@ export function initShowApp() {
     if (payload && payload.url) {
       audioEngine.playCustomAudioTrack(payload.url, payload.name || 'Canción DJ', payload.resume || false);
       singer.animController.triggerDjHandsUp(3500);
-      if (queueStatusText) queueStatusText.textContent = `🎧 Pista: ${payload.name || 'Personalizada'}`;
+      if (queueStatusText) queueStatusText.textContent = `🎧 DJ Live Club 3D`;
       if (subtitlesEl) {
-        showSubtitlePhrase(payload.resume ? `▶ Reanudando: ${payload.name || 'Música'}` : `🎵 Reproduciendo: ${payload.name || 'Pista de Audio'}`, '🎧', false);
+        // Modo Seguro Anti-Copyright: No mostrar nombres comerciales de artistas o canciones
+        showSubtitlePhrase(payload.resume ? `▶ Reanudando la Fiesta en Vivo` : `🔥 EN VIVO: Mezcla Exclusiva del Club`, '🎧', false);
       }
     }
   });
@@ -673,10 +674,7 @@ export function initShowApp() {
 
     audioEngine.stopDjTrack();
 
-    if (ytShowWrapper) {
-      ytShowWrapper.style.display = 'block';
-    }
-
+    // El video se mantiene 100% invisible en pantalla para máxima discreción y cero detección de copyright
     initOrLoadShowYTPlayer(payload.videoId, () => {
       if (showYTPlayer && showYTPlayer.playVideo) {
         showYTPlayer.playVideo();
@@ -685,9 +683,11 @@ export function initShowApp() {
 
     singer.animController.triggerDjHandsUp(5000);
     stage.triggerExtremeDisco(6.0);
-    if (queueStatusText) queueStatusText.textContent = `🔴 YouTube: ${payload.title || 'Música en Vivo'}`;
+
+    // MODO ANTI-COPYRIGHT: En pantalla pública nunca se muestra el título comercial ni artista de YouTube
+    if (queueStatusText) queueStatusText.textContent = `🎧 DJ Live Club 3D`;
     if (subtitlesEl) {
-      showSubtitlePhrase(`🔴 YouTube: ${payload.title || 'Música en Vivo'}`, '🎵', false);
+      showSubtitlePhrase(`🔥 EN VIVO: Mezcla Especial del Club`, '🎧', false);
     }
   });
 
@@ -696,9 +696,9 @@ export function initShowApp() {
       showYTPlayer.pauseVideo();
     }
     singer.animController.resetToIdle();
-    if (queueStatusText) queueStatusText.textContent = '⏸️ YouTube en Pausa';
+    if (queueStatusText) queueStatusText.textContent = '⏸️ DJ en Pausa';
     if (subtitlesEl) {
-      showSubtitlePhrase('⏸️ YouTube en Pausa', '⏸️', false);
+      showSubtitlePhrase('⏸️ Música en Pausa', '⏸️', false);
     }
   });
 
@@ -707,9 +707,9 @@ export function initShowApp() {
       showYTPlayer.playVideo();
     }
     singer.animController.triggerDjHandsUp(4000);
-    if (queueStatusText) queueStatusText.textContent = '▶️ YouTube Reanudado';
+    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Live Club 3D';
     if (subtitlesEl) {
-      showSubtitlePhrase('▶️ Continuando Música YouTube', '🎵', false);
+      showSubtitlePhrase('▶️ Continuando la Fiesta en Vivo', '🎧', false);
     }
   });
 
@@ -717,13 +717,10 @@ export function initShowApp() {
     if (showYTPlayer && showYTPlayer.stopVideo) {
       showYTPlayer.stopVideo();
     }
-    if (ytShowWrapper) {
-      ytShowWrapper.style.display = 'none';
-    }
     singer.animController.resetToIdle();
     if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
     if (subtitlesEl) {
-      showSubtitlePhrase('⏹️ Música de YouTube Detenida', '⏹️', false);
+      showSubtitlePhrase('⏹️ Música Detenida', '⏹️', false);
     }
   });
 
