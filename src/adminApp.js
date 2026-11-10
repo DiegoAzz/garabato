@@ -315,7 +315,7 @@ export function initAdminApp() {
           li.className = 'admin-joke-card';
           li.innerHTML = `
             <div class="admin-joke-info">
-              <span class="admin-joke-tag tag-free">🎯 ${joke.requiredTaps} Taps${joke.region ? ` · ${joke.region}` : ''}</span>
+              <span class="admin-joke-tag tag-free">😂 ${joke.requiredTaps} Risas${joke.region ? ` · ${joke.region}` : ''}</span>
               <strong class="admin-joke-title">${joke.title}</strong>
               <span class="admin-joke-cue">${joke.setup}</span>
             </div>
@@ -669,7 +669,7 @@ export function initAdminApp() {
       syncBridge.send('TIKTOK_EVENT', {
         action: 'LIKE',
         count: 15,
-        user: (simUser && simUser.value) || 'TapperFan'
+        user: (simUser && simUser.value) || 'RisasFan'
       });
     });
   }
@@ -778,16 +778,16 @@ export function initAdminApp() {
   // 13. SISTEMA ANTI-INACTIVIDAD TIKTOK (LLAMADOS JOCOSOS AL PÚBLICO)
   // ==========================================
   const DEFAULT_IDLE_PHRASES = [
-    "¡Oigan! ¿Se durmieron todos o qué? ¡Denle taps a la pantalla que los chistes son gratis!",
-    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Tiren taps al corazón!",
-    "¿Qué pasó con los dedos de este público? ¡Taps a la pantalla muchachos, que el actor tiene que comer!",
-    "¡Epa! ¿Están congelados como estatuas? ¡Tóquenme la pantalla que quiero contar el chiste de los paisas!",
-    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o denle taps a la pantalla.",
-    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Taps, taps, taps a la pantalla!",
+    "¡Oigan! ¿Se durmieron todos o qué? ¡Manden risas y corazones al chat que los chistes son gratis!",
+    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Dejen su buena vibra en el chat!",
+    "¿Dónde está el público más alegre de TikTok? ¡Manden sus risas que el show está que arde!",
+    "¡Epa! ¿Están congelados como estatuas? ¡Manden risas al chat que quiero contar el chiste de los paisas!",
+    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o dejen sus risas en el chat.",
+    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Hagan ruido en el chat con sus risas!",
     "¡Oigan, una Rosa cuesta una monedita y me ponen a llorar o a bailar! ¡Anímense!",
-    "¡El comediante más barato de TikTok está aquí! ¡Taps gratis a la pantalla para desbloquear chistes!",
-    "¡Mueve los dedos, mi rey! ¡Taps a la pantalla que la comedia no para!",
-    "¡Si llegamos a la meta de taps suelto un chiste bomba! ¡A tocar la pantalla todo el mundo!"
+    "¡El show de humor interactivo más prendido de TikTok! ¡Desbloqueen chistes gratis con sus risas!",
+    "¡Mueve los dedos, mi rey! ¡Manda corazones y risas para que la fiesta no pare!",
+    "¡Si llegamos a la meta de risas suelto un chiste bomba! ¡A reírse todo el mundo!"
   ];
 
   const IDLE_STORAGE_KEY = 'garabato_idle_config_v1';

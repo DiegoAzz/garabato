@@ -180,7 +180,7 @@ export class TomatoRain {
   }
 
   update(delta) {
-    const stageFloorY = 0.82; // Altura de la tarima
+    const stageFloorY = 0.35; // Altura de la tarima circular
 
     let anyActive = false;
 

@@ -45,7 +45,8 @@ export function initShowApp() {
 
   // 4. Comediante Stickman (en tarima)
   const singer = createStickman(true, 0xffffff);
-  singer.position.set(0, 0, -3.0);
+  // Comediante posicionado exactamente encima de la tarima (Y = 0.35, Z = -2.2)
+  singer.position.set(0, 0.35, -2.2);
   scene.add(singer);
 
   // 5. Público de Garabatos (Espectadores)
@@ -150,7 +151,7 @@ export function initShowApp() {
         if (milestoneBadgeEl) {
           milestoneBadgeEl.textContent = evt.isVip
             ? `¡REGALO VIP DE @${evt.user}! (${evt.gift || 'Regalo'})`
-            : `¡TAPS COMPLETADOS POR @${evt.user}!`;
+            : `¡META DE RISAS LOGRADA POR @${evt.user}!`;
         }
         if (milestoneQueueBadge) {
           if (remaining > 0) {
@@ -607,7 +608,7 @@ export function initShowApp() {
         </div>
         <div class="joke-card-meta" style="margin-bottom: 3px;">
           <span style="color: #ec4899; font-weight: 800; font-size: 8px;">🔥 META EN JUEGO</span>
-          <strong style="font-size: 9px; color: #f43f5e;">${currentTaps}/${reqTaps} Taps 👆</strong>
+          <strong style="font-size: 9px; color: #f43f5e;">${currentTaps}/${reqTaps} Risas 😂</strong>
         </div>
         <div class="joke-progress-track" style="height: 5px;">
           <div class="joke-progress-fill" style="width: ${pct}%;"></div>
@@ -634,7 +635,7 @@ export function initShowApp() {
           </div>
           <div class="joke-card-meta">
             <span style="font-size: 6.5px;">Siguiente</span>
-            <span style="font-size: 6.5px; color: #94a3b8;">${nextJoke.requiredTaps || 30} Taps</span>
+            <span style="font-size: 6.5px; color: #94a3b8;">${nextJoke.requiredTaps || 30} Risas</span>
           </div>
         `;
         nextCard.addEventListener('click', (e) => {
@@ -711,7 +712,7 @@ export function initShowApp() {
           } else {
             const cur = joke.currentTaps || 0;
             const req = joke.requiredTaps || 30;
-            sliderTriggerText.innerHTML = `👆 Gratis con Taps: <strong>${cur}/${req}</strong>`;
+            sliderTriggerText.innerHTML = `😂 Gratis con Risas: <strong>${cur}/${req}</strong>`;
           }
         }
 
@@ -791,7 +792,7 @@ export function initShowApp() {
     if (result) {
       renderJokesOnScreen();
       if (result.isCompleted) {
-        enqueueJoke(result.joke, 'Comunidad de Taps', false);
+        enqueueJoke(result.joke, 'Comunidad de Risas 😂', false);
         // Avanzar automáticamente al siguiente chiste en el repertorio
         const freeJokes = jokeManager.getFreeJokes();
         const currentIdx = freeJokes.findIndex(j => j.id === result.joke.id);
@@ -1028,7 +1029,7 @@ export function initShowApp() {
 
           cancelIdleInvitation();
           markActivity();
-          audioEngine.speakActorLine(`¡Atención mi gente! ${user} eligió el chiste número ${jokeNumber}: ${selectedJoke.title}. ¡Taps a la pantalla para escucharlo!`, {
+          audioEngine.speakActorLine(`¡Atención mi gente! ${user} eligió el chiste número ${jokeNumber}: ${selectedJoke.title}. ¡Risas y corazones en el chat para escucharlo!`, {
             pitch: 1.0,
             rate: 1.05
           });
@@ -1120,7 +1121,7 @@ export function initShowApp() {
     (u) => `¡Ojo que llegó ${u}! Mira esa cara de jefe que tiene... ¡Bienvenido, tú tienes el control de la tarima!`,
     (u) => `¡Atención todos, aplausos para ${u} que acaba de entrar! ¡Tú mandas compadre, si quieres ponerme a llorar solo dilo!`,
     (u) => `¡Llegó ${u}! Ya me estaba quedando sin aire, pero como tú mandas, ¡aquí estoy a tu entera disposición!`,
-    (u) => `¡Qué hubo ${u}! Bienvenido al show. Tira una Rosa para un tomatazo o haz taps para chistes gratis.`
+    (u) => `¡Qué hubo ${u}! Bienvenido al show. Tira una Rosa para un tomatazo o manda risas y buena vibra para chistes gratis.`
   ];
 
   function handleViewerJoin(user) {
@@ -1156,14 +1157,14 @@ export function initShowApp() {
   const missionTextEl = document.getElementById('mission-text');
   const ctaDynamicTextEl = document.getElementById('cta-dynamic-text');
   const LIVE_MISSION_TIPS = [
-    '🎯 ¡Chiste en juego! Haz taps para completarlo o escribe su número en el chat',
+    '🎯 ¡Chiste en juego! Manda risas para completarlo o escribe su número en el chat',
     '🌹 1 Rosa = Lluvia de Tomates en la cara del actor en la tarima',
     '👑 Regalos VIP dirigen cada movimiento del actor en tarima',
     '💬 Escribe un número del 1 al 50 en el chat para elegir el siguiente chiste',
     '💌 Manda un regalo y escribe tu chiste en el chat/interno ¡lo cuenta en vivo!'
   ];
   const LIVE_RULES_TIPS = [
-    '💡 <strong>¿Cómo jugar?</strong> 👆 Taps = Chiste en Juego | 💬 Escribe un número (1-50) | 🎁 Regalos = Órdenes',
+    '💡 <strong>¿Cómo jugar?</strong> ❤️ Risas = Chiste en Juego | 💬 Escribe un número (1-50) | 🎁 Regalos = Órdenes',
     '👑 <strong>¡El Público Manda!</strong> Los regalos de TikTok dirigen cada movimiento del actor en tarima.',
     '🍅 <strong>¡Castigo Cómico!</strong> Manda 1 Rosa y el público lo llena de tomates en vivo.',
     '💬 <strong>Elige tu Chiste:</strong> Escribe cualquier número del 1 al 50 en el chat para cambiar de chiste.'
@@ -1240,16 +1241,16 @@ export function initShowApp() {
   // ==========================================
   const IDLE_STORAGE_KEY = 'garabato_idle_config';
   const DEFAULT_IDLE_PHRASES = [
-    "¡Oigan! ¿Se durmieron todos o qué? ¡Denle taps a la pantalla que los chistes son gratis!",
-    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Tiren taps al corazón!",
-    "¿Qué pasó con los dedos de este público? ¡Taps a la pantalla muchachos, que el actor tiene que comer!",
-    "¡Epa! ¿Están congelados como estatuas? ¡Tóquenme la pantalla que quiero contar el chiste de los paisas!",
-    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o denle taps a la pantalla.",
-    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Taps, taps, taps a la pantalla!",
+    "¡Oigan! ¿Se durmieron todos o qué? ¡Manden risas y corazones al chat que los chistes son gratis!",
+    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Dejen su buena vibra en el chat!",
+    "¿Dónde está el público más alegre de TikTok? ¡Manden sus risas que el show está que arde!",
+    "¡Epa! ¿Están congelados como estatuas? ¡Manden risas al chat que quiero contar el chiste de los paisas!",
+    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o dejen sus risas en el chat.",
+    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Hagan ruido en el chat con sus risas!",
     "¡Oigan, una Rosa cuesta una monedita y me ponen a llorar o a bailar! ¡Anímense!",
-    "¡El comediante más barato de TikTok está aquí! ¡Taps gratis a la pantalla para desbloquear chistes!",
-    "¡Mueve los dedos, mi rey! ¡Taps a la pantalla para que la risa no pare!",
-    "¿Quién manda en este show? ¡Taps para chistes gratis o regalo para mandar al comediante!"
+    "¡El show de humor interactivo más prendido de TikTok! ¡Desbloqueen chistes gratis con sus risas!",
+    "¡Mueve los dedos, mi rey! ¡Manda corazones y risas para que la fiesta no pare!",
+    "¡Si llegamos a la meta de risas suelto un chiste bomba! ¡A reírse todo el mundo!"
   ];
 
   let idleConfig = {

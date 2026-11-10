@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 
 /**
  * GENERADOR DE PERSONAJES CARTOON STICKMAN ULTRA-LIGERO 3D
@@ -44,7 +44,7 @@ export function createStickman(isSinger = false, initialColor = null, customConf
 
   // 1. RAÍZ / CADERAS
   const hips = new THREE.Group();
-  hips.position.y = (isSinger ? 1.05 : 0.86) * scale;
+  hips.position.y = 0.785 * scale;
   group.add(hips);
 
   // Esfera de cadera negra
@@ -283,7 +283,7 @@ export function createStickman(isSinger = false, initialColor = null, customConf
   function createLeg(isLeft) {
     const side = isLeft ? -1 : 1;
     const hipJoint = new THREE.Group();
-    hipJoint.position.set(side * 0.14 * scale, -0.05, 0);
+    hipJoint.position.set(side * 0.14 * scale, -0.05 * scale, 0);
     hips.add(hipJoint);
 
     // Muslo

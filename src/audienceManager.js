@@ -32,15 +32,17 @@ export class AudienceManager {
 
   /**
    * Calcula la posición y rotación de cada espectador en círculos concéntricos
-   * mirando hacia el centro (0, 0, 0) donde se encuentra el comediante.
+   * mirando hacia la tarima central (0, 0, -2.2) donde se encuentra el comediante.
+   * Todos apoyados con los pies firmes sobre el piso en Y = 0.00 (sin hundirse).
    */
   calculateSlotPosition(index) {
+    const stageCenterZ = -2.2;
     const rings = [
-      { count: 12, radius: 2.8, yOffset: 0.0 },
-      { count: 18, radius: 3.9, yOffset: 0.12 },
-      { count: 24, radius: 5.1, yOffset: 0.25 },
-      { count: 32, radius: 6.4, yOffset: 0.40 },
-      { count: 40, radius: 7.8, yOffset: 0.55 }
+      { count: 12, radius: 3.5, yOffset: 0.0 },
+      { count: 18, radius: 4.8, yOffset: 0.0 },
+      { count: 24, radius: 6.2, yOffset: 0.0 },
+      { count: 32, radius: 7.8, yOffset: 0.0 },
+      { count: 40, radius: 9.6, yOffset: 0.0 }
     ];
 
     let currentIdx = index;
@@ -52,15 +54,24 @@ export class AudienceManager {
 
     const ring = rings[ringIdx];
     const totalInRing = ring.count;
-    // Ligero escalonado angular para evitar que se tapen
+    // Escalonado angular para máxima visibilidad entre filas
     const stagger = (ringIdx % 2 === 1) ? (Math.PI / totalInRing) : 0;
-    const angle = (currentIdx / totalInRing) * Math.PI * 2 + stagger;
+    let angle = (currentIdx / totalInRing) * Math.PI * 2 + stagger;
 
-    const posX = Math.sin(angle) * ring.radius;
-    const posZ = Math.cos(angle) * ring.radius;
-    const posY = ring.yOffset;
-    // Mirando hacia el escenario central (0, 0, 0)
-    const rotY = angle + Math.PI;
+    let posX = Math.sin(angle) * ring.radius;
+    let posZ = stageCenterZ + Math.cos(angle) * ring.radius;
+
+    // Pasillo despejado para la cámara frontal principal
+    if (posZ > 0 && Math.abs(posX) < 0.6) {
+      angle += (posX >= 0 ? 0.16 : -0.16);
+      posX = Math.sin(angle) * ring.radius;
+      posZ = stageCenterZ + Math.cos(angle) * ring.radius;
+    }
+
+    // Altura del suelo nivelada para que ningún personaje salga cortado por la mitad
+    const posY = 0.0;
+    // Mirando exactamente hacia el comediante en el centro de la tarima
+    const rotY = Math.atan2(-posX, stageCenterZ - posZ);
 
     return { posX, posY, posZ, rotY };
   }

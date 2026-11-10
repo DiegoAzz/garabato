@@ -12,27 +12,28 @@ export function buildDiscoStage(scene) {
   // ==========================================
   // 1. TARIMA CENTRAL
   // ==========================================
-  const stageWidth = 10;
-  const stageDepth = 6;
-  const stageHeight = 0.8;
+  const stageRadius = 2.3;
+  const stageHeight = 0.35;
+  const stageCenterZ = -2.2;
 
-  // Base de la tarima
-  const stageGeo = new THREE.BoxGeometry(stageWidth, stageHeight, stageDepth);
+  // Base de la tarima circular de comedia
+  const stageGeo = new THREE.CylinderGeometry(stageRadius, stageRadius + 0.15, stageHeight, 36);
   const stageMat = new THREE.MeshStandardMaterial({
     color: 0x111827,
     roughness: 0.25,
     metalness: 0.6
   });
   const stageMesh = new THREE.Mesh(stageGeo, stageMat);
-  stageMesh.position.set(0, stageHeight / 2, -3);
+  stageMesh.position.set(0, stageHeight / 2, stageCenterZ);
   stageMesh.receiveShadow = true;
   stageGroup.add(stageMesh);
 
-  // Borde neon brillante alrededor de la tarima
-  const rimGeo = new THREE.BoxGeometry(stageWidth + 0.1, 0.1, stageDepth + 0.1);
+  // Borde neon brillante tubular (Torus) alrededor de la tarima (no cubre el piso)
+  const rimGeo = new THREE.TorusGeometry(stageRadius + 0.02, 0.035, 10, 36);
   const rimMat = new THREE.MeshBasicMaterial({ color: 0xec4899 });
   const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-  rimMesh.position.set(0, stageHeight + 0.05, -3);
+  rimMesh.rotation.x = Math.PI / 2;
+  rimMesh.position.set(0, stageHeight, stageCenterZ);
   stageGroup.add(rimMesh);
 
   // ==========================================
@@ -135,8 +136,8 @@ export function buildDiscoStage(scene) {
     speakers.push({ group: spkGroup, subCone, tweetCone });
   }
 
-  createSpeaker(-5.8, -2.5, 0.25);
-  createSpeaker(5.8, -2.5, -0.25);
+  createSpeaker(-3.2, stageCenterZ, 0.25);
+  createSpeaker(3.2, stageCenterZ, -0.25);
 
   // ==========================================
   // 5. CUATRO FOCOS MÓVILES SIMULADOS (LIGHT CONES)
@@ -180,31 +181,39 @@ export function buildDiscoStage(scene) {
   }
 
   // ==========================================
-  // 6. PISTA DE BAILE DE DISCOTECA (TILES ILUMINADOS)
+  // 6. SUELO DE ARENA ANFITEATRO Y ANILLOS CONCÉNTRICOS EN EL PISO
   // ==========================================
-  const floorTiles = [];
-  const gridX = 14;
-  const gridZ = 22;
-  const tileSize = 1.35;
+  const floorMesh = new THREE.Mesh(
+    new THREE.CircleGeometry(16, 48),
+    new THREE.MeshStandardMaterial({
+      color: 0x060913,
+      roughness: 0.8,
+      metalness: 0.1
+    })
+  );
+  floorMesh.rotation.x = -Math.PI / 2;
+  floorMesh.position.set(0, 0, stageCenterZ);
+  floorMesh.receiveShadow = true;
+  stageGroup.add(floorMesh);
 
-  const danceFloorGroup = new THREE.Group();
-  danceFloorGroup.position.set(0, 0.01, 11.5);
+  // Anillos concéntricos neón grabados en el piso para guiar las filas del público
+  const arenaRingColors = [0x00f0ff, 0x8b5cf6, 0xfacc15, 0xec4899, 0x10b981];
+  const arenaRingRadii = [3.5, 4.8, 6.2, 7.8, 9.6];
+  const floorTiles = []; // Mantenido para compatibilidad
 
-  for (let ix = -gridX / 2; ix < gridX / 2; ix++) {
-    for (let iz = -gridZ / 2; iz < gridZ / 2; iz++) {
-      const tileGeo = new THREE.PlaneGeometry(tileSize * 0.94, tileSize * 0.94);
-      const isAlt = (Math.abs(ix) + Math.abs(iz)) % 2 === 0;
-      const tileMat = new THREE.MeshBasicMaterial({
-        color: isAlt ? 0x1e1b4b : 0x0f172a
-      });
-      const tile = new THREE.Mesh(tileGeo, tileMat);
-      tile.rotation.x = -Math.PI / 2;
-      tile.position.set(ix * tileSize + tileSize / 2, 0, iz * tileSize + tileSize / 2);
-      danceFloorGroup.add(tile);
-      floorTiles.push({ mesh: tile, mat: tileMat, ix, iz });
-    }
-  }
-  stageGroup.add(danceFloorGroup);
+  arenaRingRadii.forEach((r, idx) => {
+    const ringGeo = new THREE.RingGeometry(r - 0.025, r + 0.025, 64);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: arenaRingColors[idx % arenaRingColors.length],
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35
+    });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = -Math.PI / 2;
+    ringMesh.position.set(0, 0.005, stageCenterZ);
+    stageGroup.add(ringMesh);
+  });
 
   // ==========================================
   // 7. SISTEMA DE CONFETI CELEBRATORIO
@@ -231,7 +240,7 @@ export function buildDiscoStage(scene) {
     });
   }
 
-  function burstConfetti(origin = new THREE.Vector3(0, 4.5, -2)) {
+  function burstConfetti(origin = new THREE.Vector3(0, 4.0, stageCenterZ)) {
     for (let c = 0; c < confettiCount; c++) {
       const p = confettiPool[c];
       p.mesh.position.copy(origin);

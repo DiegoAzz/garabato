@@ -11,28 +11,28 @@ export class CameraDirector {
     // Planos para formato Horizontal (Escritorio)
     this.landscapeShots = {
       WIDE: {
-        pos: new THREE.Vector3(0, 5.5, 12.0),
-        target: new THREE.Vector3(0, 2.0, -1.5)
+        pos: new THREE.Vector3(0, 5.2, 11.0),
+        target: new THREE.Vector3(0, 1.5, -1.8)
       },
       SINGER: {
-        pos: new THREE.Vector3(0, 2.4, 2.0),
-        target: new THREE.Vector3(0, 1.8, -2.8)
+        pos: new THREE.Vector3(0, 2.2, 1.8),
+        target: new THREE.Vector3(0, 1.5, -2.2)
       },
       PRIMERA_PLANA: {
-        pos: new THREE.Vector3(0, 1.8, 0.9),
-        target: new THREE.Vector3(0, 1.35, -3.0)
+        pos: new THREE.Vector3(0, 1.8, 0.8),
+        target: new THREE.Vector3(0, 1.4, -2.2)
       },
       CROWD: {
-        pos: new THREE.Vector3(-3.5, 2.8, 8.5),
-        target: new THREE.Vector3(0, 2.2, -2.0)
+        pos: new THREE.Vector3(-3.2, 2.8, 8.0),
+        target: new THREE.Vector3(0, 1.6, -1.8)
       },
       SIDE: {
-        pos: new THREE.Vector3(7.5, 4.5, 2.5),
-        target: new THREE.Vector3(0, 2.0, -2.2)
+        pos: new THREE.Vector3(6.5, 3.8, 2.0),
+        target: new THREE.Vector3(0, 1.6, -2.0)
       },
       DIVE: {
-        pos: new THREE.Vector3(3.2, 2.8, 6.5),
-        target: new THREE.Vector3(0, 1.5, 0.5)
+        pos: new THREE.Vector3(2.8, 2.6, 6.0),
+        target: new THREE.Vector3(0, 1.4, 0.0)
       }
     };
 
@@ -40,29 +40,29 @@ export class CameraDirector {
     // Siempre frontales y perfectamente centrados (X = 0) para no perder nunca al cantante ni la tarima
     this.verticalShots = {
       WIDE: {
-        pos: new THREE.Vector3(0, 8.2, 11.8),
-        target: new THREE.Vector3(0, 0.8, -0.4)
+        pos: new THREE.Vector3(0, 7.8, 11.2),
+        target: new THREE.Vector3(0, 1.4, -1.8)
       },
       SINGER: {
-        pos: new THREE.Vector3(0, 3.2, 3.8),
-        target: new THREE.Vector3(0, 1.8, -2.8)
+        pos: new THREE.Vector3(0, 2.6, 2.8),
+        target: new THREE.Vector3(0, 1.6, -2.2)
       },
       PRIMERA_PLANA: {
         // Enfoque frontal directo sin público delante, capturando cuerpo completo y tarima con máximo detalle
-        pos: new THREE.Vector3(0, 2.2, 1.6),
-        target: new THREE.Vector3(0, 1.35, -3.0)
+        pos: new THREE.Vector3(0, 1.9, 1.2),
+        target: new THREE.Vector3(0, 1.5, -2.2)
       },
       CROWD: {
-        pos: new THREE.Vector3(0, 7.2, 15.0),
-        target: new THREE.Vector3(0, 1.8, -1.2)
+        pos: new THREE.Vector3(0, 7.0, 13.5),
+        target: new THREE.Vector3(0, 1.4, -1.5)
       },
       SIDE: {
-        pos: new THREE.Vector3(0, 7.8, 16.0), // En 9:16 se mantiene centrado en X para no salir de encuadre
-        target: new THREE.Vector3(0, 2.0, -1.8)
+        pos: new THREE.Vector3(0, 7.2, 14.0), // En 9:16 se mantiene centrado en X para no salir de encuadre
+        target: new THREE.Vector3(0, 1.5, -1.8)
       },
       DIVE: {
-        pos: new THREE.Vector3(0, 4.2, 8.5),
-        target: new THREE.Vector3(0, 1.6, 0.0)
+        pos: new THREE.Vector3(0, 4.0, 7.5),
+        target: new THREE.Vector3(0, 1.5, -0.5)
       }
     };
 
