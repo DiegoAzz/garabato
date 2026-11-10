@@ -125,39 +125,83 @@ app.post('/api/music/import-url', async (req, res) => {
 
     // 0. Detectar si el usuario pegó un enlace a una CARPETA de Google Drive
     const folderMatch = rawUrl.match(/drive\.google\.com\/(?:drive\/)?(?:u\/\d+\/)?folders\/([a-zA-Z0-9_-]+)/i);
-    const driveApiKey = req.body.apiKey || process.env.GOOGLE_DRIVE_API_KEY;
 
     if (folderMatch) {
       const folderId = folderMatch[1];
-      if (driveApiKey) {
-        // Si hay API Key de Google Drive, listar y descargar todas las canciones de la carpeta
-        try {
-          const listUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&key=${driveApiKey}&fields=files(id,name,mimeType,size)&pageSize=100`;
-          const listResp = await fetch(listUrl);
-          const listData = await listResp.json();
-          if (listData.files && listData.files.length > 0) {
-            const audioFiles = listData.files.filter(f => 
-              (f.mimeType && f.mimeType.startsWith('audio/')) || 
-              /\.(mp3|wav|ogg|m4a|aac)$/i.test(f.name)
-            );
-            return res.json({
-              success: true,
-              isFolder: true,
-              folderId,
-              files: audioFiles,
-              message: `Se encontraron ${audioFiles.length} canciones en la carpeta de Drive.`
-            });
+      console.log(`[Drive Folder] Analizando carpeta pública de Drive: ${folderId}`);
+
+      try {
+        const folderPageUrl = `https://drive.google.com/drive/folders/${folderId}`;
+        const folderRes = await fetch(folderPageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
           }
-        } catch (e) {
-          console.warn('[Drive API Error]:', e);
+        });
+
+        if (!folderRes.ok) {
+          throw new Error(`Google Drive devolvió error ${folderRes.status}`);
         }
+
+        const html = await folderRes.text();
+        const fileMap = new Map();
+
+        // Patrón 1: aria-label="NOMBRE.mp3..." y ssk='...:FILE_ID-0-16'
+        const regex1 = /aria-label="([^"]+?\.(?:mp3|wav|ogg|m4a|aac))[^"]*".*?ssk='[^:]+:[^:]+:([a-zA-Z0-9_-]{25,})/gi;
+        let m;
+        while ((m = regex1.exec(html)) !== null) {
+          const rawName = m[1].replace(/^x22/i, '').trim();
+          const cleanId = m[2].split('-')[0].trim();
+          if (cleanId.length >= 25 && !fileMap.has(cleanId)) {
+            fileMap.set(cleanId, rawName);
+          }
+        }
+
+        // Patrón 2: ["FILE_ID",["NOMBRE.mp3"...
+        const regex2 = /\["([a-zA-Z0-9_-]{25,})",\["([^"]+?\.(?:mp3|wav|ogg|m4a|aac))"/gi;
+        while ((m = regex2.exec(html)) !== null) {
+          const cleanId = m[1].split('-')[0].trim();
+          const rawName = m[2].replace(/^x22/i, '').trim();
+          if (cleanId.length >= 25 && !fileMap.has(cleanId)) {
+            fileMap.set(cleanId, rawName);
+          }
+        }
+
+        const files = Array.from(fileMap.entries()).map(([id, name]) => {
+          // Decodificar posibles entidades HTML o caracteres especiales
+          let cleanName = name
+            .replace(/&amp;/g, '&')
+            .replace(/&#39;/g, "'")
+            .replace(/&quot;/g, '"')
+            .replace(/\.[^/.]+$/, '')
+            .trim();
+          return {
+            id,
+            name: cleanName,
+            filename: `${cleanName}.mp3`,
+            url: `https://drive.google.com/uc?export=download&id=${id}`
+          };
+        });
+
+        if (files.length > 0) {
+          console.info(`[Drive Folder] ¡Éxito! Se encontraron ${files.length} canciones en la carpeta.`);
+          return res.json({
+            success: true,
+            isFolder: true,
+            folderId,
+            count: files.length,
+            files: files,
+            message: `¡Se encontraron ${files.length} canciones en tu carpeta de Google Drive!`
+          });
+        }
+      } catch (e) {
+        console.warn('[Drive Folder Scraping Warning]:', e.message);
       }
 
       return res.status(400).json({
         success: false,
         isFolder: true,
         folderId,
-        error: 'Has ingresado el enlace de una CARPETA de Google Drive. Para cargar todas las canciones de una vez, usa el botón "📂 Cargar Carpeta Completa" (seleccionando tu carpeta local) o selecciona todas las canciones en Drive (Ctrl+A), copia sus enlaces y pégalos en "📋 Importar Múltiples Links".'
+        error: 'No se pudieron leer las canciones de esta carpeta. Asegúrate de que la carpeta en Google Drive esté configurada como "Cualquier persona con el enlace".'
       });
     }
 

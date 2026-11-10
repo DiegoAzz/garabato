@@ -531,7 +531,41 @@ export function initAdminApp() {
         });
         const data = await res.json();
 
-        if (data.success && data.track) {
+        if (data.success && data.isFolder && Array.isArray(data.files)) {
+          // ¡Carpeta de Google Drive detectada y leída con éxito!
+          showUploadStatus(`¡Carpeta de Google Drive detectada! Importando ${data.files.length} canciones al DJ... 🚀`);
+          djStreamUrl.value = '';
+
+          let imported = 0;
+          let firstTrack = null;
+
+          for (let i = 0; i < data.files.length; i++) {
+            const f = data.files[i];
+            const percent = Math.round(((i + 1) / data.files.length) * 100);
+            showUploadStatus(`Descargando ${i + 1} de ${data.files.length}: "${f.name}" (${percent}%)...`);
+
+            try {
+              const fileRes = await fetch('/api/music/import-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: f.url, name: f.name })
+              });
+              const fileData = await fileRes.json();
+              if (fileData.success && fileData.track) {
+                imported++;
+                if (!firstTrack) firstTrack = fileData.track;
+              }
+            } catch (e) {
+              console.warn('[Batch Drive Import Error]:', e);
+            }
+          }
+
+          showUploadStatus(`¡Carpeta importada al 100%! Se añadieron ${imported} canciones de tu Google Drive 🔥`);
+          await fetchMusicPlaylist();
+          if (firstTrack) {
+            playCustomTrack(firstTrack);
+          }
+        } else if (data.success && data.track) {
           showUploadStatus(`¡Pista "${data.track.name}" importada y lista! 🔥`);
           djStreamUrl.value = '';
           await fetchMusicPlaylist();
