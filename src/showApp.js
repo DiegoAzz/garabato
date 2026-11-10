@@ -141,31 +141,17 @@ export function initShowApp() {
   const jokesFreeListEl = document.getElementById('jokes-free-list');
 
   // ==========================================
-  // COLA PRIORIZADA DE CHISTES (VIP > GRATIS)
+  // COLA DE EVENTOS DJ EN VIVO
   // ==========================================
   const eventQueue = new EventQueue({
-    onEventStart: (evt, remaining) => {
+    onEventStart: (evt) => {
+      // Ocultar cualquier modal central para no tapar la cabina ni la cara del DJ
       if (milestoneCelebration) {
-        if (milestoneIconEl) milestoneIconEl.textContent = evt.icon || (evt.isVip ? '👑' : '🎙️');
-        if (milestoneNameEl) milestoneNameEl.textContent = evt.title || 'Chiste de Stand-Up';
-        if (milestoneBadgeEl) {
-          milestoneBadgeEl.textContent = evt.isVip
-            ? `¡REGALO VIP DE @${evt.user}! (${evt.gift || 'Regalo'})`
-            : `¡META DE RISAS LOGRADA POR @${evt.user}!`;
-        }
-        if (milestoneQueueBadge) {
-          if (remaining > 0) {
-            milestoneQueueBadge.textContent = `+${remaining} en cola`;
-            milestoneQueueBadge.classList.remove('hidden');
-          } else {
-            milestoneQueueBadge.classList.add('hidden');
-          }
-        }
-        milestoneCelebration.classList.remove('hidden');
+        milestoneCelebration.classList.add('hidden');
       }
 
       if (queueStatusText) {
-        queueStatusText.textContent = evt.isVip ? `👑 ${evt.title}` : `🎙️ ${evt.title}`;
+        queueStatusText.textContent = `🎧 ${evt.title || 'DJ Mix'}`;
       }
     },
     onQueueUpdate: (queueData) => {
@@ -173,7 +159,7 @@ export function initShowApp() {
 
       if (queueCountsBadge) {
         if (queueData.pendingCount > 0) {
-          queueCountsBadge.textContent = `${queueData.vipCount > 0 ? `👑${queueData.vipCount} ` : ''}${queueData.normalCount > 0 ? `🆓${queueData.normalCount} ` : ''}cola`;
+          queueCountsBadge.textContent = `${queueData.pendingCount} en cola`;
           queueCountsBadge.classList.remove('hidden');
         } else {
           queueCountsBadge.classList.add('hidden');
@@ -181,11 +167,11 @@ export function initShowApp() {
       }
 
       if (!queueData.active && queueStatusText) {
-        queueStatusText.textContent = '🎙️ Comedy Club';
+        queueStatusText.textContent = '🎧 DJ Live Club';
       }
     },
     onEventEnd: () => {
-      if (milestoneCelebration && !eventQueue.getCurrentEvent()) {
+      if (milestoneCelebration) {
         milestoneCelebration.classList.add('hidden');
       }
     }
@@ -257,384 +243,150 @@ export function initShowApp() {
   }
 
   // ==========================================
-  // EJECUCIÓN DE ÓRDENES AL ACTOR ("EL PÚBLICO MANDA")
+  // EJECUCIÓN DE EFECTOS Y REGALOS DJ EN VIVO
   // ==========================================
-  function enqueueActorAction(actionType, user = 'Espectador', isVip = false, gift = null) {
+  function enqueueDjAction(actionType, user = 'Espectador', isVip = false, gift = null) {
     markActivity();
     const act = (actionType || '').toUpperCase();
-    let title = '¡Acción del Actor!';
-    let icon = '🎭';
+    const cleanU = String(user || 'Fan').replace(/^@+/, '').trim();
+    let title = '¡Efecto DJ!';
+    let icon = '🎧';
 
-    if (act === 'LLORAR' || act === 'CRY') {
-      title = '¡Poner a Llorar al Actor!';
-      icon = '😭';
-    } else if (act === 'BAILAR' || act === 'DANCE') {
-      title = '¡Poner a Bailar al Actor!';
+    if (act === 'SCRATCH' || act === 'CONTROL') {
+      title = 'Scratch en Tornamesa';
+      icon = '💿';
+    } else if (act === 'DROP' || act === 'BASS' || act === 'GG') {
+      title = 'Bass Drop Explosivo';
+      icon = '💣';
+    } else if (act === 'CONFETTI' || act === 'DONA' || act === 'ROSA') {
+      title = 'Lluvia de Confeti';
+      icon = '🎉';
+    } else if (act === 'CORONAR' || act === 'CORONA' || act === 'REY') {
+      title = 'Rey de la Noche VIP';
+      icon = '👑';
+    } else if (act === 'BAILAR' || act === 'DANCE' || act === 'CORAZON') {
+      title = '¡Pista de Baile Prendida!';
       icon = '💃';
-    } else if (act === 'CANTAR' || act === 'SING') {
-      title = '¡Poner a Cantar al Actor!';
-      icon = '🎤';
-    } else if (act === 'RABIA' || act === 'RAGE') {
-      title = '¡Rabieta Cómica del Actor!';
-      icon = '😡';
-    } else if (act === 'FLEXIONES' || act === 'PUSHUPS') {
-      title = '¡Castigo: Hacer Flexiones!';
-      icon = '🏋️';
-    } else if (act === 'ESTATUA' || act === 'FREEZE') {
-      title = '¡Modo Estatua Congelado!';
-      icon = '🥶';
-    } else if (act === 'TOMATE' || act === 'TOMATO' || act === 'TOMATOES') {
-      title = '¡Tomatazo al Actor!';
-      icon = '🍅';
-    } else if (act === 'CUENTO' || act === 'STORY') {
-      title = '¡Contar un Cuento en Vivo!';
-      icon = '💌';
+    } else {
+      title = `¡Regalo: ${gift || 'Especial'}!`;
+      icon = '🎁';
     }
 
-    const actionDuration = (act === 'BAILAR' || act === 'DANCE') ? 10000 : (act === 'CANTAR' || act === 'SING') ? 11500 : 6000;
+    const actionDuration = 4500;
 
     eventQueue.enqueue({
       type: 'ACTION',
       isAction: true,
       isVip,
-      user,
+      user: cleanU,
       gift,
       title,
       icon,
-      setup: `${user} ordenó: ¡${title}!`,
+      setup: `¡@${cleanU} activó ${title}!`,
       duration: actionDuration,
       execute: (evt, done) => {
         unlockAudio();
         singer.animController.resetToIdle();
 
-        const specPos = audience.getSpectatorPosition(user);
-        if (specPos) audience.highlightSpectator(user, 4000);
-        if (act === 'BAILAR' || act === 'DANCE' || act === 'CANTAR' || act === 'SING') {
-          cameraDirector.lockShot('PRIMERA_PLANA', actionDuration);
-        } else {
-          cameraDirector.lockShot('SINGER', actionDuration);
-        }
+        const specPos = audience.getSpectatorPosition(cleanU);
+        if (specPos) audience.highlightSpectator(cleanU, 4000);
 
         stage.setLedData({
-          songTitle: `🎭 ${title.toUpperCase()}`,
-          subtitles: `Ordenado por @${user}`
+          songTitle: `🎧 ${title.toUpperCase()}`,
+          subtitles: `Activado por @${cleanU}`
         });
 
-        const cleanU = String(user || 'amigo').replace(/^@+/, '').trim();
-        showSubtitlePhrase(`${icon} ${cleanU} ordenó: ${title}`, icon, false);
+        showSubtitlePhrase(`${icon} ¡@${cleanU} activó ${title}! 🔥`, icon, false);
 
-        if (isVip && giftBanner) {
+        if (giftBanner && giftUser && giftItem) {
           giftUser.textContent = cleanU;
-          giftItem.textContent = gift || 'Regalo Especial';
+          giftItem.textContent = gift || title;
           giftBanner.classList.remove('hidden');
           setTimeout(() => giftBanner.classList.add('hidden'), 3500);
         }
 
-        if (act === 'LLORAR' || act === 'CRY') {
-          singer.animController.triggerCryReaction(cleanU, 4500);
-          audioEngine.playCryingDrama(4.0);
-          audioEngine.speakActorLine(`¡Buaaa! ¡Por qué me haces llorar ${cleanU}?!`, {
-            pitch: 1.04,
-            onChunk: (chunk) => showSubtitlePhrase(chunk, '😭', false)
-          });
-          setTimeout(() => {
-            hideSubtitles();
-            cameraDirector.unlockShot();
-            singer.animController.resetToIdle();
-            done();
-          }, 4800);
-        } else if (act === 'BAILAR' || act === 'DANCE') {
-          cameraDirector.lockShot('PRIMERA_PLANA', 9500);
+        if (act === 'SCRATCH' || act === 'CONTROL') {
+          singer.animController.triggerDjScratch(4500);
+          audioEngine.playVinylScratch();
+        } else if (act === 'DROP' || act === 'BASS' || act === 'GG') {
+          singer.animController.triggerDjDrop(5000);
+          audioEngine.playBassDrop();
+          cameraDirector.shake(0.5, 800);
+          stage.burstConfetti();
+        } else if (act === 'CONFETTI' || act === 'DONA' || act === 'ROSA') {
+          singer.animController.triggerDjHandsUp(4000);
+          stage.burstConfetti();
+          audioEngine.playCheer();
+          audioEngine.playCrowdApplause(4.0);
+        } else if (act === 'CORONAR' || act === 'CORONA' || act === 'REY') {
+          audience.promoteToVIP(cleanU, 'rey');
+          stage.burstConfetti();
+          audioEngine.playCheer();
+          singer.animController.triggerDjHandsUp(4000);
+        } else if (act === 'BAILAR' || act === 'DANCE' || act === 'CORAZON') {
           singer.animController.triggerDanceFrenzyReaction();
-          stage.triggerExtremeDisco(8.5);
-          audience.triggerFrenzy(8.5);
-          stage.setLedData({ songTitle: `🕺 BAILE DE @${cleanU.toUpperCase()}`, subtitles: '🔥 ¡PASOS PROHIBIDOS! 🔥' });
-          hideSubtitles();
-
-          audioEngine.startPartyDanceTrack(8.0);
-          audioEngine.speakActorLine(`¡Música maestro! ¡A romper la pista con los pasos prohibidos por orden de ${cleanU}!`, {
-            pitch: 1.0,
-            rate: 1.04
-          });
-
-          setTimeout(() => {
-            audioEngine.playCrowdApplause(4.0);
-            showSubtitlePhrase(`👏 ¡Uff, qué sabrosura! ¡Gracias por el baile ${cleanU}!`, '🎉', true);
-            audioEngine.speakActorLine(`¡Uff, qué sabrosura de música! ¡Gracias por ponerme a bailar ${cleanU}!`, { pitch: 1.0 });
-            setTimeout(() => {
-              hideSubtitles();
-              cameraDirector.unlockShot();
-              singer.animController.resetToIdle();
-              done();
-            }, 1400);
-          }, 8200);
-        } else if (act === 'CANTAR' || act === 'SING') {
-          cameraDirector.lockShot('PRIMERA_PLANA', 13500);
-
-          const songsCatalog = [
-            {
-              genre: '🤠 RANCHERA DE DESPECHO',
-              intro: `¡Con sentimiento por orden de ${cleanU}!`,
-              lyrics: `¡Y volver, volver, volveeeer! ¡A comer empanadas con ají bien picante! ¡Nos dejaron sin plata pero con dignidad ${cleanU}! ¡Ajúa!`,
-              outro: `¡Viva la ranchera y viva ${cleanU}!`
-            },
-            {
-              genre: '🔥 REGUETÓN DE TIKTOK',
-              intro: `¡Dímelo DJ, suelta el beat para ${cleanU}!`,
-              lyrics: `¡Tra tra tra! ¡Báilalo hasta abajo ${cleanU}! ¡No tengo un Ferrari pero tengo este piquete en el live! ¡Báilalo que esto se prende!`,
-              outro: `¡Qué flow tan criminal, gracias ${cleanU}!`
-            },
-            {
-              genre: '🎭 ÓPERA DRAMÁTICA ABSURDA',
-              intro: `¡Mi do de pecho para ${cleanU}!`,
-              lyrics: `¡Fiiiiígaro! ¡Fígaro, Fígaro, Fígaroooo! ¡O sole mío, devuélveme el pasaje del metro! ¡Qué voz tan celestial tengo ${cleanU}!`,
-              outro: `¡Grazie, gracias, el tenor de TikTok!`
-            },
-            {
-              genre: '🪗 VALLENATO COSTERO',
-              intro: `¡Ay hombe! ¡Con sabor a fiesta para ${cleanU}!`,
-              lyrics: `¡Esta noche yo me voy de parranda con ${cleanU}! ¡Porque la vida es sabrosa y el live está prendido! ¡Con acordeón y alegría en el pecho!`,
-              outro: `¡Eso es compadre, qué viva el vallenato!`
-            }
-          ];
-
-          const song = songsCatalog[Math.floor(Math.random() * songsCatalog.length)];
-          stage.setLedData({ songTitle: `🎤 ${song.genre}`, subtitles: `Canta para @${cleanU}` });
-          showSubtitlePhrase(`${song.genre}: ${song.intro}`, '🎤', false);
-
-          singer.animController.danceMove = 'salsa';
-          audience.triggerFrenzy(7.0);
-          audioEngine.startSingingAccompaniment(9.0);
-
-          const songText = `${song.intro}. ${song.lyrics}. ${song.outro}`;
-          audioEngine.speakActorLine(songText, {
-            pitch: 1.0,
-            rate: 1.02,
-            onChunk: (chunk) => showSubtitlePhrase(chunk, '🎤', true)
-          });
-
-          setTimeout(() => {
-            audioEngine.playCrowdApplause(4.0);
-            audioEngine.playCheer();
-            showSubtitlePhrase(`👏 ¡Ovación del público para ${cleanU}!`, '⭐', true);
-            setTimeout(() => {
-              hideSubtitles();
-              cameraDirector.unlockShot();
-              singer.animController.resetToIdle();
-              done();
-            }, 1400);
-          }, 9200);
-        } else if (act === 'RABIA' || act === 'RAGE') {
-          singer.animController.triggerRageReaction(cleanU, 4500);
-          audioEngine.playTantrumRage(3.5);
-          audioEngine.speakActorLine(`¡Ya me cansé! ¡El actor de la tarima soy yo ${cleanU}!`, {
-            pitch: 0.98,
-            rate: 1.15,
-            onChunk: (chunk) => showSubtitlePhrase(chunk, '😡', false)
-          });
-          setTimeout(() => {
-            hideSubtitles();
-            cameraDirector.unlockShot();
-            singer.animController.resetToIdle();
-            done();
-          }, 4600);
-        } else if (act === 'FLEXIONES' || act === 'PUSHUPS') {
-          singer.animController.triggerPushupsReaction(cleanU, 5000);
-          audioEngine.speakActorLine(`Uno... dos... ¡no doy más ${cleanU}!`, {
-            pitch: 1.0,
-            onChunk: (chunk) => showSubtitlePhrase(chunk, '🏋️', false)
-          });
-          setTimeout(() => {
-            hideSubtitles();
-            cameraDirector.unlockShot();
-            singer.animController.resetToIdle();
-            done();
-          }, 5000);
-        } else if (act === 'ESTATUA' || act === 'FREEZE') {
-          const freezeDuration = 4000;
-          singer.animController.triggerFreezeReaction(freezeDuration);
-          audioEngine.playFreezeChime();
-          showSubtitlePhrase(`🧊 Modo estatua congelado por ${cleanU}`, '🧊', false);
-
-          setTimeout(() => {
-            hideSubtitles();
-            cameraDirector.unlockShot();
-            singer.animController.resetToIdle();
-            audioEngine.speakActorLine(`¡Uff, ya me descongelé! ¡Casi me da hipotermia ${cleanU}!`, {
-              pitch: 1.0,
-              rate: 1.05
-            });
-            setTimeout(() => {
-              singer.animController.resetToIdle();
-              done();
-            }, 1400);
-          }, freezeDuration);
-        } else if (act === 'TOMATE' || act === 'TOMATO' || act === 'TOMATOES') {
-          for (let i = 0; i < 6; i++) {
-            setTimeout(() => {
-              const target = singer.position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.7, 0.4, (Math.random() - 0.5) * 0.4));
-              tomatoRain.throwAt(target, specPos, () => {
-                singer.animController.triggerHitReaction();
-                audioEngine.playPainOuch();
-              });
-            }, i * 320);
-          }
-          tomatoRain.trigger();
-          audioEngine.playComicalBoo();
-          audioEngine.speakActorLine(`¡Auch! ¡Qué puntería con esa Rosa de tomates ${cleanU}!`, {
-            pitch: 1.02,
-            onChunk: (chunk) => showSubtitlePhrase(chunk, '🍅', false)
-          });
-          setTimeout(() => {
-            hideSubtitles();
-            cameraDirector.unlockShot();
-            singer.animController.resetToIdle();
-            done();
-          }, 4000);
-        } else if (act === 'CUENTO' || act === 'STORY') {
-          cameraDirector.lockShot('PRIMERA_PLANA', 8000);
-          singer.animController.triggerWelcomeReaction(cleanU, 4000);
-          showSubtitlePhrase(`💌 ¡Un saludo especial para @${cleanU}!`, '💌', false);
-          audioEngine.speakActorLine(`¡Atención mi gente! ¡Un saludo especial para ${cleanU} que está prendiendo la pista de baile hoy!`, {
-            pitch: 1.0,
-            rate: 1.04
-          });
-          setTimeout(() => {
-            hideSubtitles();
-            cameraDirector.unlockShot();
-            singer.animController.resetToIdle();
-            done();
-          }, 6500);
+          stage.triggerExtremeDisco(5.0);
+          audience.triggerFrenzy(5.0);
+          audioEngine.playCrowdApplause(3.5);
         } else {
-          setTimeout(() => {
-            singer.animController.resetToIdle();
-            done();
-          }, 2000);
+          stage.burstConfetti();
+          audioEngine.playCheer();
+          singer.animController.triggerDjHandsUp(3500);
         }
+
+        setTimeout(() => {
+          hideSubtitles();
+          singer.animController.resetToIdle();
+          done();
+        }, actionDuration);
       }
     });
   }
 
+  // Alias para retrocompatibilidad
+  const enqueueActorAction = enqueueDjAction;
+
   // ==========================================
-  // RENDERIZADO INTELIGENTE DE CHISTES PARA TIKTOK LIVE
-  // ==========================================
-  // PANELES LATERALES 100% DJ Y PISTA DE BAILE (SIN CHISTES)
+  // MINI TARJETA DE SOLO 3 REGALOS VIP DJ
   // ==========================================
   const sliderEl = document.getElementById('jokes-auto-slider');
-  if (sliderEl) {
-    sliderEl.style.display = 'none';
-  }
+  if (sliderEl) sliderEl.style.display = 'none';
 
   const DJ_VIP_EFFECTS = [
     {
-      id: 'fx_scratch',
-      icon: '💿',
-      title: 'Scratch en Tornamesa',
-      gift: '🎮 Control',
-      action: () => {
-        singer.animController.triggerDjScratch(4500);
-        audioEngine.playVinylScratch();
-        showSubtitlePhrase('💿 ¡SCRATCH EN TORNAMESA! 🔥', '💿', true);
-      }
+      id: 'scratch',
+      icon: '🎮',
+      title: 'Control',
+      sub: '💿 Scratch DJ',
+      action: (u = 'VIP') => enqueueDjAction('SCRATCH', u, true, '🎮 Control')
     },
     {
-      id: 'fx_drop',
-      icon: '💣',
-      title: 'Bass Drop Explosivo',
-      gift: '💥 Super GG',
-      action: () => {
-        singer.animController.triggerDjDrop(5000);
-        audioEngine.playBassDrop();
-        cameraDirector.shake(0.5, 800);
-        stage.burstConfetti();
-        showSubtitlePhrase('💣 ¡BASS DROP EN LA PISTA! 💥', '💣', true);
-      }
+      id: 'drop',
+      icon: '💥',
+      title: 'Super GG',
+      sub: '💣 Bass Drop',
+      action: (u = 'VIP') => enqueueDjAction('DROP', u, true, '💥 Super GG')
     },
     {
-      id: 'fx_dance',
-      icon: '💃',
-      title: 'Baile Loco en Tarima',
-      gift: '💖 Corazón',
-      action: () => {
-        enqueueActorAction('BAILAR', 'EspectadorVIP', true, '💖 Corazón');
-      }
-    },
-    {
-      id: 'fx_king',
-      icon: '👑',
-      title: 'Rey de la Noche VIP',
-      gift: '👑 Corona',
-      action: () => {
-        enqueueActorAction('CORONAR', 'EspectadorVIP', true, '👑 Corona');
-        stage.burstConfetti();
-        audioEngine.playCheer();
-      }
-    },
-    {
-      id: 'fx_confetti',
-      icon: '🎉',
-      title: 'Lluvia de Confeti',
-      gift: '🍩 Dona',
-      action: () => {
-        stage.burstConfetti();
-        audioEngine.playCheer();
-        audioEngine.playCrowdApplause(4.0);
-        showSubtitlePhrase('🎉 ¡FIESTA TOTAL EN EL CLUB! 🎉', '🎉', true);
-      }
-    },
-    {
-      id: 'fx_tomato',
-      icon: '🍅',
-      title: 'Tomatazo al DJ',
-      gift: '🌹 Rosa',
-      action: () => {
-        enqueueActorAction('TOMATE', 'EspectadorVIP', true, '🌹 Rosa');
-      }
-    }
-  ];
-
-  const DJ_CLUB_MODES = [
-    {
-      icon: '💬',
-      title: 'Bocadillo 3D sobre tu cabeza',
-      meta: 'Escribe en el chat para salir',
-      badge: 'CHAT ACTIVO'
-    },
-    {
-      icon: '👗',
-      title: 'Cambiar a Chica o Chico',
-      meta: 'Escribe "chica" o "chico"',
-      badge: 'COMANDO'
-    },
-    {
-      icon: '💃',
-      title: 'Paso de Salsa o Perreo',
-      meta: 'Escribe "salsa" o "perreo"',
-      badge: 'BAILE'
-    },
-    {
-      icon: '🔥',
-      title: 'Subir Energía del Club',
-      meta: 'Toca la pantalla o manda likes',
-      badge: 'FIESTÓMETRO'
+      id: 'confetti',
+      icon: '🍩',
+      title: 'Dona',
+      sub: '🎉 Confeti',
+      action: (u = 'VIP') => enqueueDjAction('CONFETTI', u, true, '🍩 Dona')
     }
   ];
 
   function renderDjPanels() {
-    // 1. COLUMNA IZQUIERDA: EFECTOS VIP DE DJ POR REGALO
     if (jokesVipListEl) {
       jokesVipListEl.innerHTML = '';
       DJ_VIP_EFFECTS.forEach(fx => {
         const item = document.createElement('div');
-        item.className = 'joke-card-item vip-item';
+        item.className = 'dj-mini-gift-item';
         item.innerHTML = `
-          <div class="joke-card-top">
-            <span class="joke-card-icon">${fx.icon}</span>
-            <span class="joke-card-title">${fx.title}</span>
-          </div>
-          <div class="joke-card-meta">
-            <span>Regalo:</span>
-            <strong>${fx.gift}</strong>
+          <span class="gift-ico">${fx.icon}</span>
+          <div class="gift-txt">
+            <strong>${fx.title}</strong>
+            <small>${fx.sub}</small>
           </div>
         `;
         item.addEventListener('click', (e) => {
@@ -642,36 +394,15 @@ export function initShowApp() {
           unlockAudio();
           item.classList.add('active-target');
           setTimeout(() => item.classList.remove('active-target'), 250);
-          fx.action();
+          fx.action('AdminVIP');
         });
         jokesVipListEl.appendChild(item);
       });
     }
 
-    // 2. COLUMNA DERECHA: MODOS DE PISTA Y COMANDOS DE BAILE
     if (jokesFreeListEl) {
       jokesFreeListEl.innerHTML = '';
-      DJ_CLUB_MODES.forEach(mode => {
-        const card = document.createElement('div');
-        card.className = 'joke-card-item free-item';
-        card.innerHTML = `
-          <div class="joke-card-top">
-            <span class="joke-card-icon">${mode.icon}</span>
-            <span class="joke-card-title">${mode.title}</span>
-          </div>
-          <div class="joke-card-meta">
-            <span>${mode.meta}</span>
-            <strong style="color: #38bdf8;">${mode.badge}</strong>
-          </div>
-        `;
-        card.addEventListener('click', (e) => {
-          e.stopPropagation();
-          unlockAudio();
-          audience.triggerFrenzy(3.5);
-          audience.increaseEnergy(8);
-        });
-        jokesFreeListEl.appendChild(card);
-      });
+      jokesFreeListEl.style.display = 'none';
     }
   }
 
@@ -1010,54 +741,26 @@ export function initShowApp() {
       const giftName = evt.gift || 'Rosa';
       const cleanGift = giftName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-      if (cleanGift.includes('rosa')) {
-        if (audience) audience.promoteToVIP(user, 'musico');
-        enqueueActorAction('TOMATE', user, true, giftName);
-        return;
-      }
-
       if (audience) {
-        if (cleanGift.includes('corazon') || cleanGift.includes('dona') || cleanGift.includes('novia')) {
-          audience.promoteToVIP(user, 'novia');
-        } else if (cleanGift.includes('novio')) {
-          audience.promoteToVIP(user, 'novio');
-        } else {
-          audience.promoteToVIP(user, 'rey');
-        }
+        audience.promoteToVIP(user, 'rey');
       }
 
-      if (cleanGift.includes('corazon') || cleanGift.includes('dance') || cleanGift.includes('baile')) {
-        enqueueActorAction('BAILAR', user, true, giftName);
-        return;
-      } else if (cleanGift.includes('control') || cleanGift.includes('retro') || cleanGift.includes('dino')) {
-        singer.animController.triggerDjScratch(4500);
-        audioEngine.playVinylScratch();
-        showSubtitlePhrase(`💿 ¡@${user} ACTIVÓ EL SCRATCH! 🔥`, '💿', true);
-        return;
+      if (cleanGift.includes('control') || cleanGift.includes('retro') || cleanGift.includes('dino')) {
+        enqueueDjAction('SCRATCH', user, true, giftName);
       } else if (cleanGift.includes('gg') || cleanGift.includes('bomba') || cleanGift.includes('drop')) {
-        singer.animController.triggerDjDrop(5000);
-        audioEngine.playBassDrop();
-        cameraDirector.shake(0.5, 800);
-        stage.burstConfetti();
-        showSubtitlePhrase(`💣 ¡@${user} SOLTÓ EL BASS DROP! 💥`, '💣', true);
-        return;
+        enqueueDjAction('DROP', user, true, giftName);
+      } else if (cleanGift.includes('dona') || cleanGift.includes('confeti')) {
+        enqueueDjAction('CONFETTI', user, true, giftName);
+      } else if (cleanGift.includes('corazon') || cleanGift.includes('dance') || cleanGift.includes('baile')) {
+        enqueueDjAction('BAILAR', user, true, giftName);
+      } else if (cleanGift.includes('corona') || cleanGift.includes('leon')) {
+        enqueueDjAction('CORONAR', user, true, giftName);
       } else {
-        stage.burstConfetti();
-        audioEngine.playCheer();
-        singer.animController.triggerDjScratch(3500);
-        showSubtitlePhrase(`🎁 ¡GRACIAS @${user} POR EL REGALO! 🎉`, '🎁', true);
-        return;
+        enqueueDjAction('CONFETTI', user, true, giftName);
       }
-    } else if (action === 'LLORAR' || action === 'CRY') {
-      enqueueActorAction('LLORAR', user, false);
+      return;
     } else if (action === 'BAILAR' || action === 'DANCE') {
-      enqueueActorAction('BAILAR', user, false);
-    } else if (action === 'RABIA' || action === 'RAGE') {
-      enqueueActorAction('RABIA', user, false);
-    } else if (action === 'FLEXIONES' || action === 'PUSHUPS') {
-      enqueueActorAction('FLEXIONES', user, false);
-    } else if (action === 'ESTATUA' || action === 'FREEZE') {
-      enqueueActorAction('ESTATUA', user, false);
+      enqueueDjAction('BAILAR', user, false);
     } else if (action === 'LIKE') {
       const count = evt.count || 1;
       const numHearts = Math.min(count, 4);
@@ -1072,8 +775,6 @@ export function initShowApp() {
       if (audience && user) {
         audience.speak(user, comment);
       }
-    } else if (action === 'TOMATE') {
-      enqueueActorAction('TOMATE', user, false);
     } else if (action === 'JOIN' || action === 'MEMBER') {
       handleViewerJoin(user);
     }
@@ -1196,7 +897,7 @@ export function initShowApp() {
   const LIVE_MISSION_TIPS = [
     '🎧 ¡FIESTA EN VIVO! Sube el volumen y disfruta de la música en tiempo real',
     '💬 Escribe en el chat y aparecerá tu mensaje bailando sobre tu cabeza',
-    '🌹 1 Rosa = Lluvia de Tomates al DJ en la cabina',
+    '🌹 1 Rosa = Lluvia de Confeti y Fuego en la pista',
     '🎮 1 Control = Rayar tornamesas (Scratch en vivo)',
     '👑 Corona = Coronar al rey de la fiesta con fuegos artificiales',
     '💣 Regalos VIP sueltan el Bass Drop y pirotecnia en la pista'
@@ -1229,7 +930,7 @@ export function initShowApp() {
     else if (sound === 'APPLAUSE') audioEngine.playCrowdApplause(payload.duration || 5.0);
     else if (sound === 'BOO') audioEngine.playComicalBoo();
     else if (sound === 'TOMATO') {
-      enqueueActorAction('TOMATE', 'Admin', false);
+      enqueueDjAction('CONFETTI', 'Admin', false);
     } else if (sound === 'CONFETTI') {
       stage.burstConfetti();
       audioEngine.playCheer();
@@ -1287,7 +988,7 @@ export function initShowApp() {
     "¡DJ Garabato en vivo! ¡Manden sus reacciones para soltar el siguiente temazo!",
     "¡Arriba las manos los que vinieron a rumbear hoy!",
     "¡Si llegamos a la meta de likes suelto el Bass Drop con todo el poder!",
-    "¡Manda una Rosa para tirarle tomates al DJ o manda fuego en el chat!",
+    "¡Manda una Rosa para soltar confeti o manda fuego en el chat!",
     "¡Bienvenidos al Garabato DJ Club 3D! ¡La mejor fiesta interactiva de TikTok LIVE!"
   ];
 
