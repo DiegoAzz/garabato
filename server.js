@@ -325,6 +325,124 @@ app.delete('/api/music/:id', (req, res) => {
   }
 });
 
+// ==========================================
+// BÚSQUEDA Y METADATOS DE YOUTUBE PARA EL DJ
+// ==========================================
+app.get('/api/youtube/search', async (req, res) => {
+  const query = (req.query.q || '').trim();
+  const customApiKey = (req.query.apiKey || process.env.YOUTUBE_API_KEY || '').trim();
+
+  if (!query) {
+    return res.status(400).json({ success: false, error: 'La consulta no puede estar vacía' });
+  }
+
+  // 1. Si es un link directo de YouTube, extraer el videoId
+  const ytRegex = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
+  const match = query.match(ytRegex);
+  const directVideoId = match ? match[1] : (/^[\w-]{11}$/.test(query) ? query : null);
+
+  if (directVideoId) {
+    try {
+      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${directVideoId}&format=json`);
+      if (oembedRes.ok) {
+        const oembedData = await oembedRes.json();
+        return res.json({
+          success: true,
+          results: [{
+            id: directVideoId,
+            title: oembedData.title || `Video de YouTube (${directVideoId})`,
+            channel: oembedData.author_name || 'YouTube',
+            duration: '',
+            thumbnail: oembedData.thumbnail_url || `https://i.ytimg.com/vi/${directVideoId}/hqdefault.jpg`,
+            url: `https://www.youtube.com/watch?v=${directVideoId}`
+          }]
+        });
+      }
+    } catch (e) {
+      console.warn('Error fetching oembed:', e.message);
+    }
+
+    return res.json({
+      success: true,
+      results: [{
+        id: directVideoId,
+        title: `YouTube Video (${directVideoId})`,
+        channel: 'YouTube',
+        duration: '',
+        thumbnail: `https://i.ytimg.com/vi/${directVideoId}/hqdefault.jpg`,
+        url: `https://www.youtube.com/watch?v=${directVideoId}`
+      }]
+    });
+  }
+
+  // 2. Si el usuario proporcionó una API key de Google Data API v3
+  if (customApiKey) {
+    try {
+      const apiRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=8&q=${encodeURIComponent(query)}&type=video&key=${customApiKey}`);
+      if (apiRes.ok) {
+        const apiData = await apiRes.json();
+        const results = (apiData.items || []).map(item => ({
+          id: item.id?.videoId,
+          title: item.snippet?.title || '',
+          channel: item.snippet?.channelTitle || '',
+          duration: '',
+          thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || `https://i.ytimg.com/vi/${item.id?.videoId}/hqdefault.jpg`,
+          url: `https://www.youtube.com/watch?v=${item.id?.videoId}`
+        })).filter(r => r.id);
+
+        if (results.length > 0) {
+          return res.json({ success: true, results });
+        }
+      }
+    } catch (e) {
+      console.warn('Error con YouTube Data API:', e.message);
+    }
+  }
+
+  // 3. Fallback inteligente: Scraper de resultados públicos de YouTube
+  try {
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const ytRes = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+      }
+    });
+
+    if (ytRes.ok) {
+      const html = await ytRes.text();
+      const ytDataMatch = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
+      if (ytDataMatch) {
+        const data = JSON.parse(ytDataMatch[1]);
+        const contents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
+        const results = [];
+        for (const item of contents) {
+          const vr = item.videoRenderer;
+          if (vr && vr.videoId) {
+            results.push({
+              id: vr.videoId,
+              title: vr.title?.runs?.[0]?.text || '',
+              channel: vr.ownerText?.runs?.[0]?.text || '',
+              duration: vr.lengthText?.simpleText || '',
+              thumbnail: vr.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${vr.videoId}/hqdefault.jpg`,
+              url: `https://www.youtube.com/watch?v=${vr.videoId}`
+            });
+            if (results.length >= 8) break;
+          }
+        }
+
+        if (results.length > 0) {
+          return res.json({ success: true, results });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[YouTube Search Scraper Error]:', err.message);
+  }
+
+  return res.json({ success: false, error: 'No se encontraron resultados para esta búsqueda', results: [] });
+});
+
 // Estado global de la conexión con TikTok LIVE
 let tiktokConnection = null;
 let currentTikTokUser = 'CreandoConIA';

@@ -376,6 +376,230 @@ export function initAdminApp() {
     }, 1200);
   }
 
+  // ==========================================
+  // GESTIÓN DE YOUTUBE MUSIC DJ (VIRTUAL DJ)
+  // ==========================================
+  let adminYTPlayer = null;
+  let currentYTVideo = null;
+  let isYTPlaying = false;
+
+  const ytSearchInput = document.getElementById('yt-search-input');
+  const btnYtSearch = document.getElementById('btn-yt-search');
+  const adminYtMonitorContainer = document.getElementById('admin-yt-monitor-container');
+  const adminYtCurrentTitle = document.getElementById('admin-yt-current-title');
+  const btnToggleYtPlayerView = document.getElementById('btn-toggle-yt-player-view');
+  const btnYtPause = document.getElementById('btn-yt-pause');
+  const btnYtResume = document.getElementById('btn-yt-resume');
+  const btnYtStop = document.getElementById('btn-yt-stop');
+  const ytSearchResults = document.getElementById('yt-search-results');
+
+  function initOrLoadAdminYTPlayer(videoId, onReadyCallback) {
+    if (adminYTPlayer && adminYTPlayer.loadVideoById) {
+      adminYTPlayer.loadVideoById(videoId);
+      if (onReadyCallback) onReadyCallback();
+      return;
+    }
+
+    const loadAPI = () => {
+      if (window.YT && window.YT.Player) {
+        adminYTPlayer = new window.YT.Player('admin-yt-iframe-slot', {
+          width: '100%',
+          height: '100%',
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1
+          },
+          events: {
+            onReady: (event) => {
+              const vol = djMasterVolume ? parseInt(djMasterVolume.value, 10) : 85;
+              event.target.setVolume(vol);
+              event.target.playVideo();
+              isYTPlaying = true;
+              if (onReadyCallback) onReadyCallback();
+            },
+            onStateChange: (event) => {
+              if (event.data === 1) isYTPlaying = true;
+              else if (event.data === 2) isYTPlaying = false;
+            }
+          }
+        });
+      } else {
+        setTimeout(loadAPI, 200);
+      }
+    };
+
+    if (!document.getElementById('yt-iframe-api-script')) {
+      const tag = document.createElement('script');
+      tag.id = 'yt-iframe-api-script';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+    loadAPI();
+  }
+
+  function playYouTubeTrack(track) {
+    stopAllMusic();
+
+    currentYTVideo = track;
+    isYTPlaying = true;
+
+    if (adminYtMonitorContainer) {
+      adminYtMonitorContainer.style.display = 'block';
+    }
+    if (adminYtCurrentTitle) {
+      adminYtCurrentTitle.textContent = `▶ ${track.title}`;
+    }
+    if (djNowPlayingTitle) {
+      djNowPlayingTitle.textContent = `🔴 [YouTube] ${track.title}`;
+    }
+
+    initOrLoadAdminYTPlayer(track.id, () => {
+      if (adminYTPlayer && adminYTPlayer.playVideo) {
+        adminYTPlayer.playVideo();
+      }
+    });
+
+    syncBridge.send('DJ_PLAY_YOUTUBE', {
+      videoId: track.id,
+      title: track.title,
+      channel: track.channel,
+      thumbnail: track.thumbnail
+    });
+
+    showUploadStatus(`🔴 Sonando desde YouTube: "${track.title}"`, false);
+  }
+
+  function pauseYouTubeTrack() {
+    isYTPlaying = false;
+    if (adminYTPlayer && adminYTPlayer.pauseVideo) {
+      adminYTPlayer.pauseVideo();
+    }
+    if (adminYtCurrentTitle && currentYTVideo) {
+      adminYtCurrentTitle.textContent = `⏸ [PAUSA] ${currentYTVideo.title}`;
+    }
+    syncBridge.send('DJ_PAUSE_YOUTUBE', {});
+  }
+
+  function resumeYouTubeTrack() {
+    isYTPlaying = true;
+    if (adminYTPlayer && adminYTPlayer.playVideo) {
+      adminYTPlayer.playVideo();
+    }
+    if (adminYtCurrentTitle && currentYTVideo) {
+      adminYtCurrentTitle.textContent = `▶ ${currentYTVideo.title}`;
+    }
+    syncBridge.send('DJ_RESUME_YOUTUBE', {});
+  }
+
+  function stopYouTubeTrack() {
+    isYTPlaying = false;
+    if (adminYTPlayer && adminYTPlayer.stopVideo) {
+      adminYTPlayer.stopVideo();
+    }
+    if (adminYtCurrentTitle) {
+      adminYtCurrentTitle.textContent = '⏹ YouTube Detenido';
+    }
+    if (djNowPlayingTitle) {
+      djNowPlayingTitle.textContent = '⏹️ Música Detenida (0:00)';
+    }
+    syncBridge.send('DJ_STOP_YOUTUBE', {});
+  }
+
+  if (btnToggleYtPlayerView) {
+    btnToggleYtPlayerView.addEventListener('click', () => {
+      if (!adminYtMonitorContainer) return;
+      const isHidden = adminYtMonitorContainer.style.display === 'none';
+      adminYtMonitorContainer.style.display = isHidden ? 'block' : 'none';
+      btnToggleYtPlayerView.textContent = isHidden ? '🙈 Ocultar Reproductor' : '👁️ Ver Reproductor';
+    });
+  }
+
+  if (btnYtPause) btnYtPause.addEventListener('click', pauseYouTubeTrack);
+  if (btnYtResume) btnYtResume.addEventListener('click', resumeYouTubeTrack);
+  if (btnYtStop) btnYtStop.addEventListener('click', stopYouTubeTrack);
+
+  async function performYouTubeSearch() {
+    if (!ytSearchInput) return;
+    const query = ytSearchInput.value.trim();
+    if (!query) return;
+
+    if (ytSearchResults) {
+      ytSearchResults.style.display = 'block';
+      ytSearchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: #f87171; font-size: 11px;">🔍 Buscando en YouTube...</div>';
+    }
+
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+
+      if (!data.success || !data.results || data.results.length === 0) {
+        if (ytSearchResults) {
+          ytSearchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 11px;">No se encontraron canciones en YouTube. Prueba con otro nombre o pega el link directo.</div>';
+        }
+        return;
+      }
+
+      if (data.results.length === 1 && (/youtube\.com|youtu\.be/.test(query) || /^[\w-]{11}$/.test(query))) {
+        playYouTubeTrack(data.results[0]);
+      }
+
+      renderYouTubeResults(data.results);
+    } catch (err) {
+      if (ytSearchResults) {
+        ytSearchResults.innerHTML = `<div style="padding: 10px; color: #ef4444; font-size: 11px;">Error en la búsqueda: ${err.message}</div>`;
+      }
+    }
+  }
+
+  function renderYouTubeResults(results) {
+    if (!ytSearchResults) return;
+    ytSearchResults.innerHTML = '';
+    ytSearchResults.style.display = 'block';
+
+    results.forEach(item => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;';
+      row.onmouseenter = () => row.style.background = 'rgba(239, 68, 68, 0.12)';
+      row.onmouseleave = () => row.style.background = 'transparent';
+
+      row.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1;">
+          <img src="${item.thumbnail}" alt="" style="width: 50px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid #7f1d1d;" />
+          <div style="overflow: hidden; text-align: left;">
+            <div style="font-size: 11px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.title}">${item.title}</div>
+            <div style="font-size: 9.5px; color: #94a3b8;">${item.channel} ${item.duration ? '• ' + item.duration : ''}</div>
+          </div>
+        </div>
+        <button type="button" class="btn-action-small" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: #000; font-weight: 900; font-size: 10.5px; padding: 4px 10px; border-radius: 6px; white-space: nowrap;">
+          ▶ Tocar
+        </button>
+      `;
+
+      const playBtn = row.querySelector('button');
+      playBtn.addEventListener('click', () => {
+        playYouTubeTrack(item);
+      });
+
+      ytSearchResults.appendChild(row);
+    });
+  }
+
+  if (btnYtSearch) {
+    btnYtSearch.addEventListener('click', performYouTubeSearch);
+  }
+  if (ytSearchInput) {
+    ytSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        performYouTubeSearch();
+      }
+    });
+  }
+
   async function deleteCustomTrack(trackId) {
     try {
       const res = await fetch(`/api/music/${encodeURIComponent(trackId)}`, { method: 'DELETE' });
@@ -678,6 +902,9 @@ export function initAdminApp() {
       if (djVolumeLabel) djVolumeLabel.textContent = `${vol}%`;
       if (adminMonitorAudio) {
         adminMonitorAudio.volume = vol / 100;
+      }
+      if (adminYTPlayer && adminYTPlayer.setVolume) {
+        adminYTPlayer.setVolume(vol);
       }
       syncBridge.send('DJ_SET_VOLUME', { volume: vol / 100 });
     });

@@ -91,6 +91,46 @@
             </span>
           </div>
 
+          <!-- ======================================================== -->
+          <!-- SECCIÓN YOUTUBE MUSIC DJ (VIRTUAL DJ / YOUTUBE PREMIUM)   -->
+          <!-- ======================================================== -->
+          <div class="form-group" style="margin-bottom: 12px; background: rgba(220, 38, 38, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: 10px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="yt-search-input" style="font-size: 11px; font-weight: 800; color: #f87171; display: flex; align-items: center; gap: 6px;">
+                <span style="background: #dc2626; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 900;">▶ YouTube</span>
+                Buscador & Reproductor Virtual DJ (Sin Anuncios con Premium)
+              </label>
+              <button type="button" id="btn-toggle-yt-player-view" class="btn-text-action" style="font-size: 10px; color: #fca5a5;">
+                👁️ Ver Reproductor
+              </button>
+            </div>
+
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="yt-search-input" placeholder="Escribe canción, artista o pega link de YouTube... (ej: Rodolfo Aicardi, Titanium, etc.)" style="flex: 1; padding: 7px; font-size: 11px; background: #05050d; border: 1px solid #7f1d1d; border-radius: 6px; color: #fff;" />
+              <button type="button" id="btn-yt-search" class="btn-action-small" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; font-weight: 800; white-space: nowrap;">
+                🔍 Buscar
+              </button>
+            </div>
+
+            <!-- Contenedor del Reproductor de Monitoreo YouTube en Admin -->
+            <div id="admin-yt-monitor-container" style="display: none; margin-top: 10px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #7f1d1d;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #1e1111; border-bottom: 1px solid #7f1d1d;">
+                <span id="admin-yt-current-title" style="font-size: 11px; font-weight: 700; color: #fca5a5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">Ningún video cargado</span>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" id="btn-yt-pause" class="btn-action-small" style="background: #eab308; color: #000; font-weight: 800; padding: 3px 8px; font-size: 10px;">⏸ Pausar</button>
+                  <button type="button" id="btn-yt-resume" class="btn-action-small" style="background: #22c55e; color: #000; font-weight: 800; padding: 3px 8px; font-size: 10px;">▶ Play</button>
+                  <button type="button" id="btn-yt-stop" class="btn-action-small" style="background: #ef4444; color: #fff; font-weight: 800; padding: 3px 8px; font-size: 10px;">⏹ Stop</button>
+                </div>
+              </div>
+              <div style="width: 100%; height: 160px; background: #050505;">
+                <div id="admin-yt-iframe-slot"></div>
+              </div>
+            </div>
+
+            <!-- Resultados de Búsqueda de YouTube -->
+            <div id="yt-search-results" style="display: none; margin-top: 8px; max-height: 240px; overflow-y: auto; background: #0b0c16; border: 1px solid #450a0a; border-radius: 8px; padding: 4px;"></div>
+          </div>
+
           <!-- Banner de Pista Sonando Ahora Mismo con Monitor de Audio Directo -->
           <div id="dj-now-playing-banner" class="dj-now-playing-banner" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">

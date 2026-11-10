@@ -599,6 +599,131 @@ export function initShowApp() {
   syncBridge.on('DJ_SET_VOLUME', (payload) => {
     if (payload && payload.volume !== undefined) {
       audioEngine.setDjVolume(payload.volume);
+      if (showYTPlayer && showYTPlayer.setVolume) {
+        showYTPlayer.setVolume(Math.round(payload.volume * 100));
+      }
+    }
+  });
+
+  // ==========================================
+  // REPRODUCTOR YOUTUBE SINCRONIZADO EN /SHOW
+  // ==========================================
+  let showYTPlayer = null;
+  const ytShowWrapper = document.getElementById('yt-show-wrapper');
+  const btnToggleYtScreen = document.getElementById('btn-toggle-yt-screen');
+
+  if (btnToggleYtScreen && ytShowWrapper) {
+    btnToggleYtScreen.addEventListener('click', () => {
+      ytShowWrapper.style.display = 'none';
+    });
+  }
+
+  function initOrLoadShowYTPlayer(videoId, onReadyCallback) {
+    if (showYTPlayer && showYTPlayer.loadVideoById) {
+      showYTPlayer.loadVideoById(videoId);
+      if (onReadyCallback) onReadyCallback();
+      return;
+    }
+
+    const loadAPI = () => {
+      if (window.YT && window.YT.Player) {
+        showYTPlayer = new window.YT.Player('yt-show-iframe-slot', {
+          width: '100%',
+          height: '100%',
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1
+          },
+          events: {
+            onReady: (event) => {
+              const currentVol = audioEngine.djCustomVolume !== undefined ? Math.round(audioEngine.djCustomVolume * 100) : 85;
+              event.target.setVolume(currentVol);
+              event.target.playVideo();
+              if (onReadyCallback) onReadyCallback();
+            },
+            onStateChange: (event) => {
+              if (event.data === 1) {
+                singer.animController.triggerDjHandsUp(5000);
+              }
+            }
+          }
+        });
+      } else {
+        setTimeout(loadAPI, 200);
+      }
+    };
+
+    if (!document.getElementById('yt-iframe-api-script')) {
+      const tag = document.createElement('script');
+      tag.id = 'yt-iframe-api-script';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+    loadAPI();
+  }
+
+  syncBridge.on('DJ_PLAY_YOUTUBE', (payload) => {
+    markActivity();
+    unlockAudio();
+    if (!payload || !payload.videoId) return;
+
+    audioEngine.stopDjTrack();
+
+    if (ytShowWrapper) {
+      ytShowWrapper.style.display = 'block';
+    }
+
+    initOrLoadShowYTPlayer(payload.videoId, () => {
+      if (showYTPlayer && showYTPlayer.playVideo) {
+        showYTPlayer.playVideo();
+      }
+    });
+
+    singer.animController.triggerDjHandsUp(5000);
+    stage.triggerExtremeDisco(6.0);
+    if (queueStatusText) queueStatusText.textContent = `🔴 YouTube: ${payload.title || 'Música en Vivo'}`;
+    if (subtitlesEl) {
+      showSubtitlePhrase(`🔴 YouTube: ${payload.title || 'Música en Vivo'}`, '🎵', false);
+    }
+  });
+
+  syncBridge.on('DJ_PAUSE_YOUTUBE', () => {
+    if (showYTPlayer && showYTPlayer.pauseVideo) {
+      showYTPlayer.pauseVideo();
+    }
+    singer.animController.resetToIdle();
+    if (queueStatusText) queueStatusText.textContent = '⏸️ YouTube en Pausa';
+    if (subtitlesEl) {
+      showSubtitlePhrase('⏸️ YouTube en Pausa', '⏸️', false);
+    }
+  });
+
+  syncBridge.on('DJ_RESUME_YOUTUBE', () => {
+    if (showYTPlayer && showYTPlayer.playVideo) {
+      showYTPlayer.playVideo();
+    }
+    singer.animController.triggerDjHandsUp(4000);
+    if (queueStatusText) queueStatusText.textContent = '▶️ YouTube Reanudado';
+    if (subtitlesEl) {
+      showSubtitlePhrase('▶️ Continuando Música YouTube', '🎵', false);
+    }
+  });
+
+  syncBridge.on('DJ_STOP_YOUTUBE', () => {
+    if (showYTPlayer && showYTPlayer.stopVideo) {
+      showYTPlayer.stopVideo();
+    }
+    if (ytShowWrapper) {
+      ytShowWrapper.style.display = 'none';
+    }
+    singer.animController.resetToIdle();
+    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
+    if (subtitlesEl) {
+      showSubtitlePhrase('⏹️ Música de YouTube Detenida', '⏹️', false);
     }
   });
 

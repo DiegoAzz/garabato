@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>GARABATO DJ CLUB 3D — TikTok LIVE Móvil</title>
   <link rel="stylesheet" href="./style.css" />
+  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
     /* ========================================================
        SAFE ZONES Y ADAPTACIÓN EXCLUSIVA PARA TIKTOK LIVE MÓVIL
@@ -512,6 +513,15 @@
     <!-- Llamado a la acción inferior -->
     <div id="audience-cta-bar" class="audience-cta-bar">
       <span id="cta-dynamic-text">🔥 Pista en Vivo | 🎁 Regalos = Efectos DJ & Drops</span>
+    </div>
+
+    <!-- Contenedor del Reproductor YouTube Sincronizado para Móvil -->
+    <div id="yt-show-wrapper" class="yt-show-wrapper" style="position: absolute; top: var(--tiktok-safe-top); right: 12px; width: 180px; height: 104px; border-radius: 10px; overflow: hidden; border: 1.5px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); z-index: 30; pointer-events: auto; display: none; background: #000;">
+      <div style="background: rgba(15, 23, 42, 0.95); padding: 3px 6px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #7f1d1d;">
+        <span style="font-size: 9px; font-weight: 800; color: #fca5a5;">🔴 YouTube DJ</span>
+        <button type="button" id="btn-toggle-yt-screen" style="background: transparent; border: none; color: #94a3b8; font-size: 10px; cursor: pointer;">✕</button>
+      </div>
+      <div id="yt-show-iframe-slot" style="width: 100%; height: calc(100% - 18px);"></div>
     </div>
 
     <!-- Botón para Desbloquear Audio -->
