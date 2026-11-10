@@ -247,20 +247,42 @@ export function initAdminApp() {
     });
   }
 
-  // Reproducir desde URL directa
+  // Importar y reproducir desde Google Drive o URL directa
   if (btnPlayStreamUrl && djStreamUrl) {
-    btnPlayStreamUrl.addEventListener('click', () => {
+    btnPlayStreamUrl.addEventListener('click', async () => {
       const url = djStreamUrl.value.trim();
       if (!url) {
-        alert('Por favor pega una URL de audio válida (ej: https://...mp3)');
+        alert('Por favor pega un enlace de Google Drive o URL de audio (ej: https://drive.google.com/file/d/...)');
         return;
       }
-      const title = url.split('/').pop().split('?')[0] || 'Radio Web en Vivo';
-      playCustomTrack({
-        id: 'stream_' + Date.now(),
-        name: title,
-        url: url
-      });
+
+      showUploadStatus('Conectando con Google Drive / URL remota...');
+      const oldBtnText = btnPlayStreamUrl.textContent;
+      btnPlayStreamUrl.disabled = true;
+      btnPlayStreamUrl.textContent = '⏳ Importando...';
+
+      try {
+        const res = await fetch('/api/music/import-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+
+        if (data.success && data.track) {
+          showUploadStatus(`¡Pista "${data.track.name}" importada y lista! 🔥`);
+          djStreamUrl.value = '';
+          await fetchMusicPlaylist();
+          playCustomTrack(data.track);
+        } else {
+          showUploadStatus(`Error: ${data.error || 'No se pudo importar'}`, true);
+        }
+      } catch (err) {
+        showUploadStatus('Fallo de conexión al importar: ' + err.message, true);
+      } finally {
+        btnPlayStreamUrl.disabled = false;
+        btnPlayStreamUrl.textContent = oldBtnText;
+      }
     });
   }
 

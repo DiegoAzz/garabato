@@ -51,15 +51,20 @@
           <!-- Estado de Subida -->
           <div id="dj-upload-status" style="display: none; font-size: 11px; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; text-align: center;"></div>
 
-          <!-- O pegar URL de transmisión externa -->
+          <!-- O pegar enlace de Google Drive o URL directa -->
           <div class="form-group" style="margin-bottom: 10px;">
-            <label for="dj-stream-url" style="font-size: 11px;">O reproducir desde URL directa (MP3 / Radio Web)</label>
+            <label for="dj-stream-url" style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;">
+              📁 Importar desde Google Drive o Link Directo (MP3 / WAV)
+            </label>
             <div style="display: flex; gap: 6px;">
-              <input type="url" id="dj-stream-url" placeholder="https://ejemplo.com/audio.mp3" style="flex: 1; padding: 7px; font-size: 11px;" />
-              <button type="button" id="btn-play-stream-url" class="btn-action-small" style="background: #10b981; color: #fff; font-weight: 800; white-space: nowrap;">
-                ▶ Cargar URL
+              <input type="url" id="dj-stream-url" placeholder="Pega el enlace de Google Drive (ej: https://drive.google.com/file/d/...)" style="flex: 1; padding: 7px; font-size: 11px;" />
+              <button type="button" id="btn-play-stream-url" class="btn-action-small" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 800; white-space: nowrap;">
+                ⬇️ Importar & Tocar
               </button>
             </div>
+            <span class="input-hint" style="font-size: 10px; color: #94a3b8; display: block; margin-top: 3px;">
+              💡 <em>En Google Drive: clic derecho en tu canción > Compartir > "Cualquier persona con el enlace".</em>
+            </span>
           </div>
 
           <!-- Banner de Pista Sonando Ahora Mismo -->

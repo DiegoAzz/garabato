@@ -103,6 +103,106 @@ app.post('/api/music/upload', (req, res) => {
   }
 });
 
+app.post('/api/music/import-url', async (req, res) => {
+  try {
+    const rawUrl = (req.body.url || '').trim();
+    if (!rawUrl) {
+      return res.status(400).json({ success: false, error: 'URL requerida' });
+    }
+
+    let downloadUrl = rawUrl;
+    let trackName = (req.body.name || '').trim();
+
+    // 1. Detectar si es enlace de Google Drive y convertir a link de descarga directa
+    const driveMatch = rawUrl.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/i);
+    if (driveMatch) {
+      const fileId = driveMatch[1];
+      downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      if (!trackName) trackName = `Drive_${fileId.slice(0, 8)}`;
+    }
+
+    // 2. Descargar archivo en el servidor (evita bloqueos de CORS en el navegador)
+    const response = await fetch(downloadUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      redirect: 'follow'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Servidor remoto devolvió código HTTP ${response.status}`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    const arrayBuffer = await response.arrayBuffer();
+    let buffer = Buffer.from(arrayBuffer);
+
+    // Verificar si Google Drive devolvió página HTML de confirmación o error de acceso
+    if (contentType.includes('text/html')) {
+      const htmlText = buffer.toString('utf-8');
+      const confirmMatch = htmlText.match(/href="(\/uc\?export=download[^"]+confirm=[^"&]+[^"]*)"/i);
+      if (confirmMatch) {
+        const confirmUrl = confirmMatch[1].startsWith('http')
+          ? confirmMatch[1]
+          : `https://drive.google.com${confirmMatch[1].replace(/&amp;/g, '&')}`;
+        const retryResp = await fetch(confirmUrl, { redirect: 'follow' });
+        const retryBuffer = await retryResp.arrayBuffer();
+        buffer = Buffer.from(retryBuffer);
+      } else if (htmlText.includes('Google Drive') && (htmlText.includes('Acceso') || htmlText.includes('denied') || htmlText.includes('Sign in'))) {
+        return res.status(400).json({
+          success: false,
+          error: 'El archivo de Google Drive es privado. Cámbialo en Drive a "Cualquier persona con el enlace".'
+        });
+      }
+    }
+
+    // Extraer nombre original del archivo si viene en Content-Disposition
+    const disposition = response.headers.get('content-disposition') || '';
+    const nameMatch = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+    if (nameMatch && nameMatch[1]) {
+      try {
+        trackName = decodeURIComponent(nameMatch[1].trim());
+      } catch (e) {
+        trackName = nameMatch[1].trim();
+      }
+    }
+
+    if (!trackName || trackName.startsWith('Drive_')) {
+      try {
+        const urlObj = new URL(rawUrl);
+        const base = path.basename(urlObj.pathname);
+        if (base && !base.includes('uc') && !base.includes('view')) {
+          trackName = base;
+        }
+      } catch (e) {}
+    }
+
+    if (!trackName) trackName = `Pista_${Date.now()}`;
+
+    const hasExt = /\.(mp3|wav|ogg|m4a|aac)$/i.test(trackName);
+    const safeExt = hasExt ? '' : '.mp3';
+    const cleanBaseName = trackName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const safeName = `${Date.now()}_${cleanBaseName}${safeExt}`;
+    const filePath = path.join(uploadsDir, safeName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const track = {
+      id: safeName,
+      name: trackName.replace(/\.[^/.]+$/, ''),
+      url: `/uploads/${encodeURIComponent(safeName)}`,
+      size: buffer.length,
+      createdAt: Date.now()
+    };
+
+    io.emit('MUSIC_TRACK_ADDED', track);
+    res.json({ success: true, track });
+  } catch (err) {
+    console.error('[Import URL Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.delete('/api/music/:id', (req, res) => {
   try {
     const safeId = path.basename(req.params.id);
