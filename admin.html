@@ -91,18 +91,22 @@
             </span>
           </div>
 
-          <!-- Banner de Pista Sonando Ahora Mismo -->
-          <div id="dj-now-playing-banner" class="dj-now-playing-banner">
-            <div style="overflow: hidden; margin-right: 8px;">
-              <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85;">▶ SONANDO EN VIVO</div>
-              <strong id="dj-now-playing-title" style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">Ninguna pista sonando</strong>
+          <!-- Banner de Pista Sonando Ahora Mismo con Monitor de Audio Directo -->
+          <div id="dj-now-playing-banner" class="dj-now-playing-banner" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="overflow: hidden; margin-right: 8px;">
+                <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85;">▶ SONANDO EN VIVO (MONITOR DJ)</div>
+                <strong id="dj-now-playing-title" style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">Ninguna pista sonando</strong>
+              </div>
+              <div class="dj-equalizer-bars">
+                <span class="dj-eq-bar"></span>
+                <span class="dj-eq-bar"></span>
+                <span class="dj-eq-bar"></span>
+                <span class="dj-eq-bar"></span>
+              </div>
             </div>
-            <div class="dj-equalizer-bars">
-              <span class="dj-eq-bar"></span>
-              <span class="dj-eq-bar"></span>
-              <span class="dj-eq-bar"></span>
-              <span class="dj-eq-bar"></span>
-            </div>
+            <!-- Reproductor HTML5 Nativo visible para escuchar de inmediato en el panel -->
+            <audio id="admin-native-audio" controls preload="auto" style="width: 100%; height: 32px; border-radius: 6px; outline: none;"></audio>
           </div>
 
           <!-- Control de Volumen Maestro de Música -->

@@ -1968,7 +1968,6 @@ export class AudioEngine {
 
     if (!this.audioElement) {
       this.audioElement = new Audio();
-      this.audioElement.crossOrigin = 'anonymous';
       this.audioElement.preload = 'auto';
     }
 
@@ -1977,9 +1976,9 @@ export class AudioEngine {
 
     if (!isSameSource) {
       this.audioElement.src = srcUrl;
-      this.audioElement.currentTime = 0;
+      try { this.audioElement.load(); } catch (e) {}
     } else if (!resume) {
-      this.audioElement.currentTime = 0;
+      try { this.audioElement.currentTime = 0; } catch (e) {}
     }
 
     this.audioElement.loop = true;

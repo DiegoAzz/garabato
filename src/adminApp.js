@@ -67,14 +67,36 @@ export function initAdminApp() {
   let currentSearchQuery = '';
   let isDjVoiceEnabled = localStorage.getItem('garabato_dj_voice_enabled') !== 'false';
   let adminMonitorAudio = null;
+  const adminNativeAudio = document.getElementById('admin-native-audio');
 
   function getOrCreateAdminAudio() {
+    if (adminNativeAudio) {
+      adminMonitorAudio = adminNativeAudio;
+      adminMonitorAudio.loop = true;
+      adminMonitorAudio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
+      return adminMonitorAudio;
+    }
     if (!adminMonitorAudio) {
       adminMonitorAudio = new Audio();
       adminMonitorAudio.loop = true;
       adminMonitorAudio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
     }
     return adminMonitorAudio;
+  }
+
+  // Si el usuario usa los controles nativos del reproductor en el panel
+  if (adminNativeAudio) {
+    adminNativeAudio.addEventListener('play', () => {
+      if (currentPlayingTrackId && isCurrentTrackPaused) {
+        const track = customTracksList.find(t => t.id === currentPlayingTrackId);
+        if (track) playCustomTrack(track, true);
+      }
+    });
+    adminNativeAudio.addEventListener('pause', () => {
+      if (currentPlayingTrackId && !isCurrentTrackPaused && adminNativeAudio.currentTime > 0) {
+        pauseCustomTrack();
+      }
+    });
   }
 
   function showUploadStatus(msg, isError = false) {
@@ -276,12 +298,15 @@ export function initAdminApp() {
       const isSame = currentSrc.endsWith(track.url) || track.url.endsWith(currentSrc);
       if (!isSame) {
         audio.src = track.url;
-        audio.currentTime = 0;
+        try { audio.load(); } catch (e) {}
       } else if (!resume) {
-        audio.currentTime = 0;
+        try { audio.currentTime = 0; } catch (e) {}
       }
       audio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
-      audio.play().catch(e => console.info('[Admin Monitor] Reproducción iniciada:', e.message));
+      audio.play().catch(e => {
+        console.warn('[Admin Monitor] Reproducción:', e.message);
+        showUploadStatus(`Haz clic en el botón ▶ Play del reproductor para escuchar "${track.name}"`);
+      });
     } catch (e) {
       console.warn('[Admin Monitor] Error al reproducir audio local:', e);
     }
