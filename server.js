@@ -31,17 +31,29 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Servir archivos de audio con cabeceras CORS completas para evitar que los navegadores silencien el audio
+// Servir archivos de audio con cabeceras CORS y streaming directo sin compresión gzip
 app.use('/uploads', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.header('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Cache-Control', 'no-transform, public, max-age=86400');
+  res.setHeader('Accept-Ranges', 'bytes');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 }, express.static(uploadsDir, {
-  setHeaders: (res) => {
+  setHeaders: (res, filePath) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'no-transform, public, max-age=86400');
+    if (filePath.endsWith('.mp3')) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+    } else if (filePath.endsWith('.wav')) {
+      res.setHeader('Content-Type', 'audio/wav');
+    } else if (filePath.endsWith('.ogg')) {
+      res.setHeader('Content-Type', 'audio/ogg');
+    } else if (filePath.endsWith('.m4a') || filePath.endsWith('.aac')) {
+      res.setHeader('Content-Type', 'audio/mp4');
+    }
   }
 }));
 

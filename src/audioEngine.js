@@ -1969,6 +1969,14 @@ export class AudioEngine {
     if (!this.audioElement) {
       this.audioElement = new Audio();
       this.audioElement.preload = 'auto';
+      this.audioElement.onerror = (e) => {
+        console.warn('[AudioEngine] Error cargando pista de audio:', this.audioElement.error, this.audioElement.src);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('AUDIO_PLAY_ERROR', {
+            detail: { error: this.audioElement.error, src: this.audioElement.src }
+          }));
+        }
+      };
     }
 
     const currentSrc = this.audioElement.src || '';
