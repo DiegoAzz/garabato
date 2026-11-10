@@ -3469,3 +3469,940 @@ body.tiktok-vertical-mode .joke-card-meta {
   background: #dc2626;
 }
 
+/* ==========================================================================
+   VIRTUAL DJ PRO 2024 CONSOLE STYLES (DUAL DECK MIXER & COMPACT STUDIO RACK)
+   ========================================================================== */
+.vdj-studio {
+  max-width: 1560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 10px 14px 40px 14px;
+}
+
+/* 1. Header Superior Virtual DJ */
+.vdj-header {
+  background: linear-gradient(180deg, #181d28 0%, #0d1017 100%);
+  border: 1px solid #283042;
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.vdj-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vdj-logo-badge {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+  box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+}
+
+.vdj-header-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.vdj-header-sub {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.vdj-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vdj-mic-pill-btn {
+  background: #1e293b;
+  border: 1.5px solid #38bdf8;
+  color: #38bdf8;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.vdj-mic-pill-btn.is-active {
+  background: #dc2626;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+  animation: pulse-red-border 1.2s infinite;
+}
+
+/* 2. Top Dual Waveform Running Display */
+.vdj-top-waveforms {
+  background: #080a10;
+  border: 1px solid #1f2737;
+  border-radius: 10px;
+  height: 64px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+}
+
+.vdj-wave-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.vdj-wave-center-needle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.vdj-wave-labels {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  z-index: 4;
+}
+
+.vdj-wave-label-a { color: #00f0ff; text-shadow: 0 0 6px rgba(0, 240, 255, 0.6); }
+.vdj-wave-label-b { color: #f43f5e; text-shadow: 0 0 6px rgba(244, 63, 94, 0.6); }
+
+/* 3. The Main DJ Console (Deck A | Mixer Central | Deck B) */
+.vdj-console {
+  display: grid;
+  grid-template-columns: 1fr 260px 1fr;
+  gap: 12px;
+  background: #0d1017;
+  border: 1px solid #232b3c;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+@media (max-width: 1100px) {
+  .vdj-console {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Decks Individuales */
+.vdj-deck {
+  background: linear-gradient(180deg, #121622 0%, #0a0d14 100%);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.vdj-deck-a {
+  border: 1.5px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.08);
+}
+
+.vdj-deck-b {
+  border: 1.5px solid rgba(244, 63, 94, 0.35);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.08);
+}
+
+/* Header del Deck */
+.vdj-deck-header {
+  background: #07090f;
+  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid #1a2232;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.vdj-deck-tag {
+  font-weight: 900;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.vdj-deck-a .vdj-deck-tag {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
+}
+
+.vdj-deck-b .vdj-deck-tag {
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+  border: 1px solid #f43f5e;
+}
+
+.vdj-deck-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.vdj-deck-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.vdj-deck-sub {
+  font-size: 10px;
+  color: #94a3b8;
+  display: flex;
+  gap: 8px;
+}
+
+.vdj-deck-time-box {
+  text-align: right;
+  font-family: monospace;
+}
+
+.vdj-deck-time-main {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.vdj-deck-a .vdj-deck-time-main { color: #38bdf8; }
+.vdj-deck-b .vdj-deck-time-main { color: #fb7185; }
+
+.vdj-deck-time-rem {
+  font-size: 9.5px;
+  color: #64748b;
+}
+
+/* Barra de progreso de la pista */
+.vdj-deck-scrub-bar {
+  width: 100%;
+  height: 22px;
+  background: #090c13;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.vdj-deck-scrub-fill {
+  height: 100%;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.vdj-deck-a .vdj-deck-scrub-fill {
+  background: linear-gradient(90deg, #0284c7 0%, #00f0ff 100%);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.vdj-deck-b .vdj-deck-scrub-fill {
+  background: linear-gradient(90deg, #be123c 0%, #f43f5e 100%);
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
+}
+
+/* Cuerpo del Deck: Tornamesa Jog Wheel + Pitch + Pads */
+.vdj-deck-body {
+  display: grid;
+  grid-template-columns: 1fr 140px 48px;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .vdj-deck-body {
+    grid-template-columns: 1fr 120px;
+  }
+}
+
+/* Tornamesa Jog Wheel */
+.vdj-jog-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.vdj-jog-wheel {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #181d28 20%, #0d1017 65%, #05070a 100%);
+  position: relative;
+  box-shadow: 0 0 0 4px #1c2434, 0 6px 18px rgba(0, 0, 0, 0.7);
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.05s linear;
+}
+
+.vdj-deck-a .vdj-jog-wheel {
+  border: 2px solid rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 0 3px #182234, 0 0 14px rgba(0, 240, 255, 0.25);
+}
+
+.vdj-deck-b .vdj-jog-wheel {
+  border: 2px solid rgba(244, 63, 94, 0.5);
+  box-shadow: 0 0 0 3px #281820, 0 0 14px rgba(244, 63, 94, 0.25);
+}
+
+/* Anillo exterior con ranuras de vinilo */
+.vdj-jog-grooves {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+/* Centro del plato */
+.vdj-jog-center {
+  position: absolute;
+  top: 36px;
+  bottom: 36px;
+  left: 36px;
+  right: 36px;
+  border-radius: 50%;
+  background: #090c13;
+  border: 1.5px solid #283347;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 11px;
+}
+
+.vdj-deck-a .vdj-jog-center { color: #00f0ff; }
+.vdj-deck-b .vdj-jog-center { color: #f43f5e; }
+
+.vdj-jog-marker {
+  position: absolute;
+  top: 4px;
+  left: calc(50% - 2.5px);
+  width: 5px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.vdj-deck-a .vdj-jog-marker { background: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
+.vdj-deck-b .vdj-jog-marker { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
+
+/* Rotación continua al sonar */
+.vdj-jog-wheel.is-spinning {
+  animation: spin-jog 2.4s linear infinite;
+}
+
+@keyframes spin-jog {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Pitch Fader Slider */
+.vdj-pitch-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 130px;
+}
+
+.vdj-pitch-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.vdj-pitch-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 14px;
+  height: 95px;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+.vdj-pitch-val {
+  font-size: 9px;
+  font-family: monospace;
+  color: #94a3b8;
+}
+
+/* Pads de Rendimiento */
+.vdj-pads-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vdj-pads-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.vdj-pad-btn {
+  background: #151a24;
+  border: 1px solid #2d3748;
+  color: #94a3b8;
+  border-radius: 5px;
+  padding: 8px 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.vdj-pad-btn:hover {
+  background: #1e2638;
+  color: #f8fafc;
+}
+
+.vdj-deck-a .vdj-pad-btn:active {
+  background: #00f0ff;
+  color: #000;
+  box-shadow: 0 0 10px #00f0ff;
+}
+
+.vdj-deck-b .vdj-pad-btn:active {
+  background: #f43f5e;
+  color: #fff;
+  box-shadow: 0 0 10px #f43f5e;
+}
+
+/* Botones de Transporte */
+.vdj-transport-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 60px 48px;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.vdj-btn-cue {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border: 1.5px solid #64748b;
+  color: #f59e0b;
+  border-radius: 8px;
+  font-weight: 900;
+  font-size: 11px;
+  padding: 10px 4px;
+  cursor: pointer;
+}
+
+.vdj-btn-play {
+  border-radius: 8px;
+  font-weight: 900;
+  font-size: 12px;
+  padding: 10px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.vdj-deck-a .vdj-btn-play {
+  background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+  border: 1.5px solid #00f0ff;
+  color: #f0fdfa;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+.vdj-deck-a .vdj-btn-play.is-playing {
+  background: linear-gradient(180deg, #00f0ff 0%, #0284c7 100%);
+  color: #000;
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.6);
+}
+
+.vdj-deck-b .vdj-btn-play {
+  background: linear-gradient(180deg, #be123c 0%, #881337 100%);
+  border: 1.5px solid #f43f5e;
+  color: #fff1f2;
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+}
+
+.vdj-deck-b .vdj-btn-play.is-playing {
+  background: linear-gradient(180deg, #f43f5e 0%, #be123c 100%);
+  color: #fff;
+  box-shadow: 0 0 18px rgba(244, 63, 94, 0.6);
+}
+
+.vdj-btn-sync {
+  background: #172033;
+  border: 1.5px solid #334155;
+  color: #94a3b8;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.vdj-btn-stop {
+  background: #2a1215;
+  border: 1.5px solid #7f1d1d;
+  color: #fca5a5;
+  border-radius: 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* ========================================================
+   4. MEZCLADOR CENTRAL PIONEER / VIRTUAL DJ MIXER
+   ======================================================== */
+.vdj-mixer {
+  background: linear-gradient(180deg, #151822 0%, #0c0e14 100%);
+  border: 1.5px solid #283042;
+  border-radius: 10px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.vdj-mixer-header {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 900;
+  color: #64748b;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #1e2638;
+  padding-bottom: 4px;
+}
+
+/* Perillas de Ecualización */
+.vdj-knobs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.vdj-knob-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.vdj-knob-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vdj-knob-label {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.vdj-knob-dial {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1c2230;
+  border: 2px solid #334155;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+  cursor: ns-resize;
+}
+
+.vdj-knob-notch {
+  position: absolute;
+  top: 2px;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 8px;
+  background: #38bdf8;
+  border-radius: 1px;
+}
+
+.vdj-knob-col-b .vdj-knob-notch { background: #fb7185; }
+
+/* Vúmetros LED Estéreo Centrales */
+.vdj-vu-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  margin: 4px 0;
+  background: #07090f;
+  border-radius: 6px;
+  border: 1px solid #1e2536;
+}
+
+.vdj-vu-column {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  height: 60px;
+  width: 14px;
+  padding: 2px;
+  background: #0b0d14;
+  border-radius: 3px;
+}
+
+.vdj-vu-segment {
+  height: 4px;
+  border-radius: 1px;
+  background: #1e2638;
+  transition: background 0.05s linear;
+}
+
+.vdj-vu-segment.active-green { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+.vdj-vu-segment.active-yellow { background: #facc15; box-shadow: 0 0 4px #facc15; }
+.vdj-vu-segment.active-red { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+/* Faders de Canal A & B */
+.vdj-faders-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 6px 12px;
+  align-items: center;
+}
+
+.vdj-ch-fader-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.vdj-ch-fader {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 18px;
+  height: 75px;
+  cursor: pointer;
+}
+
+.vdj-ch-fader-a { accent-color: #00f0ff; }
+.vdj-ch-fader-b { accent-color: #f43f5e; }
+
+/* Crossfader Horizontal A <---> B */
+.vdj-crossfader-container {
+  padding: 6px 8px;
+  background: #090c13;
+  border-radius: 6px;
+  border: 1px solid #1e2738;
+  margin-top: 6px;
+}
+
+.vdj-cf-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  font-weight: 900;
+  margin-bottom: 2px;
+}
+
+.vdj-cf-label-a { color: #00f0ff; }
+.vdj-cf-label-b { color: #f43f5e; }
+
+.vdj-crossfader-slider {
+  width: 100%;
+  height: 14px;
+  accent-color: #ffffff;
+  cursor: pointer;
+}
+
+/* ========================================================
+   5. PARTE INFERIOR: BIBLIOTECA DJ + RACK COMPACTO DE ESTUDIO
+   ======================================================== */
+.vdj-lower-layout {
+  display: grid;
+  grid-template-columns: 1fr 390px;
+  gap: 12px;
+}
+
+@media (max-width: 1080px) {
+  .vdj-lower-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Biblioteca & Explorador Virtual DJ */
+.vdj-crate-panel {
+  background: #0d1017;
+  border: 1px solid #232b3c;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vdj-crate-nav {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid #1f2738;
+  padding-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.vdj-crate-tab {
+  background: #141a26;
+  border: 1px solid #283348;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.vdj-crate-tab.is-active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+}
+
+.vdj-crate-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #07090f;
+  border: 1.5px solid #1e293b;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.vdj-crate-search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+}
+
+/* Tabla de Canciones Estilo Virtual DJ */
+.vdj-table-wrapper {
+  max-height: 380px;
+  overflow-y: auto;
+  border: 1px solid #1c2333;
+  border-radius: 8px;
+  background: #080a10;
+}
+
+.vdj-track-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.vdj-track-table th {
+  background: #121722;
+  color: #94a3b8;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #232b3c;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.vdj-track-row-pro {
+  border-bottom: 1px solid #141a26;
+  transition: background 0.1s ease;
+}
+
+.vdj-track-row-pro:hover {
+  background: #131926;
+}
+
+.vdj-track-row-pro td {
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+
+.vdj-btn-load-a {
+  background: #075985;
+  border: 1px solid #00f0ff;
+  color: #e0f2fe;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vdj-btn-load-a:hover {
+  background: #0284c7;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+.vdj-btn-load-b {
+  background: #9f1239;
+  border: 1px solid #f43f5e;
+  color: #ffe4e6;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vdj-btn-load-b:hover {
+  background: #be123c;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+}
+
+/* Rack Compacto Lateral de Estudio (Tabs de Voz, FX, Simulación & Cámaras) */
+.vdj-side-rack {
+  background: #0d1017;
+  border: 1px solid #232b3c;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vdj-rack-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  border-bottom: 1px solid #1f2738;
+  padding-bottom: 6px;
+}
+
+.vdj-rack-tab-btn {
+  background: #141a26;
+  border: 1px solid #283348;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 6px 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.vdj-rack-tab-btn.is-active {
+  background: #334155;
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+
+.vdj-rack-page {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vdj-rack-page.is-active {
+  display: flex;
+}
+
+/* ========================================================
+   6. ECUALIZADOR ESPECTRO HUD 2D PARA /SHOW (SIEMPRE VISIBLE)
+   ======================================================== */
+.hud-audio-spectrum {
+  position: fixed;
+  bottom: 82px;
+  right: 18px;
+  background: rgba(10, 14, 23, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 10px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+.hud-spectrum-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.hud-spectrum-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+.hud-spectrum-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 28px;
+}
+
+.hud-eq-bar {
+  width: 3px;
+  height: 4px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, #ec4899 0%, #00f0ff 100%);
+  transition: height 0.05s ease;
+}
+
+

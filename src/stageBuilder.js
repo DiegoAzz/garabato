@@ -56,6 +56,79 @@ export function buildDiscoStage(scene) {
   }
 
   // ==========================================
+  // 1.5. PANTALLA GIGANTE DE ESPECTRO DE AUDIO LED 3D (RTA EQUALIZER WALL)
+  // Ubicada directamente detrás del DJ, visible en todos los ángulos de cámara
+  // ==========================================
+  const spectrumColumns = [];
+  const spectrumWallGroup = new THREE.Group();
+  spectrumWallGroup.position.set(0, 3.4, -5.8);
+
+  // Marco de fibra de carbono del visualizador
+  const specFrameMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(6.6, 2.7, 0.12),
+    new THREE.MeshStandardMaterial({ color: 0x070b14, roughness: 0.35, metalness: 0.85 })
+  );
+  spectrumWallGroup.add(specFrameMesh);
+
+  // Borde exterior de neón cian
+  const specBorderMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(6.68, 2.78, 0.06),
+    new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+  );
+  specBorderMesh.position.z = -0.04;
+  spectrumWallGroup.add(specBorderMesh);
+
+  // 22 Columnas de Ecualizador Neón Reactivas
+  const numEqCols = 22;
+  const colSpacing = 0.27;
+  const startX = -((numEqCols - 1) * colSpacing) / 2;
+  const maxBarH = 2.1;
+
+  const eqColors = [
+    0xec4899, 0xec4899, 0xf43f5e, 0xf43f5e, // Sub-bajos (Hot Pink / Red)
+    0xd946ef, 0xa855f7, 0x8b5cf6, 0x6366f1, // Bajos & Medios (Violeta / Indigo)
+    0x3b82f6, 0x0ea5e9, 0x06b6d4, 0x00f0ff, // Medios Vocales & Sintetizadores (Cian / Sky)
+    0x14b8a6, 0x10b981, 0x22c55e, 0x84cc16, // Medios-Altos (Verde Neón)
+    0xeab308, 0xfacc15, 0xf59e0b, 0xf97316, 0xef4444, 0xffffff // Agudos & Percusiones
+  ];
+
+  for (let c = 0; c < numEqCols; c++) {
+    const colGroup = new THREE.Group();
+    const colX = startX + c * colSpacing;
+    colGroup.position.set(colX, -1.05, 0.08); // Anclado en la base
+
+    // Barra de color LED
+    const barGeo = new THREE.BoxGeometry(0.18, maxBarH, 0.06);
+    const barMat = new THREE.MeshBasicMaterial({
+      color: eqColors[c % eqColors.length]
+    });
+    const barMesh = new THREE.Mesh(barGeo, barMat);
+    barMesh.position.y = maxBarH / 2; // Desplazar para que el pivote sea la base
+    colGroup.add(barMesh);
+
+    // Indicador Flotante de Pico (Peak Hold Cap)
+    const capGeo = new THREE.BoxGeometry(0.20, 0.045, 0.08);
+    const capMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const capMesh = new THREE.Mesh(capGeo, capMat);
+    capMesh.position.set(colX, -1.05 + 0.06, 0.1);
+    spectrumWallGroup.add(capMesh);
+
+    spectrumWallGroup.add(colGroup);
+
+    spectrumColumns.push({
+      colGroup,
+      capMesh,
+      baseY: -1.05,
+      currentH: 0.05,
+      peakH: 0.05,
+      peakHold: 0,
+      index: c
+    });
+  }
+
+  stageGroup.add(spectrumWallGroup);
+
+  // ==========================================
   // 2. PISTA DE BAILE CENTRAL DE LED ILUMINADA (DISCO LED GRID)
   // ==========================================
   // Cuadrícula de 8x10 baldosas de LED que pulsan y cambian de color con la música
@@ -771,6 +844,53 @@ export function buildDiscoStage(scene) {
 
         p.mesh.rotation.x += p.rotSpeed.x * delta;
         p.mesh.rotation.y += p.rotSpeed.y * delta;
+      }
+
+      // 6. Ecualizador de Espectro Neón Gigante 3D (RTA Spectrum Wall)
+      const hasAudio = (audioLevels.overall || 0) > 0.04;
+      const bassLvl = audioLevels.bass || 0;
+      const midLvl = audioLevels.mid || 0;
+      const trebLvl = audioLevels.treble || 0;
+
+      for (let i = 0; i < spectrumColumns.length; i++) {
+        const col = spectrumColumns[i];
+        let targetH = 0.04; // Altura mínima en reposo
+
+        if (hasAudio) {
+          // Curva de frecuencia espectral por bandas
+          const normIdx = i / (spectrumColumns.length - 1);
+          let bandVal = 0;
+          if (normIdx < 0.3) {
+            // Banda de bajos (columnas 0-6)
+            bandVal = bassLvl * 1.1 + Math.sin(time * 14 + i * 0.8) * 0.12;
+          } else if (normIdx < 0.7) {
+            // Banda de medios (columnas 7-14)
+            bandVal = midLvl * 1.15 + Math.cos(time * 16 + i * 0.9) * 0.15;
+          } else {
+            // Banda de agudos (columnas 15-21)
+            bandVal = trebLvl * 1.25 + Math.sin(time * 20 + i * 1.1) * 0.14;
+          }
+          targetH = Math.min(1.0, Math.max(0.05, bandVal));
+        }
+
+        // Interpolación fluida (spring decay)
+        const lerpSpeed = targetH > col.currentH ? 24 : 10;
+        col.currentH += (targetH - col.currentH) * Math.min(1.0, delta * lerpSpeed);
+        col.colGroup.scale.y = col.currentH;
+
+        // Fisiología del indicador de pico flotante (Peak-Hold)
+        if (col.currentH >= col.peakH) {
+          col.peakH = col.currentH;
+          col.peakHold = 0.18; // Retener pico por 180ms
+        } else {
+          if (col.peakHold > 0) {
+            col.peakHold -= delta;
+          } else {
+            col.peakH = Math.max(col.currentH, col.peakH - delta * 1.4);
+          }
+        }
+
+        col.capMesh.position.y = col.baseY + col.peakH * maxBarH + 0.04;
       }
     }
   };

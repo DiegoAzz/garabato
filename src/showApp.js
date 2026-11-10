@@ -129,6 +129,21 @@ export function initShowApp() {
     }
   }
 
+  // ==========================================
+  // ECUALIZADOR ESPECTRO HUD 2D (SIEMPRE VISIBLE)
+  // ==========================================
+  const hudSpectrumBarsContainer = document.getElementById('hud-spectrum-bars');
+  const hudEqBars = [];
+  if (hudSpectrumBarsContainer) {
+    hudSpectrumBarsContainer.innerHTML = '';
+    for (let b = 0; b < 16; b++) {
+      const bar = document.createElement('div');
+      bar.className = 'hud-eq-bar';
+      hudSpectrumBarsContainer.appendChild(bar);
+      hudEqBars.push(bar);
+    }
+  }
+
   const milestoneCelebration = document.getElementById('milestone-celebration');
   const milestoneNameEl = document.getElementById('milestone-celebration-name');
   const milestoneIconEl = document.getElementById('milestone-celebration-icon');
@@ -306,30 +321,23 @@ export function initShowApp() {
 
         if (act === 'SCRATCH' || act === 'CONTROL') {
           singer.animController.triggerDjScratch(4500);
-          audioEngine.playVinylScratch();
         } else if (act === 'DROP' || act === 'BASS' || act === 'GG') {
           singer.animController.triggerDjDrop(5000);
-          audioEngine.playBassDrop();
           cameraDirector.shake(0.5, 800);
           stage.burstConfetti();
         } else if (act === 'CONFETTI' || act === 'DONA' || act === 'ROSA') {
           singer.animController.triggerDjHandsUp(4000);
           stage.burstConfetti();
-          audioEngine.playCheer();
-          audioEngine.playCrowdApplause(4.0);
         } else if (act === 'CORONAR' || act === 'CORONA' || act === 'REY') {
           audience.promoteToVIP(cleanU, 'rey');
           stage.burstConfetti();
-          audioEngine.playCheer();
           singer.animController.triggerDjHandsUp(4000);
         } else if (act === 'BAILAR' || act === 'DANCE' || act === 'CORAZON') {
           singer.animController.triggerDanceFrenzyReaction();
           stage.triggerExtremeDisco(5.0);
           audience.triggerFrenzy(5.0);
-          audioEngine.playCrowdApplause(3.5);
         } else {
           stage.burstConfetti();
-          audioEngine.playCheer();
           singer.animController.triggerDjHandsUp(3500);
         }
 
@@ -714,9 +722,67 @@ export function initShowApp() {
     }
   });
 
-  syncBridge.on('DJ_PAUSE_YOUTUBE', () => {
-    if (showYTPlayer && showYTPlayer.pauseVideo) {
-      showYTPlayer.pauseVideo();
+  // ==========================================
+  // ARQUITECTURA DUAL-DECK EN /SHOW (CANAL A & CANAL B)
+  // ==========================================
+  const deckBAudio = new Audio();
+  deckBAudio.preload = 'auto';
+  deckBAudio.loop = true;
+
+  function stopAllShowAudio() {
+    audioEngine.stopDjTrack();
+    if (deckBAudio) {
+      deckBAudio.pause();
+      deckBAudio.currentTime = 0;
+    }
+    if (showYTPlayer && showYTPlayer.stopVideo) {
+      try { showYTPlayer.stopVideo(); } catch (e) {}
+    }
+    singer.animController.resetToIdle();
+    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
+    if (subtitlesEl) {
+      showSubtitlePhrase('⏹️ Música Detenida (0:00)', '⏹️', false);
+    }
+  }
+
+  syncBridge.on('DJ_DECK_PLAY', (payload) => {
+    markActivity();
+    unlockAudio();
+    if (!payload) return;
+
+    if (payload.deck === 'A') {
+      if (payload.type === 'youtube' && payload.videoId) {
+        initOrLoadShowYTPlayer(payload.videoId, () => {
+          if (showYTPlayer && showYTPlayer.playVideo) showYTPlayer.playVideo();
+        });
+      } else if (payload.url) {
+        audioEngine.playCustomAudioTrack(payload.url, payload.title || 'Deck A', payload.resume || false);
+      }
+    } else if (payload.deck === 'B') {
+      if (payload.url) {
+        if (!deckBAudio.src.endsWith(payload.url)) {
+          deckBAudio.src = payload.url;
+          deckBAudio.load();
+        }
+        deckBAudio.play().catch(e => console.warn('[Show Deck B Play]:', e.message));
+      }
+    }
+
+    singer.animController.triggerDjHandsUp(4000);
+    stage.triggerExtremeDisco(5.0);
+    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Live Club 3D';
+    if (subtitlesEl) {
+      showSubtitlePhrase('🔥 EN VIVO: Mezcla Exclusiva del Club', '🎧', false);
+    }
+  });
+
+  syncBridge.on('DJ_DECK_PAUSE', (payload) => {
+    if (!payload) return;
+    if (payload.deck === 'A') {
+      audioEngine.pauseDjTrack();
+      if (showYTPlayer && showYTPlayer.pauseVideo) showYTPlayer.pauseVideo();
+    } else if (payload.deck === 'B') {
+      deckBAudio.pause();
     }
     singer.animController.resetToIdle();
     if (queueStatusText) queueStatusText.textContent = '⏸️ DJ en Pausa';
@@ -725,44 +791,65 @@ export function initShowApp() {
     }
   });
 
-  syncBridge.on('DJ_RESUME_YOUTUBE', () => {
-    if (showYTPlayer && showYTPlayer.playVideo) {
-      showYTPlayer.playVideo();
-    }
-    singer.animController.triggerDjHandsUp(4000);
-    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Live Club 3D';
-    if (subtitlesEl) {
-      showSubtitlePhrase('▶️ Continuando la Fiesta en Vivo', '🎧', false);
-    }
-  });
-
-  syncBridge.on('DJ_STOP_YOUTUBE', () => {
-    if (showYTPlayer && showYTPlayer.stopVideo) {
-      showYTPlayer.stopVideo();
+  syncBridge.on('DJ_DECK_STOP', (payload) => {
+    if (!payload) return;
+    if (payload.deck === 'A') {
+      audioEngine.stopDjTrack();
+      if (showYTPlayer && showYTPlayer.stopVideo) showYTPlayer.stopVideo();
+    } else if (payload.deck === 'B') {
+      deckBAudio.pause();
+      deckBAudio.currentTime = 0;
     }
     singer.animController.resetToIdle();
-    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
-    if (subtitlesEl) {
-      showSubtitlePhrase('⏹️ Música Detenida', '⏹️', false);
+  });
+
+  syncBridge.on('DJ_DECK_CUE', (payload) => {
+    if (!payload) return;
+    if (payload.deck === 'A') {
+      audioEngine.pauseDjTrack();
+      if (audioEngine.audioElement) audioEngine.audioElement.currentTime = 0;
+    } else if (payload.deck === 'B') {
+      deckBAudio.pause();
+      deckBAudio.currentTime = 0;
     }
   });
 
+  syncBridge.on('DJ_DECK_SEEK', (payload) => {
+    if (!payload || payload.time === undefined) return;
+    if (payload.deck === 'A' && audioEngine.audioElement) {
+      audioEngine.audioElement.currentTime = payload.time;
+    } else if (payload.deck === 'B' && deckBAudio) {
+      deckBAudio.currentTime = payload.time;
+    }
+  });
+
+  syncBridge.on('DJ_MIXER_UPDATE', (payload) => {
+    if (!payload) return;
+    if (payload.volA !== undefined) {
+      audioEngine.setDjVolume(payload.volA);
+      if (showYTPlayer && showYTPlayer.setVolume) {
+        showYTPlayer.setVolume(Math.round(payload.volA * 100));
+      }
+    }
+    if (payload.volB !== undefined && deckBAudio) {
+      deckBAudio.volume = Math.max(0, Math.min(1, payload.volB));
+      if (isMasterMuted) deckBAudio.muted = true;
+      else deckBAudio.muted = false;
+    }
+  });
+
+  syncBridge.on('DJ_STOP_ALL', stopAllShowAudio);
+  syncBridge.on('DJ_STOP_TRACK', stopAllShowAudio);
+  syncBridge.on('DJ_STOP_YOUTUBE', stopAllShowAudio);
   syncBridge.on('DJ_PAUSE_TRACK', () => {
     audioEngine.pauseDjTrack();
-    singer.animController.resetToIdle();
-    if (queueStatusText) queueStatusText.textContent = '⏸️ DJ en Pausa';
-    if (subtitlesEl) {
-      showSubtitlePhrase('⏸️ Música en pausa (en el mismo segundo)', '⏸️', false);
-    }
+    deckBAudio.pause();
+    if (showYTPlayer && showYTPlayer.pauseVideo) showYTPlayer.pauseVideo();
   });
-
-  syncBridge.on('DJ_STOP_TRACK', () => {
-    audioEngine.stopDjTrack();
-    singer.animController.resetToIdle();
-    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
-    if (subtitlesEl) {
-      showSubtitlePhrase('⏹️ Música detenida definitivamente (0:00)', '⏹️', false);
-    }
+  syncBridge.on('DJ_PAUSE_YOUTUBE', () => {
+    audioEngine.pauseDjTrack();
+    deckBAudio.pause();
+    if (showYTPlayer && showYTPlayer.pauseVideo) showYTPlayer.pauseVideo();
   });
 
   syncBridge.on('DJ_TOGGLE_VOICE', (payload) => {
@@ -1062,10 +1149,7 @@ export function initShowApp() {
     const isActorBusy = eventQueue.isBusy || audioEngine.isSpeaking;
     if (!audioEngine.isVoiceMuted && !isActorBusy && (now - lastSpokenWelcomeTime > 8000)) {
       lastSpokenWelcomeTime = now;
-      const phraseGen = WELCOME_PHRASES[Math.floor(Math.random() * WELCOME_PHRASES.length)];
-      const text = phraseGen(cleanUser);
       singer.animController.triggerWelcomeReaction(cleanUser, 4000);
-      audioEngine.speakActorLine(text, { pitch: 1.0, rate: 1.02 });
     }
   }
 
@@ -1176,8 +1260,8 @@ export function initShowApp() {
   ];
 
   let idleConfig = {
-    enabled: true,
-    timeoutSeconds: 10,
+    enabled: false, // Desactivado por defecto (Modo limpio: solo música + micro en vivo)
+    timeoutSeconds: 20,
     phrases: [...DEFAULT_IDLE_PHRASES]
   };
 
@@ -1269,6 +1353,21 @@ export function initShowApp() {
       singer.animController.update(time, delta, audioLevels);
       stage.update(time, delta, audioLevels);
       audience.update(time, delta, audioLevels);
+
+      // Actualizar Ecualizador Espectro en Vivo HUD 2D (Siempre Visible)
+      if (hudEqBars.length > 0) {
+        const hasAudio = (audioLevels.overall || 0) > 0.03;
+        for (let b = 0; b < hudEqBars.length; b++) {
+          let h = 4;
+          if (hasAudio) {
+            const norm = b / 15;
+            let val = norm < 0.35 ? audioLevels.bass : (norm < 0.7 ? audioLevels.mid : audioLevels.treble);
+            val += Math.sin(time * (14 + b) + b * 0.8) * 0.12;
+            h = Math.max(4, Math.min(28, Math.round(val * 28)));
+          }
+          hudEqBars[b].style.height = `${h}px`;
+        }
+      }
 
       tomatoRain.update(delta);
       cameraDirector.update(delta);

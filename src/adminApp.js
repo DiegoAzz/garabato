@@ -2,13 +2,17 @@ import { SyncBridge } from './syncBridge.js';
 import { AudioEngine } from './audioEngine.js';
 
 /**
- * Panel de Administración y Consola Maestra de DJ — GARABATO DJ CLUB 3D (/admin)
+ * VIRTUAL DJ PRO 2024 — GARABATO LIVE CLUB 3D (/admin)
+ * Panel Maestro de DJ con Arquitectura Dual-Deck (Canal 1 & Canal 2),
+ * Mezclador Pioneer, Crossfader en tiempo real, Micrófono Humano y Rack de Simulación.
  */
 export function initAdminApp() {
   const syncBridge = new SyncBridge('admin');
   const audioEngine = new AudioEngine();
 
-  // Elementos DOM de Estado y Conexión
+  // ==========================================
+  // ESTADO Y CONEXIÓN CON /SHOW
+  // ==========================================
   const statusBadge = document.getElementById('status-show-connection');
   const btnAdminToggleClean = document.getElementById('btn-admin-toggle-clean');
   let isCleanMode = false;
@@ -28,155 +32,534 @@ export function initAdminApp() {
     }
   });
 
+  // Control de Silencio de Monitor Local en Admin
+  let isAdminAudioMuted = localStorage.getItem('garabato_admin_audio_muted') === 'true';
+  const btnToggleAdminAudioMute = document.getElementById('btn-toggle-admin-audio-mute');
+
+  function updateAdminAudioMuteUI() {
+    if (!btnToggleAdminAudioMute) return;
+    if (isAdminAudioMuted) {
+      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔇 MUTE';
+      btnToggleAdminAudioMute.style.color = '#f87171';
+    } else {
+      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔊 ON';
+      btnToggleAdminAudioMute.style.color = '#38bdf8';
+    }
+    if (deckA.audioEl) deckA.audioEl.muted = isAdminAudioMuted;
+    if (deckB.audioEl) deckB.audioEl.muted = isAdminAudioMuted;
+  }
+
+  if (btnToggleAdminAudioMute) {
+    updateAdminAudioMuteUI();
+    btnToggleAdminAudioMute.addEventListener('click', () => {
+      isAdminAudioMuted = !isAdminAudioMuted;
+      localStorage.setItem('garabato_admin_audio_muted', isAdminAudioMuted ? 'true' : 'false');
+      updateAdminAudioMuteUI();
+    });
+  }
+
   // ==========================================
-  // 1. DECK & REPRODUCTOR DE MÚSICA PERSONALIZADA (MP3/WAV/URL)
+  // ESTADO DE LOS DOS DECKS (CANAL A & CANAL B)
   // ==========================================
-  const djUploadDropzone = document.getElementById('dj-upload-dropzone');
-  const djFileInput = document.getElementById('dj-file-input');
-  const btnSelectFile = document.getElementById('btn-select-file');
-  const djUploadStatus = document.getElementById('dj-upload-status');
-  const djStreamUrl = document.getElementById('dj-stream-url');
-  const btnPlayStreamUrl = document.getElementById('btn-play-stream-url');
-  const djNowPlayingBanner = document.getElementById('dj-now-playing-banner');
-  const djNowPlayingTitle = document.getElementById('dj-now-playing-title');
+  const deckA = {
+    key: 'A',
+    title: 'Ninguna pista cargada',
+    type: 'none', // 'audio' | 'youtube'
+    url: null,
+    videoId: null,
+    audioEl: document.getElementById('admin-audio-deck-a') || new Audio(),
+    isPlaying: false,
+    isPaused: false,
+    bpm: 124.0,
+    pitch: 0,
+    volume: 0.85,
+    titleEl: document.getElementById('deck-a-title'),
+    bpmEl: document.getElementById('deck-a-bpm'),
+    timeEl: document.getElementById('deck-a-time'),
+    remainEl: document.getElementById('deck-a-remain'),
+    scrubFillEl: document.getElementById('deck-a-scrub-fill'),
+    jogEl: document.getElementById('deck-a-jog'),
+    playBtn: document.getElementById('btn-deck-a-play'),
+    playIcon: document.getElementById('deck-a-play-icon'),
+    playText: document.getElementById('deck-a-play-text')
+  };
+
+  const deckB = {
+    key: 'B',
+    title: 'Ninguna pista cargada',
+    type: 'none',
+    url: null,
+    videoId: null,
+    audioEl: document.getElementById('admin-audio-deck-b') || new Audio(),
+    isPlaying: false,
+    isPaused: false,
+    bpm: 128.0,
+    pitch: 0,
+    volume: 0.85,
+    titleEl: document.getElementById('deck-b-title'),
+    bpmEl: document.getElementById('deck-b-bpm'),
+    timeEl: document.getElementById('deck-b-time'),
+    remainEl: document.getElementById('deck-b-remain'),
+    scrubFillEl: document.getElementById('deck-b-scrub-fill'),
+    jogEl: document.getElementById('deck-b-jog'),
+    playBtn: document.getElementById('btn-deck-b-play'),
+    playIcon: document.getElementById('deck-b-play-icon'),
+    playText: document.getElementById('deck-b-play-text')
+  };
+
+  // Configuración de elementos de audio locales
+  [deckA, deckB].forEach(d => {
+    d.audioEl.loop = true;
+    d.audioEl.addEventListener('timeupdate', () => updateDeckTimeDisplay(d));
+    d.audioEl.addEventListener('ended', () => {
+      d.isPlaying = false;
+      d.isPaused = false;
+      updateDeckUI(d);
+      syncBridge.send('DJ_DECK_STOP', { deck: d.key });
+    });
+  });
+
+  // ==========================================
+  // MEZCLADOR CENTRAL PIONEER & CROSSFADER
+  // ==========================================
   const djMasterVolume = document.getElementById('dj-master-volume');
   const djVolumeLabel = document.getElementById('dj-volume-label');
-  const djPlaylistList = document.getElementById('dj-playlist-list');
-  const btnRefreshPlaylist = document.getElementById('btn-refresh-playlist');
-  const btnPauseMusic = document.getElementById('btn-pause-music');
+  const deckAFader = document.getElementById('deck-a-fader');
+  const deckBFader = document.getElementById('deck-b-fader');
+  const deckAFaderVal = document.getElementById('deck-a-fader-val');
+  const deckBFaderVal = document.getElementById('deck-b-fader-val');
+  const vdjCrossfader = document.getElementById('vdj-crossfader');
   const btnStopAllMusic = document.getElementById('btn-stop-all-music');
-  const musicCountBadge = document.getElementById('music-count-badge');
-  const btnToggleDjVoice = document.getElementById('btn-toggle-dj-voice');
-  const djVoiceStatusIcon = document.getElementById('dj-voice-status-icon');
 
-  // Elementos del Buscador Virtual DJ y Carga de Carpetas
+  function calculateEffectiveVolumes() {
+    const master = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
+    const volA = deckAFader ? parseInt(deckAFader.value, 10) / 100 : 0.85;
+    const volB = deckBFader ? parseInt(deckBFader.value, 10) / 100 : 0.85;
+    const cf = vdjCrossfader ? parseInt(vdjCrossfader.value, 10) / 100 : 0; // -1.0 a +1.0
+
+    // Curva de Crossfader suave
+    const crossA = cf <= 0 ? 1.0 : Math.max(0, 1.0 - cf);
+    const crossB = cf >= 0 ? 1.0 : Math.max(0, 1.0 + cf);
+
+    const effA = master * volA * crossA;
+    const effB = master * volB * crossB;
+
+    return { effA, effB, cf, master };
+  }
+
+  function applyMixerVolumes() {
+    const { effA, effB, cf, master } = calculateEffectiveVolumes();
+
+    if (deckA.audioEl) {
+      deckA.audioEl.volume = Math.max(0, Math.min(1, effA));
+      deckA.audioEl.muted = isAdminAudioMuted;
+    }
+    if (deckB.audioEl) {
+      deckB.audioEl.volume = Math.max(0, Math.min(1, effB));
+      deckB.audioEl.muted = isAdminAudioMuted;
+    }
+
+    if (djVolumeLabel && djMasterVolume) djVolumeLabel.textContent = `${djMasterVolume.value}%`;
+    if (deckAFaderVal && deckAFader) deckAFaderVal.textContent = `${deckAFader.value}%`;
+    if (deckBFaderVal && deckBFader) deckBFaderVal.textContent = `${deckBFader.value}%`;
+
+    // Sincronizar mezcla con /show
+    syncBridge.send('DJ_MIXER_UPDATE', {
+      volA: effA,
+      volB: effB,
+      crossfader: cf,
+      masterVolume: master
+    });
+  }
+
+  if (djMasterVolume) djMasterVolume.addEventListener('input', applyMixerVolumes);
+  if (deckAFader) deckAFader.addEventListener('input', applyMixerVolumes);
+  if (deckBFader) deckBFader.addEventListener('input', applyMixerVolumes);
+  if (vdjCrossfader) vdjCrossfader.addEventListener('input', applyMixerVolumes);
+
+  // Vúmetros LED Estéreo Dinámicos Centrales
+  const vdjVuA = document.getElementById('vdj-vu-a');
+  const vdjVuB = document.getElementById('vdj-vu-b');
+  const vuSegmentsA = [];
+  const vuSegmentsB = [];
+
+  function buildVuTowers() {
+    [vdjVuA, vdjVuB].forEach((container, idx) => {
+      if (!container) return;
+      container.innerHTML = '';
+      const list = idx === 0 ? vuSegmentsA : vuSegmentsB;
+      list.length = 0;
+      for (let s = 0; s < 10; s++) {
+        const seg = document.createElement('div');
+        seg.className = 'vdj-vu-segment';
+        container.appendChild(seg);
+        list.push(seg);
+      }
+    });
+  }
+  buildVuTowers();
+
+  function animateVuMeters() {
+    requestAnimationFrame(animateVuMeters);
+    const now = Date.now();
+
+    // Deck A
+    const lvlA = deckA.isPlaying ? (0.4 + Math.abs(Math.sin(now * 0.009)) * 0.55) : 0;
+    const litA = Math.round(lvlA * 10);
+    vuSegmentsA.forEach((seg, i) => {
+      seg.className = 'vdj-vu-segment';
+      if (i < litA) {
+        if (i < 6) seg.classList.add('active-green');
+        else if (i < 8) seg.classList.add('active-yellow');
+        else seg.classList.add('active-red');
+      }
+    });
+
+    // Deck B
+    const lvlB = deckB.isPlaying ? (0.4 + Math.abs(Math.sin(now * 0.0085 + 1.2)) * 0.55) : 0;
+    const litB = Math.round(lvlB * 10);
+    vuSegmentsB.forEach((seg, i) => {
+      seg.className = 'vdj-vu-segment';
+      if (i < litB) {
+        if (i < 6) seg.classList.add('active-green');
+        else if (i < 8) seg.classList.add('active-yellow');
+        else seg.classList.add('active-red');
+      }
+    });
+  }
+  animateVuMeters();
+
+  // ==========================================
+  // ONDAS DE AUDIO DUALES EN TIEMPO REAL (CANVAS WAVEFORMS)
+  // ==========================================
+  const waveCanvas = document.getElementById('vdj-waveforms-canvas');
+  let waveCtx = waveCanvas ? waveCanvas.getContext('2d') : null;
+  let waveOffsetA = 0;
+  let waveOffsetB = 0;
+
+  function renderRunningWaveforms() {
+    requestAnimationFrame(renderRunningWaveforms);
+    if (!waveCanvas || !waveCtx) return;
+
+    const w = waveCanvas.width = waveCanvas.clientWidth || 800;
+    const h = waveCanvas.height = 64;
+
+    waveCtx.fillStyle = '#080a10';
+    waveCtx.fillRect(0, 0, w, h);
+
+    const halfH = h / 2;
+
+    // Línea divisoria central
+    waveCtx.strokeStyle = '#1e2638';
+    waveCtx.lineWidth = 1;
+    waveCtx.beginPath();
+    waveCtx.moveTo(0, halfH);
+    waveCtx.lineTo(w, halfH);
+    waveCtx.stroke();
+
+    // 1. Deck A (Mitad Superior - Azul Neón)
+    if (deckA.isPlaying) waveOffsetA += 3.2;
+    waveCtx.strokeStyle = '#00f0ff';
+    waveCtx.fillStyle = 'rgba(0, 240, 255, 0.25)';
+    waveCtx.lineWidth = 2;
+    waveCtx.beginPath();
+    for (let x = 0; x < w; x += 4) {
+      const amp = deckA.isPlaying ? Math.abs(Math.sin((x + waveOffsetA) * 0.04) * Math.cos((x + waveOffsetA) * 0.015)) * (halfH - 4) : 2;
+      const y1 = halfH - amp;
+      const y2 = halfH;
+      waveCtx.moveTo(x, y1);
+      waveCtx.lineTo(x, y2);
+    }
+    waveCtx.stroke();
+
+    // 2. Deck B (Mitad Inferior - Rojo Rubí)
+    if (deckB.isPlaying) waveOffsetB += 3.4;
+    waveCtx.strokeStyle = '#f43f5e';
+    waveCtx.fillStyle = 'rgba(244, 63, 94, 0.25)';
+    waveCtx.lineWidth = 2;
+    waveCtx.beginPath();
+    for (let x = 0; x < w; x += 4) {
+      const amp = deckB.isPlaying ? Math.abs(Math.sin((x + waveOffsetB) * 0.038) * Math.cos((x + waveOffsetB) * 0.012)) * (halfH - 4) : 2;
+      const y1 = halfH;
+      const y2 = halfH + amp;
+      waveCtx.moveTo(x, y1);
+      waveCtx.lineTo(x, y2);
+    }
+    waveCtx.stroke();
+  }
+  renderRunningWaveforms();
+
+  // ==========================================
+  // CONTROLADORES DE TRANSPORTE DE DECKS
+  // ==========================================
+  function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) seconds = 0;
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    const d = Math.floor((seconds % 1) * 10);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${d}`;
+  }
+
+  function updateDeckTimeDisplay(deck) {
+    const cur = deck.audioEl ? deck.audioEl.currentTime : 0;
+    const dur = deck.audioEl && deck.audioEl.duration ? deck.audioEl.duration : 0;
+    if (deck.timeEl) deck.timeEl.textContent = formatTime(cur);
+    if (deck.remainEl) deck.remainEl.textContent = dur > 0 ? `-${formatTime(dur - cur)}` : '-00:00.0';
+    if (deck.scrubFillEl && dur > 0) {
+      deck.scrubFillEl.style.width = `${(cur / dur) * 100}%`;
+    }
+  }
+
+  function updateDeckUI(deck) {
+    if (deck.titleEl) deck.titleEl.textContent = deck.title;
+    if (deck.jogEl) {
+      if (deck.isPlaying) deck.jogEl.classList.add('is-spinning');
+      else deck.jogEl.classList.remove('is-spinning');
+    }
+    if (deck.playBtn) {
+      if (deck.isPlaying) {
+        deck.playBtn.classList.add('is-playing');
+        if (deck.playIcon) deck.playIcon.textContent = '⏸';
+        if (deck.playText) deck.playText.textContent = 'PAUSE';
+      } else {
+        deck.playBtn.classList.remove('is-playing');
+        if (deck.playIcon) deck.playIcon.textContent = '▶';
+        if (deck.playText) deck.playText.textContent = 'PLAY';
+      }
+    }
+  }
+
+  function loadTrackToDeck(deck, track, autoPlay = false) {
+    deck.title = track.name || track.title || 'Canción DJ';
+    deck.type = track.videoId ? 'youtube' : 'audio';
+    deck.url = track.url || null;
+    deck.videoId = track.videoId || null;
+
+    if (deck.audioEl) {
+      deck.audioEl.pause();
+      if (deck.url) {
+        deck.audioEl.src = deck.url;
+        deck.audioEl.load();
+      }
+    }
+
+    deck.isPlaying = false;
+    deck.isPaused = false;
+    updateDeckUI(deck);
+    updateDeckTimeDisplay(deck);
+
+    syncBridge.send('DJ_DECK_LOAD', {
+      deck: deck.key,
+      type: deck.type,
+      url: deck.url,
+      videoId: deck.videoId,
+      title: deck.title
+    });
+
+    if (autoPlay) {
+      playDeck(deck);
+    }
+  }
+
+  function playDeck(deck) {
+    if (!deck.url && !deck.videoId) {
+      alert(`Por favor carga una canción en el Deck ${deck.key} primero desde la lista inferior.`);
+      return;
+    }
+
+    deck.isPlaying = true;
+    deck.isPaused = false;
+    applyMixerVolumes();
+
+    if (deck.audioEl && deck.url) {
+      deck.audioEl.play().catch(e => console.warn(`[Deck ${deck.key}] Play:`, e.message));
+    }
+
+    updateDeckUI(deck);
+
+    syncBridge.send('DJ_DECK_PLAY', {
+      deck: deck.key,
+      type: deck.type,
+      url: deck.url,
+      videoId: deck.videoId,
+      title: deck.title,
+      resume: deck.isPaused
+    });
+  }
+
+  function pauseDeck(deck) {
+    deck.isPlaying = false;
+    deck.isPaused = true;
+
+    if (deck.audioEl) {
+      deck.audioEl.pause();
+    }
+
+    updateDeckUI(deck);
+    syncBridge.send('DJ_DECK_PAUSE', { deck: deck.key });
+  }
+
+  function stopDeck(deck) {
+    deck.isPlaying = false;
+    deck.isPaused = false;
+
+    if (deck.audioEl) {
+      deck.audioEl.pause();
+      deck.audioEl.currentTime = 0;
+    }
+
+    updateDeckUI(deck);
+    updateDeckTimeDisplay(deck);
+    syncBridge.send('DJ_DECK_STOP', { deck: deck.key });
+  }
+
+  function cueDeck(deck) {
+    if (deck.audioEl) {
+      deck.audioEl.pause();
+      deck.audioEl.currentTime = 0;
+    }
+    deck.isPlaying = false;
+    deck.isPaused = false;
+    updateDeckUI(deck);
+    updateDeckTimeDisplay(deck);
+    syncBridge.send('DJ_DECK_CUE', { deck: deck.key });
+  }
+
+  // Conexión de Botones de Transporte Deck A
+  if (deckA.playBtn) {
+    deckA.playBtn.addEventListener('click', () => {
+      if (deckA.isPlaying) pauseDeck(deckA);
+      else playDeck(deckA);
+    });
+  }
+  document.getElementById('btn-deck-a-cue')?.addEventListener('click', () => cueDeck(deckA));
+  document.getElementById('btn-deck-a-stop')?.addEventListener('click', () => stopDeck(deckA));
+  document.getElementById('btn-deck-a-sync')?.addEventListener('click', () => {
+    deckA.bpm = deckB.bpm;
+    if (deckA.bpmEl) deckA.bpmEl.textContent = `${deckA.bpm.toFixed(2)} BPM`;
+  });
+
+  // Conexión de Botones de Transporte Deck B
+  if (deckB.playBtn) {
+    deckB.playBtn.addEventListener('click', () => {
+      if (deckB.isPlaying) pauseDeck(deckB);
+      else playDeck(deckB);
+    });
+  }
+  document.getElementById('btn-deck-b-cue')?.addEventListener('click', () => cueDeck(deckB));
+  document.getElementById('btn-deck-b-stop')?.addEventListener('click', () => stopDeck(deckB));
+  document.getElementById('btn-deck-b-sync')?.addEventListener('click', () => {
+    deckB.bpm = deckA.bpm;
+    if (deckB.bpmEl) deckB.bpmEl.textContent = `${deckB.bpm.toFixed(2)} BPM`;
+  });
+
+  // Parada de Emergencia General (Ambos Decks a 0:00)
+  if (btnStopAllMusic) {
+    btnStopAllMusic.addEventListener('click', () => {
+      stopDeck(deckA);
+      stopDeck(deckB);
+      syncBridge.send('DJ_STOP_ALL', {});
+      syncBridge.send('DJ_STOP_TRACK', {});
+      syncBridge.send('DJ_STOP_YOUTUBE', {});
+    });
+  }
+
+  // Scrubbing (Avanzar/retroceder canción con clic en barra)
+  document.getElementById('deck-a-scrub')?.addEventListener('click', (e) => {
+    if (!deckA.audioEl || !deckA.audioEl.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    deckA.audioEl.currentTime = pct * deckA.audioEl.duration;
+    syncBridge.send('DJ_DECK_SEEK', { deck: 'A', time: deckA.audioEl.currentTime });
+  });
+
+  document.getElementById('deck-b-scrub')?.addEventListener('click', (e) => {
+    if (!deckB.audioEl || !deckB.audioEl.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    deckB.audioEl.currentTime = pct * deckB.audioEl.duration;
+    syncBridge.send('DJ_DECK_SEEK', { deck: 'B', time: deckB.audioEl.currentTime });
+  });
+
+  // Pitch Sliders
+  const pitchA = document.getElementById('deck-a-pitch');
+  const pitchValA = document.getElementById('deck-a-pitch-val');
+  if (pitchA) {
+    pitchA.addEventListener('input', () => {
+      const v = parseFloat(pitchA.value);
+      if (pitchValA) pitchValA.textContent = `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+      if (deckA.audioEl) deckA.audioEl.playbackRate = 1.0 + (v / 100);
+    });
+  }
+
+  const pitchB = document.getElementById('deck-b-pitch');
+  const pitchValB = document.getElementById('deck-b-pitch-val');
+  if (pitchB) {
+    pitchB.addEventListener('input', () => {
+      const v = parseFloat(pitchB.value);
+      if (pitchValB) pitchValB.textContent = `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+      if (deckB.audioEl) deckB.audioEl.playbackRate = 1.0 + (v / 100);
+    });
+  }
+
+  // ==========================================
+  // NAVEGACIÓN DE PESTAÑAS (CRATES & SIDE RACK)
+  // ==========================================
+  document.querySelectorAll('.vdj-crate-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.vdj-crate-tab').forEach(b => b.classList.remove('is-active'));
+      document.querySelectorAll('.crate-page').forEach(p => p.style.display = 'none');
+      btn.classList.add('is-active');
+      const crateKey = btn.dataset.crate;
+      const targetPage = document.getElementById(`crate-page-${crateKey}`);
+      if (targetPage) targetPage.style.display = 'block';
+    });
+  });
+
+  document.querySelectorAll('.vdj-rack-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.vdj-rack-tab-btn').forEach(b => b.classList.remove('is-active'));
+      document.querySelectorAll('.vdj-rack-page').forEach(p => p.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      const rackKey = btn.dataset.rack;
+      const targetPage = document.getElementById(`rack-page-${rackKey}`);
+      if (targetPage) targetPage.classList.add('is-active');
+    });
+  });
+
+  // ==========================================
+  // BIBLIOTECA DE CANCIONES (SUBIDAS MP3/WAV)
+  // ==========================================
+  const djPlaylistList = document.getElementById('dj-playlist-list');
+  const musicCountBadge = document.getElementById('music-count-badge');
   const djSearchInput = document.getElementById('dj-search-input');
   const btnClearSearch = document.getElementById('btn-clear-search');
   const djSearchCountBadge = document.getElementById('dj-search-count-badge');
+  const djUploadDropzone = document.getElementById('dj-upload-dropzone');
+  const djFileInput = document.getElementById('dj-file-input');
   const djFolderInput = document.getElementById('dj-folder-input');
+  const btnSelectFile = document.getElementById('btn-select-file');
   const btnSelectFolder = document.getElementById('btn-select-folder');
-  const btnToggleBatchDrive = document.getElementById('btn-toggle-batch-drive');
-  const djBatchDriveBox = document.getElementById('dj-batch-drive-box');
-  const djBatchUrlsInput = document.getElementById('dj-batch-urls-input');
-  const btnCancelBatchDrive = document.getElementById('btn-cancel-batch-drive');
-  const btnSubmitBatchDrive = document.getElementById('btn-submit-batch-drive');
+  const btnRefreshPlaylist = document.getElementById('btn-refresh-playlist');
+  const djUploadStatus = document.getElementById('dj-upload-status');
 
-  let currentPlayingTrackId = null;
-  let isCurrentTrackPaused = false;
   let customTracksList = [];
   let currentSearchQuery = '';
-  let isDjVoiceEnabled = localStorage.getItem('garabato_dj_voice_enabled') !== 'false';
-  let adminMonitorAudio = null;
-  const adminNativeAudio = document.getElementById('admin-native-audio');
-
-  function getOrCreateAdminAudio() {
-    if (adminNativeAudio) {
-      adminMonitorAudio = adminNativeAudio;
-      adminMonitorAudio.loop = true;
-      adminMonitorAudio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
-      return adminMonitorAudio;
-    }
-    if (!adminMonitorAudio) {
-      adminMonitorAudio = new Audio();
-      adminMonitorAudio.loop = true;
-      adminMonitorAudio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
-    }
-    return adminMonitorAudio;
-  }
-
-  // Si el usuario usa los controles nativos del reproductor en el panel
-  if (adminNativeAudio) {
-    adminNativeAudio.addEventListener('play', () => {
-      if (currentPlayingTrackId && isCurrentTrackPaused) {
-        const track = customTracksList.find(t => t.id === currentPlayingTrackId);
-        if (track) playCustomTrack(track, true);
-      }
-    });
-    adminNativeAudio.addEventListener('pause', () => {
-      if (currentPlayingTrackId && !isCurrentTrackPaused && adminNativeAudio.currentTime > 0) {
-        pauseCustomTrack();
-      }
-    });
-  }
-
-  function showUploadStatus(msg, isError = false) {
-    if (!djUploadStatus) return;
-    djUploadStatus.textContent = msg;
-    djUploadStatus.style.display = 'block';
-    djUploadStatus.style.background = isError ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
-    djUploadStatus.style.color = isError ? '#f87171' : '#34d399';
-    djUploadStatus.style.border = `1px solid ${isError ? '#ef4444' : '#10b981'}`;
-
-    if (!isError) {
-      setTimeout(() => {
-        djUploadStatus.style.display = 'none';
-      }, 5000);
-    }
-  }
-
-  // Normalizar texto para búsqueda insensible a acentos/diacríticos y mayúsculas
-  function normalizeSearchText(str) {
-    return String(str || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-  }
 
   function escapeHtml(text) {
-    return String(text || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    if (!text) return '';
+    return String(text).replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[m]);
   }
 
-  function escapeRegex(text) {
-    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-  }
-
-  // Cargar lista de pistas desde la API
-  async function fetchMusicPlaylist() {
-    try {
-      const res = await fetch('/api/music/list');
-      const data = await res.json();
-      if (data.success && Array.isArray(data.tracks)) {
-        customTracksList = data.tracks;
-        renderPlaylist();
-      }
-    } catch (e) {
-      console.warn('No se pudo cargar la lista de música:', e);
-      if (djPlaylistList) {
-        djPlaylistList.innerHTML = '<div style="padding: 12px; color: #94a3b8; font-size: 11px; text-align: center;">Biblioteca lista. Sube un archivo MP3 para empezar.</div>';
-      }
-    }
-  }
-
-  function updateTransportButtons() {
-    if (!btnPauseMusic) return;
-    if (currentPlayingTrackId && !isCurrentTrackPaused) {
-      btnPauseMusic.innerHTML = '⏸️ PAUSAR MÚSICA';
-      btnPauseMusic.style.background = '#854d0e';
-      btnPauseMusic.style.borderColor = '#facc15';
-      btnPauseMusic.style.color = '#fef08a';
-    } else if (currentPlayingTrackId && isCurrentTrackPaused) {
-      btnPauseMusic.innerHTML = '▶️ REANUDAR MÚSICA';
-      btnPauseMusic.style.background = '#15803d';
-      btnPauseMusic.style.borderColor = '#22c55e';
-      btnPauseMusic.style.color = '#86efac';
-    } else {
-      btnPauseMusic.innerHTML = '⏸️ PAUSAR MÚSICA';
-      btnPauseMusic.style.background = '#1e293b';
-      btnPauseMusic.style.borderColor = '#475569';
-      btnPauseMusic.style.color = '#94a3b8';
-    }
+  function normalizeSearchText(str) {
+    return (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   }
 
   function renderPlaylist() {
     if (!djPlaylistList) return;
-    if (musicCountBadge) musicCountBadge.textContent = `${customTracksList.length} pistas`;
-
-    updateTransportButtons();
+    if (musicCountBadge) musicCountBadge.textContent = `${customTracksList.length}`;
 
     const query = normalizeSearchText(currentSearchQuery);
     const filteredTracks = query
@@ -184,95 +567,61 @@ export function initAdminApp() {
       : customTracksList;
 
     if (djSearchCountBadge) {
-      if (query) {
-        djSearchCountBadge.textContent = `${filteredTracks.length} de ${customTracksList.length}`;
-        djSearchCountBadge.style.color = filteredTracks.length > 0 ? '#38bdf8' : '#f87171';
-      } else {
-        djSearchCountBadge.textContent = `${customTracksList.length} pistas`;
-        djSearchCountBadge.style.color = '#38bdf8';
-      }
+      djSearchCountBadge.textContent = query ? `${filteredTracks.length} de ${customTracksList.length}` : `${customTracksList.length} pistas`;
     }
 
     if (customTracksList.length === 0) {
       djPlaylistList.innerHTML = `
-        <div style="padding: 18px; text-align: center; color: #64748b; font-size: 11px;">
-          No hay pistas subidas aún. Sube tus canciones MP3 o WAV arriba.
-        </div>
+        <tr>
+          <td colspan="5" style="padding: 24px; text-align: center; color: #64748b; font-size: 11px;">
+            No hay canciones subidas aún. Haz clic en <strong>+ Canciones</strong> para cargar tus pistas MP3.
+          </td>
+        </tr>
       `;
       return;
     }
 
     if (filteredTracks.length === 0) {
       djPlaylistList.innerHTML = `
-        <div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 12px;">
-          🔍 No se encontraron canciones con "<b>${escapeHtml(currentSearchQuery)}</b>"
-          <div style="margin-top: 6px; font-size: 11px; color: #64748b;">
-            Prueba con otro nombre o haz clic en ✕ para ver toda la biblioteca.
-          </div>
-        </div>
+        <tr>
+          <td colspan="5" style="padding: 24px; text-align: center; color: #94a3b8; font-size: 11px;">
+            🔍 No se encontraron canciones con "<b>${escapeHtml(currentSearchQuery)}</b>"
+          </td>
+        </tr>
       `;
       return;
     }
 
     djPlaylistList.innerHTML = '';
-    filteredTracks.forEach(track => {
-      const isCurrent = currentPlayingTrackId === track.id;
-      const row = document.createElement('div');
-      row.className = `dj-track-row ${isCurrent ? 'is-active' : ''}`;
-
-      const sizeMb = track.size ? (track.size / (1024 * 1024)).toFixed(1) + ' MB' : '';
-
-      // Resaltar coincidencia de búsqueda (Estilo Virtual DJ)
-      let displayName = escapeHtml(track.name);
-      if (query) {
-        try {
-          const regex = new RegExp(`(${escapeRegex(currentSearchQuery)})`, 'gi');
-          displayName = displayName.replace(regex, '<mark style="background: rgba(250, 204, 21, 0.4); color: #fef08a; padding: 1px 3px; border-radius: 3px; font-weight: 900;">$1</mark>');
-        } catch (e) {}
-      }
-
-      let actionButtonsHtml = '';
-      if (isCurrent && !isCurrentTrackPaused) {
-        actionButtonsHtml = `
-          <button type="button" class="btn-track-pause" data-action="pause" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #854d0e; border: 1.5px solid #facc15; color: #fef08a; cursor: pointer;">⏸️ Pausar</button>
-          <button type="button" class="btn-track-stop" data-action="stop" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #991b1b; border: 1.5px solid #ef4444; color: #fee2e2; cursor: pointer;">⏹️ Stop</button>
-        `;
-      } else if (isCurrent && isCurrentTrackPaused) {
-        actionButtonsHtml = `
-          <button type="button" class="btn-track-play" data-action="resume" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #15803d; border: 1.5px solid #22c55e; color: #86efac; cursor: pointer;">▶️ Reanudar</button>
-          <button type="button" class="btn-track-stop" data-action="stop" style="padding: 4px 9px; font-size: 11px; font-weight: 800; border-radius: 6px; background: #991b1b; border: 1.5px solid #ef4444; color: #fee2e2; cursor: pointer;">⏹️ Stop</button>
-        `;
-      } else {
-        actionButtonsHtml = `
-          <button type="button" class="btn-track-play" data-action="play">▶ Tocar</button>
-        `;
-      }
+    filteredTracks.forEach((track, idx) => {
+      const row = document.createElement('tr');
+      row.className = 'vdj-track-row-pro';
+      const sizeMb = track.size ? (track.size / (1024 * 1024)).toFixed(1) + ' MB' : '--';
 
       row.innerHTML = `
-        <div class="dj-track-meta">
-          <span class="dj-track-name" title="${track.name}">${isCurrent ? (isCurrentTrackPaused ? '⏸️ ' : '▶ ') : '🎵 '}${displayName}</span>
-          <span class="dj-track-sub">${sizeMb} • ${new Date(track.createdAt || Date.now()).toLocaleTimeString()}</span>
-        </div>
-        <div class="dj-track-actions">
-          ${actionButtonsHtml}
-          <button type="button" class="btn-track-delete" data-action="delete" title="Eliminar pista">🗑️</button>
-        </div>
+        <td style="color: #64748b; font-weight: 800; font-family: monospace;">${idx + 1}</td>
+        <td>
+          <div style="font-weight: 700; color: #f8fafc; font-size: 11.5px;">${escapeHtml(track.name)}</div>
+          <div style="font-size: 9.5px; color: #64748b;">${new Date(track.createdAt || Date.now()).toLocaleTimeString()}</div>
+        </td>
+        <td style="color: #94a3b8; font-family: monospace; font-size: 10px;">${sizeMb}</td>
+        <td style="text-align: center;">
+          <div style="display: flex; gap: 6px; justify-content: center;">
+            <button type="button" class="vdj-btn-load-a" data-action="load-a">◀ Deck A</button>
+            <button type="button" class="vdj-btn-load-b" data-action="load-b">Deck B ▶</button>
+          </div>
+        </td>
+        <td style="text-align: center;">
+          <button type="button" class="btn-track-delete" data-action="delete" title="Eliminar pista" style="padding: 3px 6px; font-size: 10px;">🗑️</button>
+        </td>
       `;
 
-      row.querySelector('[data-action="play"]')?.addEventListener('click', () => {
-        playCustomTrack(track, false);
+      row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
+        loadTrackToDeck(deckA, track, true);
       });
 
-      row.querySelector('[data-action="pause"]')?.addEventListener('click', () => {
-        pauseCustomTrack();
-      });
-
-      row.querySelector('[data-action="resume"]')?.addEventListener('click', () => {
-        playCustomTrack(track, true);
-      });
-
-      row.querySelector('[data-action="stop"]')?.addEventListener('click', () => {
-        stopAllMusic();
+      row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
+        loadTrackToDeck(deckB, track, true);
       });
 
       row.querySelector('[data-action="delete"]')?.addEventListener('click', () => {
@@ -285,67 +634,389 @@ export function initAdminApp() {
     });
   }
 
-  function playCustomTrack(track, resume = false) {
-    currentPlayingTrackId = track.id;
-    isCurrentTrackPaused = false;
-    if (djNowPlayingTitle) djNowPlayingTitle.textContent = track.name;
-    if (djNowPlayingBanner) djNowPlayingBanner.style.display = 'flex';
-
-    // Reproducir de inmediato en el panel Admin (Monitor de Auriculares del DJ)
+  async function fetchMusicPlaylist() {
     try {
-      const audio = getOrCreateAdminAudio();
-      const currentSrc = audio.src || '';
-      const isSame = currentSrc.endsWith(track.url) || track.url.endsWith(currentSrc);
-      if (!isSame) {
-        audio.src = track.url;
-        try { audio.load(); } catch (e) {}
-      } else if (!resume) {
-        try { audio.currentTime = 0; } catch (e) {}
+      const res = await fetch('/api/music/list');
+      if (res.ok) {
+        const data = await res.json();
+        customTracksList = data.tracks || [];
+        renderPlaylist();
       }
-      audio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
-      audio.muted = !!isAdminAudioMuted;
-      audio.play().catch(e => {
-        console.warn('[Admin Monitor] Reproducción:', e.message);
-        showUploadStatus(`Haz clic en el botón ▶ Play del reproductor para escuchar "${track.name}"`);
+    } catch (e) {
+      console.warn('[Admin] Error cargando pistas:', e);
+    }
+  }
+
+  async function deleteCustomTrack(trackId) {
+    try {
+      await fetch(`/api/music/${trackId}`, { method: 'DELETE' });
+      customTracksList = customTracksList.filter(t => t.id !== trackId);
+      renderPlaylist();
+    } catch (e) {
+      console.warn('[Admin] Error eliminando pista:', e);
+    }
+  }
+
+  if (djSearchInput) {
+    djSearchInput.addEventListener('input', (e) => {
+      currentSearchQuery = e.target.value;
+      if (btnClearSearch) btnClearSearch.style.display = currentSearchQuery ? 'flex' : 'none';
+      renderPlaylist();
+    });
+  }
+
+  if (btnClearSearch) {
+    btnClearSearch.addEventListener('click', () => {
+      currentSearchQuery = '';
+      if (djSearchInput) djSearchInput.value = '';
+      btnClearSearch.style.display = 'none';
+      renderPlaylist();
+    });
+  }
+
+  // ==========================================
+  // SUBIDA DE ARCHIVOS Y CARPETAS
+  // ==========================================
+  function showUploadStatus(msg, isErr = false) {
+    if (!djUploadStatus) return;
+    djUploadStatus.textContent = msg;
+    djUploadStatus.style.display = 'block';
+    djUploadStatus.style.background = isErr ? '#7f1d1d' : '#064e3b';
+    djUploadStatus.style.color = isErr ? '#fca5a5' : '#86efac';
+    setTimeout(() => { if (djUploadStatus) djUploadStatus.style.display = 'none'; }, 5000);
+  }
+
+  async function uploadFiles(files) {
+    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('audio', files[i]);
+    }
+    showUploadStatus(`Subiendo ${files.length} canciones...`, false);
+    try {
+      const res = await fetch('/api/music/upload', { method: 'POST', body: formData });
+      if (res.ok) {
+        showUploadStatus(`¡${files.length} canciones subidas con éxito!`, false);
+        await fetchMusicPlaylist();
+      } else {
+        showUploadStatus('Error al subir archivos.', true);
+      }
+    } catch (e) {
+      showUploadStatus(`Error: ${e.message}`, true);
+    }
+  }
+
+  if (btnSelectFile && djFileInput) {
+    btnSelectFile.addEventListener('click', () => djFileInput.click());
+    djFileInput.addEventListener('change', (e) => uploadFiles(e.target.files));
+  }
+
+  if (btnSelectFolder && djFolderInput) {
+    btnSelectFolder.addEventListener('click', () => djFolderInput.click());
+    djFolderInput.addEventListener('change', (e) => uploadFiles(e.target.files));
+  }
+
+  if (btnRefreshPlaylist) {
+    btnRefreshPlaylist.addEventListener('click', fetchMusicPlaylist);
+  }
+
+  // ==========================================
+  // BUSCADOR YOUTUBE DJ PRO
+  // ==========================================
+  const ytSearchInput = document.getElementById('yt-search-input');
+  const btnYtSearch = document.getElementById('btn-yt-search');
+  const ytSearchResults = document.getElementById('yt-search-results');
+
+  async function searchYouTube() {
+    if (!ytSearchInput) return;
+    const query = ytSearchInput.value.trim();
+    if (!query) return;
+
+    if (ytSearchResults) {
+      ytSearchResults.innerHTML = '<div style="padding: 16px; text-align: center; color: #f87171; font-size: 11px;">🔍 Buscando canciones en YouTube...</div>';
+    }
+
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      const results = data.results || [];
+
+      if (results.length === 0) {
+        ytSearchResults.innerHTML = '<div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 11px;">No se encontraron resultados en YouTube.</div>';
+        return;
+      }
+
+      ytSearchResults.innerHTML = '';
+      results.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #1e2638; gap: 8px;';
+        row.innerHTML = `
+          <img src="${item.thumbnail || ''}" style="width: 44px; height: 32px; object-fit: cover; border-radius: 4px;" />
+          <div style="flex: 1; overflow: hidden;">
+            <div style="font-weight: 700; color: #f8fafc; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.title)}</div>
+            <div style="font-size: 9.5px; color: #94a3b8;">${escapeHtml(item.channel || 'YouTube')}</div>
+          </div>
+          <div style="display: flex; gap: 5px;">
+            <button type="button" class="vdj-btn-load-a" data-action="load-a">◀ Deck A</button>
+            <button type="button" class="vdj-btn-load-b" data-action="load-b">Deck B ▶</button>
+          </div>
+        `;
+
+        row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
+          loadTrackToDeck(deckA, { name: item.title, videoId: item.id }, true);
+        });
+
+        row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
+          loadTrackToDeck(deckB, { name: item.title, videoId: item.id }, true);
+        });
+
+        ytSearchResults.appendChild(row);
       });
     } catch (e) {
-      console.warn('[Admin Monitor] Error al reproducir audio local:', e);
+      if (ytSearchResults) {
+        ytSearchResults.innerHTML = `<div style="padding: 16px; text-align: center; color: #f87171; font-size: 11px;">Error en búsqueda: ${e.message}</div>`;
+      }
     }
+  }
 
-    syncBridge.send('DJ_PLAY_CUSTOM_AUDIO', {
-      url: track.url,
-      name: track.name,
-      resume: resume
+  if (btnYtSearch) btnYtSearch.addEventListener('click', searchYouTube);
+  if (ytSearchInput) {
+    ytSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') searchYouTube();
     });
-
-    renderPlaylist();
   }
 
-  function pauseCustomTrack() {
-    if (!currentPlayingTrackId) return;
-    const currentTrack = customTracksList.find(t => t.id === currentPlayingTrackId);
-    isCurrentTrackPaused = true;
-    if (djNowPlayingTitle && currentTrack) {
-      djNowPlayingTitle.textContent = `${currentTrack.name} (⏸️ EN PAUSA)`;
-    }
-    if (adminMonitorAudio) {
-      adminMonitorAudio.pause();
-    }
-    syncBridge.send('DJ_PAUSE_TRACK', { id: currentPlayingTrackId });
-    renderPlaylist();
+  // ==========================================
+  // GOOGLE DRIVE DIRECT LINK IMPORT
+  // ==========================================
+  const djStreamUrl = document.getElementById('dj-stream-url');
+  const btnPlayStreamUrl = document.getElementById('btn-play-stream-url');
+  const btnToggleBatchDrive = document.getElementById('btn-toggle-batch-drive');
+  const djBatchDriveBox = document.getElementById('dj-batch-drive-box');
+  const djBatchUrlsInput = document.getElementById('dj-batch-urls-input');
+  const btnCancelBatchDrive = document.getElementById('btn-cancel-batch-drive');
+  const btnSubmitBatchDrive = document.getElementById('btn-submit-batch-drive');
+
+  if (btnToggleBatchDrive && djBatchDriveBox) {
+    btnToggleBatchDrive.addEventListener('click', () => {
+      const isHidden = djBatchDriveBox.style.display === 'none';
+      djBatchDriveBox.style.display = isHidden ? 'block' : 'none';
+    });
+  }
+  if (btnCancelBatchDrive && djBatchDriveBox) {
+    btnCancelBatchDrive.addEventListener('click', () => { djBatchDriveBox.style.display = 'none'; });
   }
 
-  function stopAllMusic() {
-    currentPlayingTrackId = null;
-    isCurrentTrackPaused = false;
-    if (djNowPlayingTitle) djNowPlayingTitle.textContent = '⏹️ Música Detenida (0:00)';
-    if (adminMonitorAudio) {
-      adminMonitorAudio.pause();
-      adminMonitorAudio.currentTime = 0;
+  async function importDriveUrl(url) {
+    if (!url) return;
+    showUploadStatus('Descargando pista desde Google Drive...', false);
+    try {
+      const res = await fetch('/api/music/google-drive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+      if (data.success && data.track) {
+        showUploadStatus(`¡Pista importada: "${data.track.name}"!`, false);
+        await fetchMusicPlaylist();
+        // Cargar en el Deck que esté libre
+        if (!deckA.isPlaying) loadTrackToDeck(deckA, data.track, true);
+        else loadTrackToDeck(deckB, data.track, true);
+      } else {
+        showUploadStatus(data.error || 'Error al importar pista.', true);
+      }
+    } catch (e) {
+      showUploadStatus(`Error: ${e.message}`, true);
     }
+  }
+
+  if (btnPlayStreamUrl && djStreamUrl) {
+    btnPlayStreamUrl.addEventListener('click', () => {
+      importDriveUrl(djStreamUrl.value.trim());
+      djStreamUrl.value = '';
+    });
+  }
+
+  if (btnSubmitBatchDrive && djBatchUrlsInput) {
+    btnSubmitBatchDrive.addEventListener('click', async () => {
+      const text = djBatchUrlsInput.value.trim();
+      const urls = text.split('\n').map(u => u.trim()).filter(Boolean);
+      for (const u of urls) {
+        await importDriveUrl(u);
+      }
+      djBatchUrlsInput.value = '';
+      if (djBatchDriveBox) djBatchDriveBox.style.display = 'none';
+    });
+  }
+
+  // ==========================================
+  // RITMOS SINTETIZADOS CLUB
+  // ==========================================
+  let selectedGenre = 'EDM';
+  document.querySelectorAll('.btn-dj-genre').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-dj-genre').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      selectedGenre = btn.dataset.genre || 'EDM';
+    });
+  });
+
+  document.getElementById('btn-dj-play-synth')?.addEventListener('click', () => {
+    syncBridge.send('DJ_PLAY_TRACK', { genre: selectedGenre });
+  });
+
+  document.getElementById('btn-dj-stop-synth')?.addEventListener('click', () => {
     syncBridge.send('DJ_STOP_TRACK', {});
-    renderPlaylist();
+  });
+
+  // ==========================================
+  // MICRÓFONO EN VIVO (VOZ HUMANA - ANTI-BAN TIKTOK)
+  // ==========================================
+  let isHumanMicActive = false;
+  let micStream = null;
+  let micAudioContext = null;
+  let micAnalyser = null;
+  let micAnimFrame = null;
+  let micGainNode = null;
+  let adminRtcPeer = null;
+
+  const btnQuickMicHead = document.getElementById('btn-quick-mic-head');
+  const quickMicDot = document.getElementById('quick-mic-dot');
+  const quickMicLabel = document.getElementById('quick-mic-label');
+  const btnToggleMic = document.getElementById('btn-toggle-mic');
+  const micAirStatus = document.getElementById('mic-air-status');
+  const micVuFill = document.getElementById('mic-vu-fill');
+  const micDbLabel = document.getElementById('mic-db-label');
+  const micGainSlider = document.getElementById('mic-gain-slider');
+  const micGainLabel = document.getElementById('mic-gain-label');
+  const micModeSelect = document.getElementById('mic-mode-select');
+
+  function updateMicUI(active) {
+    isHumanMicActive = active;
+
+    if (btnQuickMicHead) {
+      if (active) btnQuickMicHead.classList.add('is-active');
+      else btnQuickMicHead.classList.remove('is-active');
+    }
+    if (quickMicDot) {
+      quickMicDot.style.background = active ? '#ffffff' : '#38bdf8';
+    }
+    if (quickMicLabel) {
+      quickMicLabel.textContent = active ? '🔴 EN EL AIRE (MIC ACTIVO)' : '🎙️ HABLAR EN VIVO [Espacio]';
+    }
+
+    if (btnToggleMic) {
+      btnToggleMic.className = active ? 'btn-mic-main is-live' : 'btn-mic-main';
+      const micText = document.getElementById('mic-text');
+      if (micText) micText.textContent = active ? '🔴 EN EL AIRE • MICRÓFONO TRANSMITIENDO' : 'ACTIVAR MICRÓFONO EN VIVO';
+    }
+
+    if (micAirStatus) {
+      micAirStatus.textContent = active ? '🔴 AL AIRE (HABLANDO)' : '⚪ Silenciado';
+      micAirStatus.style.background = active ? '#dc2626' : '#1e293b';
+      micAirStatus.style.color = '#fff';
+    }
+
+    syncBridge.send('HUMAN_MIC_LEVEL', { active, level: 0 });
   }
+
+  async function startHumanMic() {
+    try {
+      if (!micStream) {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+      }
+
+      if (!micAudioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        micAudioContext = new AudioCtx();
+        const source = micAudioContext.createMediaStreamSource(micStream);
+        micGainNode = micAudioContext.createGain();
+        const userGain = micGainSlider ? parseInt(micGainSlider.value, 10) / 100 : 1.2;
+        micGainNode.gain.setValueAtTime(userGain, micAudioContext.currentTime);
+
+        micAnalyser = micAudioContext.createAnalyser();
+        micAnalyser.fftSize = 256;
+        source.connect(micGainNode);
+        micGainNode.connect(micAnalyser);
+      } else if (micAudioContext.state === 'suspended') {
+        await micAudioContext.resume();
+      }
+
+      updateMicUI(true);
+      monitorMicLevels();
+    } catch (e) {
+      console.warn('[Admin Mic] Error:', e);
+      alert(`No se pudo acceder al micrófono: ${e.message}`);
+    }
+  }
+
+  function stopHumanMic() {
+    updateMicUI(false);
+    if (micAnimFrame) cancelAnimationFrame(micAnimFrame);
+    if (micVuFill) micVuFill.style.width = '0%';
+    if (micDbLabel) micDbLabel.textContent = '0%';
+  }
+
+  function monitorMicLevels() {
+    if (!isHumanMicActive || !micAnalyser) return;
+    const data = new Uint8Array(micAnalyser.frequencyBinCount);
+    micAnalyser.getByteFrequencyData(data);
+
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) sum += data[i];
+    const avg = sum / data.length;
+    const normalized = Math.min(1.0, avg / 128);
+
+    if (micVuFill) micVuFill.style.width = `${Math.round(normalized * 100)}%`;
+    if (micDbLabel) micDbLabel.textContent = `${Math.round(normalized * 100)}%`;
+
+    syncBridge.send('HUMAN_MIC_LEVEL', { active: true, level: normalized });
+    micAnimFrame = requestAnimationFrame(monitorMicLevels);
+  }
+
+  if (btnQuickMicHead) {
+    btnQuickMicHead.addEventListener('click', () => {
+      if (isHumanMicActive) stopHumanMic();
+      else startHumanMic();
+    });
+  }
+
+  if (btnToggleMic) {
+    btnToggleMic.addEventListener('click', () => {
+      if (isHumanMicActive) stopHumanMic();
+      else startHumanMic();
+    });
+  }
+
+  // Atajo de teclado: Tecla Espacio o 'M' para hablar
+  window.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    if (e.code === 'Space' || e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      const mode = micModeSelect ? micModeSelect.value : 'toggle';
+      if (mode === 'ptt') {
+        if (!isHumanMicActive) startHumanMic();
+      } else {
+        if (isHumanMicActive) stopHumanMic();
+        else startHumanMic();
+      }
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    if ((e.code === 'Space' || e.key === 'm' || e.key === 'M') && micModeSelect && micModeSelect.value === 'ptt') {
+      stopHumanMic();
+    }
+  });
+
+  // Silenciar Voz Automática del DJ
+  const btnToggleDjVoice = document.getElementById('btn-toggle-dj-voice');
+  const djVoiceStatusIcon = document.getElementById('dj-voice-status-icon');
+  let isDjVoiceEnabled = localStorage.getItem('garabato_dj_voice_enabled') === 'true';
 
   function updateDjVoiceUI() {
     if (!btnToggleDjVoice) return;
@@ -372,1163 +1043,54 @@ export function initAdminApp() {
       updateDjVoiceUI();
       syncBridge.send('DJ_TOGGLE_VOICE', { enabled: isDjVoiceEnabled });
     });
-    setTimeout(() => {
-      syncBridge.send('DJ_TOGGLE_VOICE', { enabled: isDjVoiceEnabled });
-    }, 1200);
   }
 
   // ==========================================
-  // GESTIÓN DE YOUTUBE MUSIC DJ (VIRTUAL DJ)
+  // LAUNCHPAD DE EFECTOS DJ
   // ==========================================
-  let adminYTPlayer = null;
-  let currentYTVideo = null;
-  let isYTPlaying = false;
-  let isAdminAudioMuted = localStorage.getItem('garabato_admin_audio_muted') === 'true';
-
-  const ytSearchInput = document.getElementById('yt-search-input');
-  const btnYtSearch = document.getElementById('btn-yt-search');
-  const adminYtMonitorContainer = document.getElementById('admin-yt-monitor-container');
-  const adminYtCurrentTitle = document.getElementById('admin-yt-current-title');
-  const btnToggleYtPlayerView = document.getElementById('btn-toggle-yt-player-view');
-  const btnToggleAdminAudioMute = document.getElementById('btn-toggle-admin-audio-mute');
-  const btnYtPause = document.getElementById('btn-yt-pause');
-  const btnYtResume = document.getElementById('btn-yt-resume');
-  const btnYtStop = document.getElementById('btn-yt-stop');
-  const ytSearchResults = document.getElementById('yt-search-results');
-
-  function updateAdminAudioMuteUI() {
-    if (!btnToggleAdminAudioMute) return;
-    if (isAdminAudioMuted) {
-      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔇 MUTE';
-      btnToggleAdminAudioMute.style.color = '#f87171';
-    } else {
-      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔊 ON';
-      btnToggleAdminAudioMute.style.color = '#38bdf8';
-    }
-    if (adminMonitorAudio) {
-      adminMonitorAudio.muted = isAdminAudioMuted;
-    }
-    if (adminYTPlayer) {
-      if (isAdminAudioMuted && adminYTPlayer.mute) adminYTPlayer.mute();
-      else if (!isAdminAudioMuted && adminYTPlayer.unMute) adminYTPlayer.unMute();
-    }
-  }
-
-  if (btnToggleAdminAudioMute) {
-    updateAdminAudioMuteUI();
-    btnToggleAdminAudioMute.addEventListener('click', () => {
-      isAdminAudioMuted = !isAdminAudioMuted;
-      localStorage.setItem('garabato_admin_audio_muted', isAdminAudioMuted ? 'true' : 'false');
-      updateAdminAudioMuteUI();
-    });
-  }
-
-  function initOrLoadAdminYTPlayer(videoId, onReadyCallback) {
-    if (adminYTPlayer && adminYTPlayer.loadVideoById) {
-      adminYTPlayer.loadVideoById(videoId);
-      if (onReadyCallback) onReadyCallback();
-      return;
-    }
-
-    const loadAPI = () => {
-      if (window.YT && window.YT.Player) {
-        adminYTPlayer = new window.YT.Player('admin-yt-iframe-slot', {
-          width: '100%',
-          height: '100%',
-          videoId: videoId,
-          playerVars: {
-            autoplay: 1,
-            controls: 1,
-            modestbranding: 1,
-            rel: 0,
-            playsinline: 1
-          },
-          events: {
-            onReady: (event) => {
-              const vol = djMasterVolume ? parseInt(djMasterVolume.value, 10) : 85;
-              event.target.setVolume(vol);
-              if (isAdminAudioMuted) event.target.mute();
-              else event.target.unMute();
-              event.target.playVideo();
-              isYTPlaying = true;
-              if (onReadyCallback) onReadyCallback();
-            },
-            onStateChange: (event) => {
-              if (event.data === 1) isYTPlaying = true;
-              else if (event.data === 2) isYTPlaying = false;
-            }
-          }
-        });
-      } else {
-        setTimeout(loadAPI, 200);
-      }
-    };
-
-    if (!document.getElementById('yt-iframe-api-script')) {
-      const tag = document.createElement('script');
-      tag.id = 'yt-iframe-api-script';
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-    }
-    loadAPI();
-  }
-
-  function playYouTubeTrack(track) {
-    stopAllMusic();
-
-    currentYTVideo = track;
-    isYTPlaying = true;
-
-    if (adminYtMonitorContainer) {
-      adminYtMonitorContainer.style.display = 'block';
-    }
-    if (adminYtCurrentTitle) {
-      adminYtCurrentTitle.textContent = `▶ ${track.title}`;
-    }
-    if (djNowPlayingTitle) {
-      djNowPlayingTitle.textContent = `🔴 [YouTube] ${track.title}`;
-    }
-
-    initOrLoadAdminYTPlayer(track.id, () => {
-      if (adminYTPlayer && adminYTPlayer.playVideo) {
-        adminYTPlayer.playVideo();
-      }
-    });
-
-    syncBridge.send('DJ_PLAY_YOUTUBE', {
-      videoId: track.id,
-      title: track.title,
-      channel: track.channel,
-      thumbnail: track.thumbnail
-    });
-
-    showUploadStatus(`🔴 Sonando desde YouTube: "${track.title}"`, false);
-  }
-
-  function pauseYouTubeTrack() {
-    isYTPlaying = false;
-    if (adminYTPlayer && adminYTPlayer.pauseVideo) {
-      adminYTPlayer.pauseVideo();
-    }
-    if (adminYtCurrentTitle && currentYTVideo) {
-      adminYtCurrentTitle.textContent = `⏸ [PAUSA] ${currentYTVideo.title}`;
-    }
-    syncBridge.send('DJ_PAUSE_YOUTUBE', {});
-  }
-
-  function resumeYouTubeTrack() {
-    isYTPlaying = true;
-    if (adminYTPlayer && adminYTPlayer.playVideo) {
-      adminYTPlayer.playVideo();
-    }
-    if (adminYtCurrentTitle && currentYTVideo) {
-      adminYtCurrentTitle.textContent = `▶ ${currentYTVideo.title}`;
-    }
-    syncBridge.send('DJ_RESUME_YOUTUBE', {});
-  }
-
-  function stopYouTubeTrack() {
-    isYTPlaying = false;
-    if (adminYTPlayer && adminYTPlayer.stopVideo) {
-      adminYTPlayer.stopVideo();
-    }
-    if (adminYtCurrentTitle) {
-      adminYtCurrentTitle.textContent = '⏹ YouTube Detenido';
-    }
-    if (djNowPlayingTitle) {
-      djNowPlayingTitle.textContent = '⏹️ Música Detenida (0:00)';
-    }
-    syncBridge.send('DJ_STOP_YOUTUBE', {});
-  }
-
-  if (btnToggleYtPlayerView) {
-    btnToggleYtPlayerView.addEventListener('click', () => {
-      if (!adminYtMonitorContainer) return;
-      const isHidden = adminYtMonitorContainer.style.display === 'none';
-      adminYtMonitorContainer.style.display = isHidden ? 'block' : 'none';
-      btnToggleYtPlayerView.textContent = isHidden ? '🙈 Ocultar Reproductor' : '👁️ Ver Reproductor';
-    });
-  }
-
-  if (btnYtPause) btnYtPause.addEventListener('click', pauseYouTubeTrack);
-  if (btnYtResume) btnYtResume.addEventListener('click', resumeYouTubeTrack);
-  if (btnYtStop) btnYtStop.addEventListener('click', stopYouTubeTrack);
-
-  async function performYouTubeSearch() {
-    if (!ytSearchInput) return;
-    const query = ytSearchInput.value.trim();
-    if (!query) return;
-
-    if (ytSearchResults) {
-      ytSearchResults.style.display = 'block';
-      ytSearchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: #f87171; font-size: 11px;">🔍 Buscando en YouTube...</div>';
-    }
-
-    try {
-      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-
-      if (!data.success || !data.results || data.results.length === 0) {
-        if (ytSearchResults) {
-          ytSearchResults.innerHTML = '<div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 11px;">No se encontraron canciones en YouTube. Prueba con otro nombre o pega el link directo.</div>';
-        }
-        return;
-      }
-
-      if (data.results.length === 1 && (/youtube\.com|youtu\.be/.test(query) || /^[\w-]{11}$/.test(query))) {
-        playYouTubeTrack(data.results[0]);
-      }
-
-      renderYouTubeResults(data.results);
-    } catch (err) {
-      if (ytSearchResults) {
-        ytSearchResults.innerHTML = `<div style="padding: 10px; color: #ef4444; font-size: 11px;">Error en la búsqueda: ${err.message}</div>`;
-      }
-    }
-  }
-
-  function renderYouTubeResults(results) {
-    if (!ytSearchResults) return;
-    ytSearchResults.innerHTML = '';
-    ytSearchResults.style.display = 'block';
-
-    results.forEach(item => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;';
-      row.onmouseenter = () => row.style.background = 'rgba(239, 68, 68, 0.12)';
-      row.onmouseleave = () => row.style.background = 'transparent';
-
-      row.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1;">
-          <img src="${item.thumbnail}" alt="" style="width: 50px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid #7f1d1d;" />
-          <div style="overflow: hidden; text-align: left;">
-            <div style="font-size: 11px; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.title}">${item.title}</div>
-            <div style="font-size: 9.5px; color: #94a3b8;">${item.channel} ${item.duration ? '• ' + item.duration : ''}</div>
-          </div>
-        </div>
-        <button type="button" class="btn-action-small" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: #000; font-weight: 900; font-size: 10.5px; padding: 4px 10px; border-radius: 6px; white-space: nowrap;">
-          ▶ Tocar
-        </button>
-      `;
-
-      const playBtn = row.querySelector('button');
-      playBtn.addEventListener('click', () => {
-        playYouTubeTrack(item);
-      });
-
-      ytSearchResults.appendChild(row);
-    });
-  }
-
-  if (btnYtSearch) {
-    btnYtSearch.addEventListener('click', performYouTubeSearch);
-  }
-  if (ytSearchInput) {
-    ytSearchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        performYouTubeSearch();
-      }
-    });
-  }
-
-  async function deleteCustomTrack(trackId) {
-    try {
-      const res = await fetch(`/api/music/${encodeURIComponent(trackId)}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        if (currentPlayingTrackId === trackId) stopAllMusic();
-        fetchMusicPlaylist();
-      }
-    } catch (e) {
-      alert('Error al eliminar la pista: ' + e.message);
-    }
-  }
-
-  // Subir múltiples archivos de audio con barra de progreso
-  async function uploadMultipleAudioFiles(fileList) {
-    if (!fileList || fileList.length === 0) return;
-    const files = Array.from(fileList).filter(f => 
-      f.type.startsWith('audio/') || f.name.match(/\.(mp3|wav|ogg|m4a|aac)$/i)
-    );
-
-    if (files.length === 0) {
-      showUploadStatus('No se encontraron archivos de audio (.mp3, .wav, .ogg) en la selección.', true);
-      return;
-    }
-
-    showUploadStatus(`Iniciando subida de ${files.length} canciones al club... 🚀`);
-
-    let uploadedCount = 0;
-    let failedCount = 0;
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const percent = Math.round(((i + 1) / files.length) * 100);
-      showUploadStatus(`Subiendo ${i + 1} de ${files.length}: "${file.name}" (${percent}%)...`);
-
-      try {
-        await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = async () => {
-            try {
-              const res = await fetch('/api/music/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  filename: file.name,
-                  data: reader.result
-                })
-              });
-              const data = await res.json();
-              if (data.success) {
-                uploadedCount++;
-              } else {
-                failedCount++;
-              }
-            } catch (err) {
-              failedCount++;
-            } finally {
-              resolve();
-            }
-          };
-          reader.onerror = () => { failedCount++; resolve(); };
-          reader.readAsDataURL(file);
-        });
-      } catch (e) {
-        failedCount++;
-      }
-    }
-
-    showUploadStatus(`¡Completado! Se subieron ${uploadedCount} canciones a tu biblioteca ${failedCount > 0 ? `(${failedCount} fallaron)` : '🔥'}`);
-    fetchMusicPlaylist();
-  }
-
-  // Eventos de selección de archivos y carpetas
-  if (btnSelectFile && djFileInput) {
-    btnSelectFile.addEventListener('click', (e) => {
-      e.stopPropagation();
-      djFileInput.click();
-    });
-  }
-
-  if (btnSelectFolder && djFolderInput) {
-    btnSelectFolder.addEventListener('click', (e) => {
-      e.stopPropagation();
-      djFolderInput.click();
-    });
-
-    djFolderInput.addEventListener('change', () => {
-      if (djFolderInput.files && djFolderInput.files.length > 0) {
-        uploadMultipleAudioFiles(djFolderInput.files);
-      }
-    });
-  }
-
-  if (djUploadDropzone && djFileInput) {
-    djUploadDropzone.addEventListener('click', (e) => {
-      if (e.target !== btnSelectFile && e.target !== btnSelectFolder) {
-        djFileInput.click();
-      }
-    });
-
-    djUploadDropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      djUploadDropzone.classList.add('dragover');
-    });
-
-    djUploadDropzone.addEventListener('dragleave', () => {
-      djUploadDropzone.classList.remove('dragover');
-    });
-
-    djUploadDropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      djUploadDropzone.classList.remove('dragover');
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        uploadMultipleAudioFiles(e.dataTransfer.files);
-      }
-    });
-
-    djFileInput.addEventListener('change', () => {
-      if (djFileInput.files && djFileInput.files.length > 0) {
-        uploadMultipleAudioFiles(djFileInput.files);
-      }
-    });
-  }
-
-  // Buscador en Tiempo Real Estilo Virtual DJ
-  if (djSearchInput) {
-    djSearchInput.addEventListener('input', () => {
-      currentSearchQuery = djSearchInput.value;
-      if (btnClearSearch) {
-        btnClearSearch.style.display = currentSearchQuery ? 'inline-flex' : 'none';
-      }
-      renderPlaylist();
-    });
-
-    // Atajos de teclado Virtual DJ: '/' para buscar, 'Escape' para limpiar
-    window.addEventListener('keydown', (e) => {
-      if (e.key === '/' && document.activeElement !== djSearchInput && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-        djSearchInput.focus();
-        djSearchInput.select();
-      } else if (e.key === 'Escape' && document.activeElement === djSearchInput) {
-        djSearchInput.value = '';
-        currentSearchQuery = '';
-        if (btnClearSearch) btnClearSearch.style.display = 'none';
-        renderPlaylist();
-      }
-    });
-  }
-
-  if (btnClearSearch) {
-    btnClearSearch.addEventListener('click', () => {
-      if (djSearchInput) djSearchInput.value = '';
-      currentSearchQuery = '';
-      btnClearSearch.style.display = 'none';
-      renderPlaylist();
-    });
-  }
-
-  // Importar y reproducir desde Google Drive o URL directa
-  if (btnPlayStreamUrl && djStreamUrl) {
-    btnPlayStreamUrl.addEventListener('click', async () => {
-      const url = djStreamUrl.value.trim();
-      if (!url) {
-        alert('Por favor pega un enlace de Google Drive o URL de audio (ej: https://drive.google.com/file/d/...)');
-        return;
-      }
-
-      showUploadStatus('Conectando con Google Drive / URL remota...');
-      const oldBtnText = btnPlayStreamUrl.textContent;
-      btnPlayStreamUrl.disabled = true;
-      btnPlayStreamUrl.textContent = '⏳ Importando...';
-
-      try {
-        const res = await fetch('/api/music/import-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
-        });
-        const data = await res.json();
-
-        if (data.success && data.isFolder && Array.isArray(data.files)) {
-          // ¡Carpeta de Google Drive detectada y leída con éxito!
-          showUploadStatus(`¡Carpeta de Google Drive detectada! Importando ${data.files.length} canciones al DJ... 🚀`);
-          djStreamUrl.value = '';
-
-          let imported = 0;
-          let firstTrack = null;
-
-          for (let i = 0; i < data.files.length; i++) {
-            const f = data.files[i];
-            const percent = Math.round(((i + 1) / data.files.length) * 100);
-            showUploadStatus(`Descargando ${i + 1} de ${data.files.length}: "${f.name}" (${percent}%)...`);
-
-            try {
-              const fileRes = await fetch('/api/music/import-url', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: f.url, name: f.name })
-              });
-              const fileData = await fileRes.json();
-              if (fileData.success && fileData.track) {
-                imported++;
-                if (!firstTrack) firstTrack = fileData.track;
-              }
-            } catch (e) {
-              console.warn('[Batch Drive Import Error]:', e);
-            }
-          }
-
-          showUploadStatus(`¡Carpeta importada al 100%! Se añadieron ${imported} canciones de tu Google Drive 🔥`);
-          await fetchMusicPlaylist();
-          if (firstTrack) {
-            playCustomTrack(firstTrack);
-          }
-        } else if (data.success && data.track) {
-          showUploadStatus(`¡Pista "${data.track.name}" importada y lista! 🔥`);
-          djStreamUrl.value = '';
-          await fetchMusicPlaylist();
-          playCustomTrack(data.track);
-        } else {
-          showUploadStatus(`Aviso: ${data.error || 'No se pudo importar'}`, true);
-        }
-      } catch (err) {
-        showUploadStatus('Fallo de conexión al importar: ' + err.message, true);
-      } finally {
-        btnPlayStreamUrl.disabled = false;
-        btnPlayStreamUrl.textContent = oldBtnText;
-      }
-    });
-  }
-
-  // Módulo de Importación de Múltiples Links de Google Drive
-  if (btnToggleBatchDrive && djBatchDriveBox) {
-    btnToggleBatchDrive.addEventListener('click', () => {
-      const isVisible = djBatchDriveBox.style.display !== 'none';
-      djBatchDriveBox.style.display = isVisible ? 'none' : 'block';
-      if (!isVisible && djBatchUrlsInput) djBatchUrlsInput.focus();
-    });
-  }
-
-  if (btnCancelBatchDrive && djBatchDriveBox) {
-    btnCancelBatchDrive.addEventListener('click', () => {
-      djBatchDriveBox.style.display = 'none';
-    });
-  }
-
-  if (btnSubmitBatchDrive && djBatchUrlsInput) {
-    btnSubmitBatchDrive.addEventListener('click', async () => {
-      const text = djBatchUrlsInput.value.trim();
-      if (!text) {
-        alert('Pega al menos un enlace de Google Drive o URL de audio');
-        return;
-      }
-      const urls = text.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
-      if (urls.length === 0) {
-        alert('No se encontraron enlaces válidos (deben comenzar con http:// o https://)');
-        return;
-      }
-
-      btnSubmitBatchDrive.disabled = true;
-      btnSubmitBatchDrive.textContent = '⏳ Importando...';
-      showUploadStatus(`Iniciando descarga de ${urls.length} enlaces desde Google Drive...`);
-
-      let imported = 0;
-      let failed = 0;
-
-      for (let i = 0; i < urls.length; i++) {
-        const url = urls[i];
-        showUploadStatus(`Descargando ${i + 1} de ${urls.length} desde Google Drive...`);
-        try {
-          const res = await fetch('/api/music/import-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
-          });
-          const data = await res.json();
-          if (data.success && data.track) {
-            imported++;
-          } else {
-            failed++;
-          }
-        } catch (e) {
-          failed++;
-        }
-      }
-
-      btnSubmitBatchDrive.disabled = false;
-      btnSubmitBatchDrive.textContent = '⬇️ Importar Todos';
-      djBatchUrlsInput.value = '';
-      if (djBatchDriveBox) djBatchDriveBox.style.display = 'none';
-      showUploadStatus(`¡Importación finalizada! ${imported} canciones descargadas de Drive ${failed > 0 ? `(${failed} fallaron)` : '🔥'}`);
-      fetchMusicPlaylist();
-    });
-  }
-
-  // Slider de Volumen Maestro
-  if (djMasterVolume) {
-    djMasterVolume.addEventListener('input', () => {
-      const vol = parseInt(djMasterVolume.value, 10);
-      if (djVolumeLabel) djVolumeLabel.textContent = `${vol}%`;
-      if (adminMonitorAudio) {
-        adminMonitorAudio.volume = vol / 100;
-      }
-      if (adminYTPlayer && adminYTPlayer.setVolume) {
-        adminYTPlayer.setVolume(vol);
-      }
-      syncBridge.send('DJ_SET_VOLUME', { volume: vol / 100 });
-    });
-  }
-
-  if (btnPauseMusic) {
-    btnPauseMusic.addEventListener('click', () => {
-      if (currentPlayingTrackId && !isCurrentTrackPaused) {
-        pauseCustomTrack();
-      } else if (currentPlayingTrackId && isCurrentTrackPaused) {
-        const track = customTracksList.find(t => t.id === currentPlayingTrackId);
-        if (track) playCustomTrack(track, true);
-      } else if (customTracksList.length > 0) {
-        playCustomTrack(customTracksList[0], false);
-      }
-    });
-  }
-
-  if (btnStopAllMusic) {
-    btnStopAllMusic.addEventListener('click', stopAllMusic);
-  }
-
-  if (btnRefreshPlaylist) {
-    btnRefreshPlaylist.addEventListener('click', fetchMusicPlaylist);
-  }
-
-  // Sockets de música en tiempo real
-  syncBridge.on('MUSIC_TRACK_ADDED', (newTrack) => {
-    fetchMusicPlaylist();
-  });
-
-  syncBridge.on('MUSIC_TRACK_DELETED', () => {
-    fetchMusicPlaylist();
-  });
-
-  // Carga inicial de playlist
-  fetchMusicPlaylist();
-
-  // ==========================================
-  // 2. RITMOS PROCEDURALES DEL CLUB (SINTETIZADOR)
-  // ==========================================
-  const djGenreBtns = document.querySelectorAll('.btn-dj-genre');
-  const btnDjPlaySynth = document.getElementById('btn-dj-play-synth');
-  const btnDjStopSynth = document.getElementById('btn-dj-stop-synth');
-
-  let selectedDjGenre = 'EDM';
-  let isDjSynthPlaying = false;
-
-  djGenreBtns.forEach(btn => {
+  document.querySelectorAll('.btn-dj-pad').forEach(btn => {
     btn.addEventListener('click', () => {
-      djGenreBtns.forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      selectedDjGenre = btn.dataset.genre || 'EDM';
-      if (isDjSynthPlaying) {
-        syncBridge.send('DJ_PLAY_TRACK', { genre: selectedDjGenre });
-        if (djNowPlayingTitle) djNowPlayingTitle.textContent = `Ritmo: ${selectedDjGenre}`;
-      }
+      const fx = btn.dataset.fx;
+      if (fx) syncBridge.send('DJ_SOUND_FX', { effect: fx });
     });
   });
 
-  if (btnDjPlaySynth) {
-    btnDjPlaySynth.addEventListener('click', () => {
-      isDjSynthPlaying = true;
-      if (djNowPlayingTitle) djNowPlayingTitle.textContent = `Ritmo: ${selectedDjGenre}`;
-      syncBridge.send('DJ_PLAY_TRACK', { genre: selectedDjGenre });
-    });
-  }
-
-  if (btnDjStopSynth) {
-    btnDjStopSynth.addEventListener('click', () => {
-      isDjSynthPlaying = false;
-      stopAllMusic();
-    });
-  }
-
-  // ==========================================
-  // 3. MICRÓFONO EN VIVO (VOZ HUMANA - ANTI-BAN TIKTOK)
-  // ==========================================
-  const btnToggleMic = document.getElementById('btn-toggle-mic');
-  const micAirStatus = document.getElementById('mic-air-status');
-  const micVuFill = document.getElementById('mic-vu-fill');
-  const micDbLabel = document.getElementById('mic-db-label');
-  const micModeSelect = document.getElementById('mic-mode-select');
-  const micGainSlider = document.getElementById('mic-gain-slider');
-  const micWebrtcStream = document.getElementById('mic-webrtc-stream');
-  const micIcon = document.getElementById('mic-icon');
-  const micText = document.getElementById('mic-text');
-
-  let isMicActive = false;
-  let micAudioContext = null;
-  let micMediaStream = null;
-  let micAnalyser = null;
-  let micGainNode = null;
-  let micAnimFrame = null;
-  let micPeerConnection = null;
-
-  async function startHumanMic() {
-    if (isMicActive) return;
-    try {
-      micMediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        },
-        video: false
-      });
-
-      micAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = micAudioContext.createMediaStreamSource(micMediaStream);
-
-      micGainNode = micAudioContext.createGain();
-      const gainVal = micGainSlider ? parseInt(micGainSlider.value, 10) / 100 : 1.2;
-      micGainNode.gain.value = gainVal;
-
-      micAnalyser = micAudioContext.createAnalyser();
-      micAnalyser.fftSize = 256;
-      micAnalyser.smoothingTimeConstant = 0.5;
-
-      source.connect(micGainNode);
-      micGainNode.connect(micAnalyser);
-
-      isMicActive = true;
-      updateMicUI(true);
-
-      // Iniciar Vúmetro LED
-      const dataArray = new Uint8Array(micAnalyser.frequencyBinCount);
-      function updateVu() {
-        if (!isMicActive) return;
-        micAnalyser.getByteFrequencyData(dataArray);
-
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i];
-        }
-        const avg = sum / dataArray.length;
-        const pct = Math.min(100, Math.round((avg / 128) * 100));
-
-        if (micVuFill) micVuFill.style.width = `${pct}%`;
-        if (micDbLabel) micDbLabel.textContent = `${pct}%`;
-
-        // Notificar al muñeco 3D para sincronizar boca
-        syncBridge.send('HUMAN_MIC_LEVEL', { level: avg / 128 });
-
-        micAnimFrame = requestAnimationFrame(updateVu);
-      }
-      updateVu();
-
-      // Transmisión WebRTC hacia /show si está habilitada
-      if (micWebrtcStream && micWebrtcStream.checked) {
-        initWebRtcBroadcast(micMediaStream);
-      }
-
-      syncBridge.send('HUMAN_MIC_STATE', { active: true });
-    } catch (err) {
-      alert('No se pudo acceder al micrófono: ' + err.message);
-      stopHumanMic();
-    }
-  }
-
-  function stopHumanMic() {
-    isMicActive = false;
-    updateMicUI(false);
-
-    if (micAnimFrame) cancelAnimationFrame(micAnimFrame);
-    if (micVuFill) micVuFill.style.width = '0%';
-    if (micDbLabel) micDbLabel.textContent = '0%';
-
-    if (micMediaStream) {
-      micMediaStream.getTracks().forEach(t => t.stop());
-      micMediaStream = null;
-    }
-    if (micAudioContext) {
-      micAudioContext.close().catch(() => {});
-      micAudioContext = null;
-    }
-    if (micPeerConnection) {
-      micPeerConnection.close();
-      micPeerConnection = null;
-    }
-
-    syncBridge.send('HUMAN_MIC_STATE', { active: false });
-    syncBridge.send('HUMAN_MIC_LEVEL', { level: 0 });
-  }
-
-  function updateMicUI(active) {
-    if (micAirStatus) {
-      if (active) {
-        micAirStatus.textContent = '🔴 EN EL AIRE (TRANSMITIENDO)';
-        micAirStatus.style.background = '#dc2626';
-        micAirStatus.style.color = '#ffffff';
-      } else {
-        micAirStatus.textContent = '⚪ Micrófono Silenciado';
-        micAirStatus.style.background = '#1e293b';
-        micAirStatus.style.color = '#94a3b8';
-      }
-    }
-    if (btnToggleMic) {
-      if (active) {
-        btnToggleMic.classList.add('is-active');
-        if (micIcon) micIcon.textContent = '⏹️';
-        if (micText) micText.textContent = 'SILENCIAR MICRÓFONO';
-      } else {
-        btnToggleMic.classList.remove('is-active');
-        if (micIcon) micIcon.textContent = '🎙️';
-        if (micText) micText.textContent = 'ACTIVAR MICRÓFONO EN VIVO';
-      }
-    }
-  }
-
-  async function initWebRtcBroadcast(stream) {
-    try {
-      micPeerConnection = new RTCPeerConnection();
-      stream.getTracks().forEach(track => micPeerConnection.addTrack(track, stream));
-
-      micPeerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          syncBridge.send('RTC_ICE_CANDIDATE', { candidate: event.candidate, sender: 'admin' });
-        }
-      };
-
-      const offer = await micPeerConnection.createOffer();
-      await micPeerConnection.setLocalDescription(offer);
-      syncBridge.send('RTC_OFFER', { offer });
-    } catch (e) {
-      console.warn('WebRTC Setup error:', e);
-    }
-  }
-
-  syncBridge.on('RTC_ANSWER', async (payload) => {
-    if (micPeerConnection && payload.answer) {
-      try {
-        await micPeerConnection.setRemoteDescription(new RTCSessionDescription(payload.answer));
-      } catch (e) {}
-    }
+  document.getElementById('btn-dj-hype-hands')?.addEventListener('click', () => {
+    syncBridge.send('DJ_SOUND_FX', { effect: 'handsup' });
   });
 
-  syncBridge.on('RTC_ICE_CANDIDATE', async (payload) => {
-    if (micPeerConnection && payload.sender === 'show' && payload.candidate) {
-      try {
-        await micPeerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
-      } catch (e) {}
-    }
-  });
-
-  if (btnToggleMic) {
-    btnToggleMic.addEventListener('click', () => {
-      const mode = micModeSelect ? micModeSelect.value : 'toggle';
-      if (mode === 'toggle') {
-        if (isMicActive) stopHumanMic();
-        else startHumanMic();
-      }
-    });
-
-    btnToggleMic.addEventListener('mousedown', () => {
-      const mode = micModeSelect ? micModeSelect.value : 'toggle';
-      if (mode === 'ptt' && !isMicActive) startHumanMic();
-    });
-
-    btnToggleMic.addEventListener('mouseup', () => {
-      const mode = micModeSelect ? micModeSelect.value : 'toggle';
-      if (mode === 'ptt' && isMicActive) stopHumanMic();
-    });
-  }
-
-  if (micGainSlider) {
-    micGainSlider.addEventListener('input', () => {
-      if (micGainNode) {
-        micGainNode.gain.value = parseInt(micGainSlider.value, 10) / 100;
-      }
-    });
-  }
-
-  // Atajos de teclado para hablar (Espacio o M)
-  window.addEventListener('keydown', (e) => {
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-    if (e.code === 'Space' || e.key.toLowerCase() === 'm') {
-      const mode = micModeSelect ? micModeSelect.value : 'toggle';
-      if (mode === 'ptt') {
-        if (!isMicActive) {
-          e.preventDefault();
-          startHumanMic();
-        }
-      } else if (mode === 'toggle' && !e.repeat) {
-        e.preventDefault();
-        if (isMicActive) stopHumanMic();
-        else startHumanMic();
-      }
-    }
-  });
-
-  window.addEventListener('keyup', (e) => {
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-    if (e.code === 'Space' || e.key.toLowerCase() === 'm') {
-      const mode = micModeSelect ? micModeSelect.value : 'toggle';
-      if (mode === 'ptt' && isMicActive) {
-        e.preventDefault();
-        stopHumanMic();
-      }
-    }
+  document.getElementById('btn-dj-dance-move')?.addEventListener('click', () => {
+    syncBridge.send('DJ_SOUND_FX', { effect: 'dancemove' });
   });
 
   // ==========================================
-  // 4. SOUNDBOARD DE EFECTOS DJ & ACCIONES
-  // ==========================================
-  const djPads = document.querySelectorAll('.btn-dj-pad');
-  const btnDjHypeHands = document.getElementById('btn-dj-hype-hands');
-  const btnDjDanceMove = document.getElementById('btn-dj-dance-move');
-
-  djPads.forEach(pad => {
-    pad.addEventListener('click', () => {
-      const fx = pad.dataset.fx;
-      if (fx) {
-        syncBridge.send('DJ_SOUND_FX', { effect: fx });
-      }
-    });
-  });
-
-  if (btnDjHypeHands) {
-    btnDjHypeHands.addEventListener('click', () => {
-      syncBridge.send('DJ_STICKMAN_ACTION', { action: 'handsup', duration: 4000 });
-    });
-  }
-
-  if (btnDjDanceMove) {
-    btnDjDanceMove.addEventListener('click', () => {
-      syncBridge.send('DJ_STICKMAN_ACTION', { action: 'dance', duration: 5000 });
-    });
-  }
-
-  // ==========================================
-  // 5. CONFIGURACIÓN DEL DJ, LUCES & CÁMARAS
-  // ==========================================
-  const singerNameInput = document.getElementById('singer-name');
-  const singerColorInput = document.getElementById('singer-color');
-  const singerDanceSelect = document.getElementById('singer-dance');
-  const cameraBtns = document.querySelectorAll('.btn-camera');
-
-  function emitSingerUpdate() {
-    const payload = {
-      name: (singerNameInput && singerNameInput.value) || 'DJ GARABATO',
-      personality: 'DJ Master',
-      color: singerColorInput ? parseInt(singerColorInput.value.replace('#', '0x'), 16) : 0x00f0ff,
-      danceMove: (singerDanceSelect && singerDanceSelect.value) || 'standup',
-      songTitle: 'DJ LIVE CLUB 3D'
-    };
-    syncBridge.send('UPDATE_SINGER', payload);
-  }
-
-  if (singerNameInput) singerNameInput.addEventListener('input', emitSingerUpdate);
-  if (singerColorInput) singerColorInput.addEventListener('input', emitSingerUpdate);
-  if (singerDanceSelect) singerDanceSelect.addEventListener('change', emitSingerUpdate);
-
-  cameraBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      cameraBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      syncBridge.send('CAMERA_SHOT', { shot: btn.dataset.shot });
-    });
-  });
-
-  // ==========================================
-  // 6. CHAT 3D DE ESPECTADORES
-  // ==========================================
-  const chatUserInput = document.getElementById('chat-user-input');
-  const chatTextInput = document.getElementById('chat-text-input');
-  const btnSendChatMsg = document.getElementById('btn-send-chat-msg');
-  const chatIsVip = document.getElementById('chat-is-vip');
-  const chatPills = document.querySelectorAll('.btn-chat-pill');
-  const btnQuickSimulation = document.getElementById('btn-quick-simulation');
-
-  function emitChatMessage(user, text, isVip) {
-    const cleanUser = String(user || 'Fan').replace(/^@+/, '').trim();
-    const cleanText = String(text || '').trim();
-    if (!cleanUser || !cleanText) return;
-
-    syncBridge.send('CHAT_MESSAGE', {
-      user: cleanUser,
-      text: cleanText,
-      isVip: Boolean(isVip)
-    });
-
-    if (btnSendChatMsg) {
-      const origText = btnSendChatMsg.innerHTML;
-      btnSendChatMsg.innerHTML = `✅ ¡@${cleanUser} hablando en 3D! 💬`;
-      btnSendChatMsg.style.borderColor = '#22c55e';
-      setTimeout(() => {
-        btnSendChatMsg.innerHTML = origText;
-        btnSendChatMsg.style.borderColor = '';
-      }, 2200);
-    }
-  }
-
-  if (btnSendChatMsg) {
-    btnSendChatMsg.addEventListener('click', () => {
-      const user = chatUserInput ? chatUserInput.value : 'Carlos';
-      const text = chatTextInput ? chatTextInput.value : '¡Suelte el bajo DJ! 🔥';
-      const isVip = chatIsVip ? chatIsVip.checked : false;
-      emitChatMessage(user, text, isVip);
-    });
-  }
-
-  if (chatTextInput) {
-    chatTextInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const user = chatUserInput ? chatUserInput.value : 'Carlos';
-        const text = chatTextInput.value;
-        const isVip = chatIsVip ? chatIsVip.checked : false;
-        emitChatMessage(user, text, isVip);
-      }
-    });
-  }
-
-  chatPills.forEach(pill => {
-    pill.addEventListener('click', () => {
-      const msg = pill.dataset.msg;
-      if (chatTextInput) chatTextInput.value = msg;
-      const user = chatUserInput ? chatUserInput.value : 'Carlos';
-      const isVip = chatIsVip ? chatIsVip.checked : false;
-      emitChatMessage(user, msg, isVip);
-    });
-  });
-
-  if (btnQuickSimulation) {
-    btnQuickSimulation.addEventListener('click', () => {
-      const demoUsers = [
-        { name: 'Andrea', text: '¡Hola a todos en la pista! 👋' },
-        { name: 'Chema', text: '¡Suelte el bajo DJ! 🔥' },
-        { name: 'Sofi', text: '¡DJ ponte una guaracha! 🌴' },
-        { name: 'Carlos', text: '¡Saludos desde Colombia! 🇨🇴' },
-        { name: 'David', text: '¡Qué temazo tan brutal! 💃' }
-      ];
-
-      demoUsers.forEach((item, idx) => {
-        setTimeout(() => {
-          syncBridge.send('CHAT_MESSAGE', {
-            user: item.name,
-            text: item.text,
-            isVip: false
-          });
-        }, idx * 600);
-      });
-    });
-  }
-
-  // ==========================================
-  // 7. CONEXIÓN REAL CON TIKTOK LIVE
-  // ==========================================
-  const tiktokUserInput = document.getElementById('tiktok-user-input');
-  const tiktokSessionInput = document.getElementById('tiktok-session-input');
-  const btnTiktokConnect = document.getElementById('btn-tiktok-connect');
-  const tiktokLiveBadge = document.getElementById('tiktok-live-badge');
-  const tiktokStatusPill = document.getElementById('tiktok-status-pill');
-  const tiktokStatusText = document.getElementById('tiktok-status-text');
-  const tiktokLiveMsg = document.getElementById('tiktok-live-msg');
-
-  let currentTikTokConnected = false;
-
-  if (tiktokUserInput) {
-    const savedUser = localStorage.getItem('garabato_tiktok_user');
-    if (savedUser) tiktokUserInput.value = savedUser;
-    const savedSession = localStorage.getItem('garabato_tiktok_session');
-    if (savedSession && tiktokSessionInput) tiktokSessionInput.value = savedSession;
-  }
-
-  function updateTikTokUI(state) {
-    if (!state) return;
-    const isConn = state.status === 'connected';
-    const isConnecting = state.status === 'connecting';
-    const isErr = state.status === 'error';
-
-    currentTikTokConnected = isConn;
-
-    if (tiktokLiveBadge) {
-      if (isConn) {
-        tiktokLiveBadge.textContent = '🟢 EN VIVO';
-        tiktokLiveBadge.style.background = '#22c55e';
-        tiktokLiveBadge.style.color = '#000';
-      } else if (isConnecting) {
-        tiktokLiveBadge.textContent = '🟡 Conectando...';
-        tiktokLiveBadge.style.background = '#f59e0b';
-        tiktokLiveBadge.style.color = '#000';
-      } else if (isErr) {
-        tiktokLiveBadge.textContent = '🔴 Error';
-        tiktokLiveBadge.style.background = '#ef4444';
-        tiktokLiveBadge.style.color = '#fff';
-      } else {
-        tiktokLiveBadge.textContent = 'Desconectado';
-        tiktokLiveBadge.style.background = '#334155';
-        tiktokLiveBadge.style.color = '#cbd5e1';
-      }
-    }
-
-    if (btnTiktokConnect) {
-      if (isConn) {
-        btnTiktokConnect.textContent = '⏹️ Desconectar';
-        btnTiktokConnect.style.background = '#ef4444';
-        btnTiktokConnect.disabled = false;
-      } else if (isConnecting) {
-        btnTiktokConnect.textContent = '⌛ Conectando...';
-        btnTiktokConnect.style.background = '#f59e0b';
-        btnTiktokConnect.disabled = true;
-      } else {
-        btnTiktokConnect.textContent = '🔴 Conectar Live';
-        btnTiktokConnect.style.background = 'linear-gradient(135deg, #f43f5e, #ec4899)';
-        btnTiktokConnect.disabled = false;
-      }
-    }
-
-    if (tiktokStatusPill && tiktokStatusText) {
-      if (isConn) {
-        tiktokStatusPill.classList.remove('hidden');
-        tiktokStatusText.textContent = `En vivo conectado a @${state.username || 'usuario'}`;
-      } else {
-        tiktokStatusPill.classList.add('hidden');
-      }
-    }
-
-    if (tiktokLiveMsg) {
-      if (state.message) {
-        let msg = state.message;
-        if (typeof msg === 'string' && msg.toLowerCase().includes('live has ended')) {
-          msg = `⚠️ El usuario @${state.username || 'indicado'} no está transmitiendo en vivo en TikTok en este momento. Inicia tu LIVE en la app de TikTok y vuelve a pulsar Conectar.`;
-        }
-        tiktokLiveMsg.textContent = msg;
-        tiktokLiveMsg.style.display = 'block';
-        tiktokLiveMsg.style.color = isConn ? '#4ade80' : isErr ? '#f87171' : '#94a3b8';
-      } else {
-        tiktokLiveMsg.style.display = 'none';
-      }
-    }
-  }
-
-  syncBridge.on('TIKTOK_STATUS', (status) => {
-    updateTikTokUI(status);
-  });
-
-  if (typeof fetch !== 'undefined') {
-    fetch('/api/tiktok/status')
-      .then(res => res.json())
-      .then(data => updateTikTokUI(data))
-      .catch(() => {});
-  }
-
-  if (btnTiktokConnect) {
-    btnTiktokConnect.addEventListener('click', () => {
-      if (currentTikTokConnected) {
-        syncBridge.disconnectTikTok();
-        updateTikTokUI({ status: 'disconnected', message: 'Desconectado de TikTok LIVE.' });
-      } else {
-        const username = (tiktokUserInput && tiktokUserInput.value || '').trim();
-        const sessionId = (tiktokSessionInput && tiktokSessionInput.value || '').trim();
-        if (!username) {
-          alert('Por favor ingresa tu nombre de usuario de TikTok (ej: CreandoConIA)');
-          return;
-        }
-        localStorage.setItem('garabato_tiktok_user', username);
-        if (sessionId) localStorage.setItem('garabato_tiktok_session', sessionId);
-        updateTikTokUI({ status: 'connecting', username, message: `Conectando con @${username}...` });
-        syncBridge.connectTikTok(username, sessionId);
-      }
-    });
-  }
-
-  // ==========================================
-  // 8. SIMULADOR DE EVENTOS TIKTOK LIVE
+  // SIMULADOR DE EVENTOS TIKTOK LIVE & CHAT 3D
   // ==========================================
   const simUser = document.getElementById('sim-user');
   const simGiftSelect = document.getElementById('sim-gift-select');
   const btnSimJoin = document.getElementById('btn-sim-join');
   const btnSimGift = document.getElementById('btn-sim-gift');
   const btnSimTaps = document.getElementById('btn-sim-taps');
+  const chatUserInput = document.getElementById('chat-user-input');
+  const chatTextInput = document.getElementById('chat-text-input');
+  const btnSendChatMsg = document.getElementById('btn-send-chat-msg');
+  const chatIsVip = document.getElementById('chat-is-vip');
 
   if (btnSimJoin) {
     btnSimJoin.addEventListener('click', () => {
-      const user = (simUser && simUser.value) || 'DancerFan';
       syncBridge.send('TIKTOK_EVENT', {
         action: 'JOIN',
-        user
+        user: (simUser && simUser.value) || 'DancerFan'
       });
     });
   }
 
   if (btnSimGift) {
     btnSimGift.addEventListener('click', () => {
-      const user = (simUser && simUser.value) || 'FanVIP';
-      const giftName = (simGiftSelect && simGiftSelect.value) || '🌹 Rosa';
       syncBridge.send('TIKTOK_EVENT', {
         action: 'GIFT',
-        gift: giftName,
-        user
+        gift: (simGiftSelect && simGiftSelect.value) || '🌹 Rosa',
+        user: (simUser && simUser.value) || 'FanVIP'
       });
     });
   }
@@ -1542,6 +1104,92 @@ export function initAdminApp() {
       });
     });
   }
+
+  if (btnSendChatMsg) {
+    btnSendChatMsg.addEventListener('click', () => {
+      const user = (chatUserInput && chatUserInput.value) || 'Carlos';
+      const text = (chatTextInput && chatTextInput.value) || '¡Qué temazo! 🔥';
+      const isVip = chatIsVip ? chatIsVip.checked : false;
+      syncBridge.send('TIKTOK_EVENT', {
+        action: 'CHAT',
+        user,
+        comment: text,
+        isVip
+      });
+    });
+  }
+
+  // ==========================================
+  // CONEXIÓN A TIKTOK LIVE REAL
+  // ==========================================
+  const tiktokUserInput = document.getElementById('tiktok-user-input');
+  const btnTiktokConnect = document.getElementById('btn-tiktok-connect');
+  const tiktokSessionInput = document.getElementById('tiktok-session-input');
+  const tiktokLiveBadge = document.getElementById('tiktok-live-badge');
+  const tiktokStatusPill = document.getElementById('tiktok-status-pill');
+  const tiktokStatusText = document.getElementById('tiktok-status-text');
+  const tiktokLiveMsg = document.getElementById('tiktok-live-msg');
+  let currentTikTokConnected = false;
+
+  function updateTikTokUI(state) {
+    if (!state) return;
+    const isConn = state.status === 'connected';
+    const isConnecting = state.status === 'connecting';
+    const isErr = state.status === 'error';
+    currentTikTokConnected = isConn;
+
+    if (tiktokLiveBadge) {
+      tiktokLiveBadge.textContent = isConn ? '🟢 Conectado' : (isConnecting ? '🟡 Conectando...' : 'Desconectado');
+      tiktokLiveBadge.style.background = isConn ? '#22c55e' : (isConnecting ? '#f59e0b' : '#334155');
+      tiktokLiveBadge.style.color = isConn ? '#000' : '#fff';
+    }
+
+    if (btnTiktokConnect) {
+      btnTiktokConnect.textContent = isConn ? '⏹️ Desconectar' : (isConnecting ? '⌛...' : 'Conectar');
+      btnTiktokConnect.style.background = isConn ? '#ef4444' : '#e11d48';
+    }
+
+    if (tiktokStatusPill && tiktokStatusText) {
+      if (isConn) {
+        tiktokStatusPill.classList.remove('hidden');
+        tiktokStatusText.textContent = `En vivo con @${state.username || 'usuario'}`;
+      } else {
+        tiktokStatusPill.classList.add('hidden');
+      }
+    }
+  }
+
+  syncBridge.on('TIKTOK_STATUS', updateTikTokUI);
+
+  if (btnTiktokConnect) {
+    btnTiktokConnect.addEventListener('click', () => {
+      if (currentTikTokConnected) {
+        syncBridge.disconnectTikTok();
+        updateTikTokUI({ status: 'disconnected' });
+      } else {
+        const username = (tiktokUserInput && tiktokUserInput.value || '').trim();
+        const sessionId = (tiktokSessionInput && tiktokSessionInput.value || '').trim();
+        if (!username) { alert('Ingresa tu usuario de TikTok'); return; }
+        updateTikTokUI({ status: 'connecting', username });
+        syncBridge.connectTikTok(username, sessionId);
+      }
+    });
+  }
+
+  // ==========================================
+  // CÁMARAS CINEMATOGRÁFICAS DEL CLUB
+  // ==========================================
+  document.querySelectorAll('.btn-camera').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-camera').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const shot = btn.dataset.shot || 'AUTO';
+      syncBridge.send('SET_CAMERA_SHOT', { shot });
+    });
+  });
+
+  // Inicializar playlist al cargar
+  fetchMusicPlaylist();
 }
 
 window.addEventListener('DOMContentLoaded', initAdminApp);

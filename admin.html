@@ -3,517 +3,708 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GARABATO DJ & LIVE CLUB 3D — Panel Maestro de Control</title>
+  <title>VIRTUAL DJ PRO 2024 — GARABATO LIVE CLUB 3D</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body class="admin-page">
-  <div class="admin-container">
-    <!-- Encabezado del Panel -->
-    <header class="admin-header">
-      <div class="admin-title-box">
-        <h1>GARABATO DJ <span class="highlight">CLUB 3D</span></h1>
-        <span class="admin-sub">PLATAFORMA MAESTRA DE DJ EN VIVO • MÚSICA PROPIA & CHAT 3D</span>
+<body class="admin-page" style="background: #07090e;">
+  <div class="vdj-studio">
+
+    <!-- ========================================================
+         1. HEADER SUPERIOR VIRTUAL DJ PRO
+         ======================================================== -->
+    <header class="vdj-header">
+      <div class="vdj-brand">
+        <span class="vdj-logo-badge">VIRTUAL DJ</span>
+        <div>
+          <h1 class="vdj-header-title">GARABATO <span style="color: #38bdf8;">PRO STUDIO</span> 3D</h1>
+          <span class="vdj-header-sub">SISTEMA DUAL-DECK (2 CANALES) • MEZCLADOR PROFESIONAL EN VIVO</span>
+        </div>
       </div>
-      <div class="admin-header-right">
-        <span id="status-show-connection" class="status-badge">● Esperando /show</span>
-        <button type="button" id="btn-admin-toggle-clean" class="btn-action-small" title="Oculta o muestra los botones de Admin en la pantalla del show">👁️ Transmisión Limpia</button>
+
+      <div class="vdj-header-actions">
+        <!-- Botón Rápido de Micrófono Humano en Vivo -->
+        <button type="button" id="btn-quick-mic-head" class="vdj-mic-pill-btn" title="Activa tu voz humana real en vivo (Atajo: [Espacio] o [M])">
+          <span id="quick-mic-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;"></span>
+          <span id="quick-mic-label">🎙️ HABLAR EN VIVO [Espacio]</span>
+        </button>
+
+        <button type="button" id="btn-toggle-admin-audio-mute" class="btn-action-small" style="background: #1e293b; color: #38bdf8; font-weight: 800; border: 1px solid #334155;" title="Silencia el monitor local de esta pestaña para evitar eco si tienes /show en la misma PC">
+          🎧 Monitor Admin: 🔊 ON
+        </button>
+
+        <span id="status-show-connection" class="status-badge" style="font-size: 10px;">● Esperando /show</span>
+        <button type="button" id="btn-admin-toggle-clean" class="btn-action-small" title="Oculta o muestra botones flotantes en /show">👁️ Modo Limpio</button>
         <a href="./show.html" target="_blank" class="btn-open-show">🖥️ Abrir /show</a>
-        <a href="./mobile.html" target="_blank" class="btn-open-show" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; margin-left: 6px;" title="Abre el enlace adaptable para celulares y TikTok LIVE Móvil">📱 Enlace Móvil</a>
+        <a href="./mobile.html" target="_blank" class="btn-open-show" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff;">📱 Móvil</a>
       </div>
     </header>
 
-    <main class="admin-grid">
-      <!-- ==========================================
-           COLUMNA 1: DECK DE MÚSICA PERSONALIZADA & PLAYLIST
-           ========================================== -->
-      <section class="admin-card">
-        <div class="card-header-row">
-          <h2 class="card-title" style="color: #c084fc;">🎧 Deck & Música del DJ</h2>
-          <span id="music-count-badge" class="counter">0 pistas</span>
-        </div>
-        <p class="card-desc">
-          Sube tus propias canciones (MP3, WAV, OGG) o pega una URL de transmisión. La música se reproduce en <strong>/show</strong> y el público bailará automáticamente al ritmo de los bajos y BPM.
-        </p>
+    <!-- ========================================================
+         2. ONDAS DE AUDIO DUALES EN TIEMPO REAL (RUNNING WAVEFORMS)
+         ======================================================== -->
+    <section class="vdj-top-waveforms">
+      <div class="vdj-wave-labels">
+        <span class="vdj-wave-label-a">◀ DECK A (CANAL 1 - AZUL)</span>
+        <span style="color: #64748b; font-size: 9px; letter-spacing: 1px;">OSCILOSCOPIO DUAL EN VIVO • ALINEACIÓN DE BEATS</span>
+        <span class="vdj-wave-label-b">DECK B (CANAL 2 - ROJO) ▶</span>
+      </div>
+      <div class="vdj-wave-center-needle"></div>
+      <canvas id="vdj-waveforms-canvas" class="vdj-wave-canvas" height="64"></canvas>
+    </section>
 
-        <!-- Subida de Música Personalizada -->
-        <div class="dj-music-deck-card">
-          <!-- Dropzone para arrastrar o hacer clic -->
-          <div id="dj-upload-dropzone" class="dj-upload-dropzone">
-            <span class="dj-upload-icon">📁</span>
-            <strong style="color: #38bdf8; font-size: 13px;">Arrastra tus canciones MP3 / WAV o carpeta aquí</strong>
-            <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 8px 0;">Selecciona una o varias canciones, o una carpeta completa de música</p>
-            <input type="file" id="dj-file-input" accept="audio/*" multiple style="display: none;" />
-            <input type="file" id="dj-folder-input" webkitdirectory directory multiple accept="audio/*" style="display: none;" />
-            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-              <button type="button" id="btn-select-file" class="btn-action-small" style="background: #6366f1; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 8px;">
-                🎵 Seleccionar Canciones
-              </button>
-              <button type="button" id="btn-select-folder" class="btn-action-small" style="background: #0284c7; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 8px;">
-                📂 Cargar Carpeta Completa
-              </button>
+    <!-- ========================================================
+         3. CONSOLA PRINCIPAL: DECK A | MEZCLADOR CENTRAL | DECK B
+         ======================================================== -->
+    <main class="vdj-console">
+
+      <!-- ==============================================
+           CANAL 1: DECK A (CYAN / NEON BLUE)
+           ============================================== -->
+      <section class="vdj-deck vdj-deck-a">
+        <!-- Header Deck A -->
+        <div class="vdj-deck-header">
+          <span class="vdj-deck-tag">DECK A</span>
+          <div class="vdj-deck-info">
+            <strong id="deck-a-title" class="vdj-deck-title">Ninguna pista cargada</strong>
+            <div class="vdj-deck-sub">
+              <span id="deck-a-type">📁 MP3 / YouTube</span>
+              <span>•</span>
+              <span id="deck-a-bpm" style="color: #38bdf8; font-weight: 800;">124.00 BPM</span>
+              <span>•</span>
+              <span id="deck-a-key" style="color: #facc15; font-weight: 800;">KEY: 08A</span>
+            </div>
+          </div>
+          <div class="vdj-deck-time-box">
+            <div id="deck-a-time" class="vdj-deck-time-main">00:00.0</div>
+            <div id="deck-a-remain" class="vdj-deck-time-rem">-00:00.0</div>
+          </div>
+        </div>
+
+        <!-- Scrubber de Progreso Deck A -->
+        <div id="deck-a-scrub" class="vdj-deck-scrub-bar" title="Haz clic para avanzar o retroceder la canción">
+          <div id="deck-a-scrub-fill" class="vdj-deck-scrub-fill"></div>
+        </div>
+
+        <!-- Cuerpo Deck A: Jog Wheel + Pitch + Pads -->
+        <div class="vdj-deck-body">
+          <!-- Pads de Rendimiento Deck A -->
+          <div class="vdj-pads-container">
+            <div class="vdj-pads-row">
+              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="cue1">HOT CUE 1</button>
+              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="cue2">HOT CUE 2</button>
+            </div>
+            <div class="vdj-pads-row">
+              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="loop1">LOOP 2</button>
+              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="loop2">LOOP 4</button>
             </div>
           </div>
 
-          <!-- Estado de Subida y Barra de Progreso -->
-          <div id="dj-upload-status" style="display: none; font-size: 11px; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; text-align: center;"></div>
+          <!-- Tornamesa Jog Wheel Deck A -->
+          <div class="vdj-jog-container">
+            <div id="deck-a-jog" class="vdj-jog-wheel" title="Tornamesa Jog Wheel Deck A (Gira al compás de la música)">
+              <div class="vdj-jog-grooves"></div>
+              <div class="vdj-jog-center">DECK A</div>
+              <div class="vdj-jog-marker"></div>
+            </div>
+          </div>
 
-          <!-- O pegar enlace de Google Drive o URL directa -->
-          <div class="form-group" style="margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <label for="dj-stream-url" style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;">
-                ☁️ Importar desde Google Drive o Link Directo
-              </label>
-              <button type="button" id="btn-toggle-batch-drive" class="btn-text-action" style="font-size: 10px; color: #38bdf8; font-weight: 800;">
-                📋 Importar Varios Links
+          <!-- Pitch / Tempo Fader Slider Deck A -->
+          <div class="vdj-pitch-box">
+            <span class="vdj-pitch-label">PITCH</span>
+            <input type="range" id="deck-a-pitch" class="vdj-pitch-slider" min="-8" max="8" step="0.1" value="0" title="Ajuste de velocidad y BPM (-8% a +8%)" />
+            <span id="deck-a-pitch-val" class="vdj-pitch-val">0.0%</span>
+          </div>
+        </div>
+
+        <!-- Botones de Transporte Deck A -->
+        <div class="vdj-transport-row">
+          <button type="button" id="btn-deck-a-cue" class="vdj-btn-cue" title="Regresar al inicio o punto CUE">CUE</button>
+          <button type="button" id="btn-deck-a-play" class="vdj-btn-play" title="Reproducir / Pausar Deck A">
+            <span id="deck-a-play-icon">▶</span>
+            <span id="deck-a-play-text">PLAY</span>
+          </button>
+          <button type="button" id="btn-deck-a-sync" class="vdj-btn-sync" title="Sincronizar BPM con Deck B">SYNC</button>
+          <button type="button" id="btn-deck-a-stop" class="vdj-btn-stop" title="Detener Deck A (0:00)">⏹</button>
+        </div>
+      </section>
+
+      <!-- ==============================================
+           MEZCLADOR CENTRAL PIONEER / VIRTUAL DJ MIXER
+           ============================================== -->
+      <section class="vdj-mixer">
+        <div class="vdj-mixer-header">
+          <span>CLUB MIXER PRO</span>
+        </div>
+
+        <!-- Perillas de Ecualización HI / MID / LOW -->
+        <div class="vdj-knobs-grid">
+          <!-- Columna EQ Deck A -->
+          <div class="vdj-knob-col">
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">GAIN A</span>
+              <input type="range" id="deck-a-gain" min="0" max="150" value="100" style="width: 70px; accent-color: #00f0ff;" />
+            </div>
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">HIGH</span>
+              <input type="range" id="deck-a-eq-high" min="0" max="100" value="50" style="width: 70px; accent-color: #00f0ff;" />
+            </div>
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">MID</span>
+              <input type="range" id="deck-a-eq-mid" min="0" max="100" value="50" style="width: 70px; accent-color: #00f0ff;" />
+            </div>
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">LOW (BASS)</span>
+              <input type="range" id="deck-a-eq-low" min="0" max="100" value="50" style="width: 70px; accent-color: #00f0ff;" />
+            </div>
+          </div>
+
+          <!-- Columna EQ Deck B -->
+          <div class="vdj-knob-col vdj-knob-col-b">
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">GAIN B</span>
+              <input type="range" id="deck-b-gain" min="0" max="150" value="100" style="width: 70px; accent-color: #f43f5e;" />
+            </div>
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">HIGH</span>
+              <input type="range" id="deck-b-eq-high" min="0" max="100" value="50" style="width: 70px; accent-color: #f43f5e;" />
+            </div>
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">MID</span>
+              <input type="range" id="deck-b-eq-mid" min="0" max="100" value="50" style="width: 70px; accent-color: #f43f5e;" />
+            </div>
+            <div class="vdj-knob-unit">
+              <span class="vdj-knob-label">LOW (BASS)</span>
+              <input type="range" id="deck-b-eq-low" min="0" max="100" value="50" style="width: 70px; accent-color: #f43f5e;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Vúmetros LED Estéreo Dinámicos Centrales -->
+        <div class="vdj-vu-wrapper">
+          <div class="vdj-vu-column" id="vdj-vu-a">
+            <!-- 10 segmentos LED generados dinámicamente -->
+          </div>
+          <span style="font-size: 8px; font-weight: 900; color: #64748b; writing-mode: vertical-lr;">VU MASTER</span>
+          <div class="vdj-vu-column" id="vdj-vu-b">
+            <!-- 10 segmentos LED generados dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Faders Verticales de Volumen de Canal (Deck A & Deck B) -->
+        <div class="vdj-faders-row">
+          <div class="vdj-ch-fader-box">
+            <span style="font-size: 9px; font-weight: 800; color: #00f0ff;">CH 1</span>
+            <input type="range" id="deck-a-fader" class="vdj-ch-fader vdj-ch-fader-a" min="0" max="100" value="85" title="Volumen Canal 1 (Deck A)" />
+            <span id="deck-a-fader-val" style="font-size: 9px; color: #94a3b8;">85%</span>
+          </div>
+
+          <div class="vdj-ch-fader-box">
+            <span style="font-size: 9px; font-weight: 800; color: #f43f5e;">CH 2</span>
+            <input type="range" id="deck-b-fader" class="vdj-ch-fader vdj-ch-fader-b" min="0" max="100" value="85" title="Volumen Canal 2 (Deck B)" />
+            <span id="deck-b-fader-val" style="font-size: 9px; color: #94a3b8;">85%</span>
+          </div>
+        </div>
+
+        <!-- Crossfader Horizontal A <=======> B -->
+        <div class="vdj-crossfader-container">
+          <div class="vdj-cf-labels">
+            <span class="vdj-cf-label-a">◀ DECK A</span>
+            <span style="font-size: 8.5px; color: #94a3b8;">CROSSFADER</span>
+            <span class="vdj-cf-label-b">DECK B ▶</span>
+          </div>
+          <input type="range" id="vdj-crossfader" class="vdj-crossfader-slider" min="-100" max="100" value="0" title="Desliza para mezclar o pasar de una canción a otra suavemente" />
+        </div>
+
+        <!-- Volumen Maestro General del Show -->
+        <div style="margin-top: 6px; padding: 4px 6px; background: #07090f; border-radius: 6px; border: 1px solid #1e2638;">
+          <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 800; color: #cbd5e1; margin-bottom: 2px;">
+            <span>VOLUMEN MAESTRO</span>
+            <span id="dj-volume-label" style="color: #38bdf8;">85%</span>
+          </div>
+          <input type="range" id="dj-master-volume" min="0" max="100" value="85" style="width: 100%; accent-color: #38bdf8; cursor: pointer;" />
+        </div>
+      </section>
+
+      <!-- ==============================================
+           CANAL 2: DECK B (RUBY / NEON RED)
+           ============================================== -->
+      <section class="vdj-deck vdj-deck-b">
+        <!-- Header Deck B -->
+        <div class="vdj-deck-header">
+          <span class="vdj-deck-tag">DECK B</span>
+          <div class="vdj-deck-info">
+            <strong id="deck-b-title" class="vdj-deck-title">Ninguna pista cargada</strong>
+            <div class="vdj-deck-sub">
+              <span id="deck-b-type">📁 MP3 / YouTube</span>
+              <span>•</span>
+              <span id="deck-b-bpm" style="color: #f43f5e; font-weight: 800;">128.00 BPM</span>
+              <span>•</span>
+              <span id="deck-b-key" style="color: #facc15; font-weight: 800;">KEY: 11B</span>
+            </div>
+          </div>
+          <div class="vdj-deck-time-box">
+            <div id="deck-b-time" class="vdj-deck-time-main">00:00.0</div>
+            <div id="deck-b-remain" class="vdj-deck-time-rem">-00:00.0</div>
+          </div>
+        </div>
+
+        <!-- Scrubber de Progreso Deck B -->
+        <div id="deck-b-scrub" class="vdj-deck-scrub-bar" title="Haz clic para avanzar o retroceder la canción">
+          <div id="deck-b-scrub-fill" class="vdj-deck-scrub-fill"></div>
+        </div>
+
+        <!-- Cuerpo Deck B: Jog Wheel + Pitch + Pads -->
+        <div class="vdj-deck-body">
+          <!-- Pads de Rendimiento Deck B -->
+          <div class="vdj-pads-container">
+            <div class="vdj-pads-row">
+              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="cue1">HOT CUE 1</button>
+              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="cue2">HOT CUE 2</button>
+            </div>
+            <div class="vdj-pads-row">
+              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="loop1">LOOP 2</button>
+              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="loop2">LOOP 4</button>
+            </div>
+          </div>
+
+          <!-- Tornamesa Jog Wheel Deck B -->
+          <div class="vdj-jog-container">
+            <div id="deck-b-jog" class="vdj-jog-wheel" title="Tornamesa Jog Wheel Deck B (Gira al compás de la música)">
+              <div class="vdj-jog-grooves"></div>
+              <div class="vdj-jog-center">DECK B</div>
+              <div class="vdj-jog-marker"></div>
+            </div>
+          </div>
+
+          <!-- Pitch / Tempo Fader Slider Deck B -->
+          <div class="vdj-pitch-box">
+            <span class="vdj-pitch-label">PITCH</span>
+            <input type="range" id="deck-b-pitch" class="vdj-pitch-slider" min="-8" max="8" step="0.1" value="0" title="Ajuste de velocidad y BPM (-8% a +8%)" />
+            <span id="deck-b-pitch-val" class="vdj-pitch-val">0.0%</span>
+          </div>
+        </div>
+
+        <!-- Botones de Transporte Deck B -->
+        <div class="vdj-transport-row">
+          <button type="button" id="btn-deck-b-cue" class="vdj-btn-cue" title="Regresar al inicio o punto CUE">CUE</button>
+          <button type="button" id="btn-deck-b-play" class="vdj-btn-play" title="Reproducir / Pausar Deck B">
+            <span id="deck-b-play-icon">▶</span>
+            <span id="deck-b-play-text">PLAY</span>
+          </button>
+          <button type="button" id="btn-deck-b-sync" class="vdj-btn-sync" title="Sincronizar BPM con Deck A">SYNC</button>
+          <button type="button" id="btn-deck-b-stop" class="vdj-btn-stop" title="Detener Deck B (0:00)">⏹</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================================
+         4. PARTE INFERIOR: BIBLIOTECA DJ + RACK COMPACTO DE ESTUDIO
+         ======================================================== -->
+    <div class="vdj-lower-layout">
+
+      <!-- ==============================================
+           IZQUIERDA: EXPLORADOR DE MÚSICA & CRATES (68%)
+           ============================================== -->
+      <section class="vdj-crate-panel">
+        <!-- Navegación de Fuentes de Música -->
+        <div class="vdj-crate-nav">
+          <button type="button" class="vdj-crate-tab is-active" data-crate="local">
+            <span>📁 Mis Pistas MP3 / WAV</span>
+            <span id="music-count-badge" class="counter" style="font-size: 9px; padding: 1px 6px;">0</span>
+          </button>
+          <button type="button" class="vdj-crate-tab" data-crate="youtube">
+            <span>▶ Buscador YouTube DJ</span>
+          </button>
+          <button type="button" class="vdj-crate-tab" data-crate="drive">
+            <span>☁️ Google Drive / Links</span>
+          </button>
+          <button type="button" class="vdj-crate-tab" data-crate="synth">
+            <span>⚡ Ritmos Club (Sintetizados)</span>
+          </button>
+
+          <button type="button" id="btn-stop-all-music" class="btn-action-small" style="margin-left: auto; background: #991b1b; color: #fee2e2; border: 1.5px solid #ef4444; font-weight: 800; padding: 4px 10px; font-size: 11px;">
+            ⏹ STOP GENERAL (Ambos Decks)
+          </button>
+        </div>
+
+        <!-- PANEL CRATE 1: SUBIDAS LOCALES MP3/WAV -->
+        <div id="crate-page-local" class="crate-page">
+          <!-- Dropzone compacto -->
+          <div id="dj-upload-dropzone" class="dj-upload-dropzone" style="padding: 12px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
+              <span style="font-size: 18px;">📁</span>
+              <span style="font-size: 11px; color: #cbd5e1;">Arrastra tus canciones MP3/WAV o carpeta aquí</span>
+              <input type="file" id="dj-file-input" accept="audio/*" multiple style="display: none;" />
+              <input type="file" id="dj-folder-input" webkitdirectory directory multiple accept="audio/*" style="display: none;" />
+              <button type="button" id="btn-select-file" class="btn-action-small" style="background: #0284c7; color: #fff; font-size: 10.5px; padding: 4px 10px;">
+                + Canciones
+              </button>
+              <button type="button" id="btn-select-folder" class="btn-action-small" style="background: #6366f1; color: #fff; font-size: 10.5px; padding: 4px 10px;">
+                + Carpeta
+              </button>
+              <button type="button" id="btn-refresh-playlist" class="btn-text-action" style="font-size: 10px; color: #38bdf8;">
+                🔄 Actualizar
               </button>
             </div>
-            <div style="display: flex; gap: 6px;">
-              <input type="url" id="dj-stream-url" placeholder="Pega el enlace de Google Drive (ej: https://drive.google.com/file/d/...)" style="flex: 1; padding: 7px; font-size: 11px;" />
-              <button type="button" id="btn-play-stream-url" class="btn-action-small" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 800; white-space: nowrap;">
-                ⬇️ Importar & Tocar
+          </div>
+          <div id="dj-upload-status" style="display: none; font-size: 11px; padding: 6px; border-radius: 6px; margin-bottom: 8px; text-align: center;"></div>
+
+          <!-- Barra de Búsqueda Rápida en la Biblioteca -->
+          <div class="vdj-crate-search-bar">
+            <span style="color: #38bdf8;">🔍</span>
+            <input type="text" id="dj-search-input" placeholder="Buscar canción, artista o ritmo en la biblioteca... [Atajo: /]" />
+            <button type="button" id="btn-clear-search" style="display: none; background: #334155; border: none; color: #cbd5e1; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer;">✕</button>
+            <span id="dj-search-count-badge" style="font-size: 10px; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px;">0 pistas</span>
+          </div>
+
+          <!-- Tabla de Pistas MP3 (Estilo Crate de Virtual DJ) -->
+          <div class="vdj-table-wrapper" style="margin-top: 8px;">
+            <table class="vdj-track-table">
+              <thead>
+                <tr>
+                  <th style="width: 32px;">#</th>
+                  <th>Título de la Canción</th>
+                  <th style="width: 70px;">Tamaño</th>
+                  <th style="width: 190px; text-align: center;">Cargar en Canal</th>
+                  <th style="width: 40px; text-align: center;">🗑️</th>
+                </tr>
+              </thead>
+              <tbody id="dj-playlist-list">
+                <tr>
+                  <td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">
+                    Cargando biblioteca de canciones...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PANEL CRATE 2: BUSCADOR YOUTUBE DJ -->
+        <div id="crate-page-youtube" class="crate-page" style="display: none;">
+          <div style="background: rgba(220, 38, 38, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="yt-search-input" placeholder="Escribe canción, artista o pega link de YouTube... (ej: Rodolfo Aicardi, Titanium, Guaracha)" style="flex: 1; padding: 8px 10px; font-size: 12px; background: #05050d; border: 1px solid #7f1d1d; border-radius: 6px; color: #fff;" />
+              <button type="button" id="btn-yt-search" class="btn-action-small" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; font-weight: 800; padding: 6px 16px;">
+                🔍 Buscar en YouTube
+              </button>
+            </div>
+            <div style="margin-top: 6px; font-size: 10px; color: #4ade80; display: flex; align-items: center; gap: 5px;">
+              <span>🛡️</span>
+              <span><strong>Modo Seguro Anti-Copyright:</strong> El video y nombres comerciales se mantienen 100% ocultos en /show para que tu cuenta de TikTok no sufra silenciamiento o avisos de derechos de autor.</span>
+            </div>
+          </div>
+
+          <div id="yt-search-results" style="max-height: 320px; overflow-y: auto; background: #080a10; border: 1px solid #283042; border-radius: 8px; padding: 6px;">
+            <div style="padding: 24px; text-align: center; color: #64748b; font-size: 11px;">
+              Escribe un título arriba y haz clic en 🔍 Buscar para encontrar canciones en YouTube.
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL CRATE 3: GOOGLE DRIVE / ENLACES -->
+        <div id="crate-page-drive" class="crate-page" style="display: none;">
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong style="font-size: 12px; color: #38bdf8;">Importar canciones desde Google Drive</strong>
+              <button type="button" id="btn-toggle-batch-drive" class="btn-text-action" style="font-size: 10px; color: #38bdf8;">
+                📋 Importar varios enlaces
+              </button>
+            </div>
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+              <input type="url" id="dj-stream-url" placeholder="Pega el enlace de Google Drive (ej: https://drive.google.com/file/d/...)" style="flex: 1; padding: 7px; font-size: 11px; background: #05050d; border: 1px solid #334155; border-radius: 6px; color: #fff;" />
+              <button type="button" id="btn-play-stream-url" class="btn-action-small" style="background: #0284c7; color: #fff; font-weight: 800; white-space: nowrap;">
+                ⬇️ Importar & Cargar
               </button>
             </div>
 
-            <!-- Bloque Oculto para Importar Múltiples Links de Google Drive -->
+            <!-- Importación múltiple de Google Drive -->
             <div id="dj-batch-drive-box" style="display: none; margin-top: 8px; padding: 10px; background: rgba(15, 23, 42, 0.85); border: 1.5px dashed #0284c7; border-radius: 8px;">
-              <div style="font-size: 11px; font-weight: 800; color: #e2e8f0; margin-bottom: 4px;">
-                📋 Pega varios enlaces de Google Drive (uno por línea):
-              </div>
-              <textarea id="dj-batch-urls-input" rows="3" placeholder="https://drive.google.com/file/d/1...&#10;https://drive.google.com/file/d/2...&#10;https://drive.google.com/file/d/3..." style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 11px; padding: 6px; font-family: monospace; resize: vertical;"></textarea>
+              <div style="font-size: 11px; font-weight: 800; color: #e2e8f0; margin-bottom: 4px;">Pega varios enlaces de Google Drive (uno por línea):</div>
+              <textarea id="dj-batch-urls-input" rows="3" style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 11px; padding: 6px; font-family: monospace;"></textarea>
               <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
                 <button type="button" id="btn-cancel-batch-drive" class="btn-action-small" style="background: #334155; color: #94a3b8;">Cancelar</button>
                 <button type="button" id="btn-submit-batch-drive" class="btn-action-small" style="background: #10b981; color: #fff; font-weight: 800;">⬇️ Importar Todos</button>
               </div>
             </div>
-
-            <span class="input-hint" style="font-size: 10px; color: #94a3b8; display: block; margin-top: 3px;">
-              💡 <em>En Google Drive: Compartir > "Cualquier persona con el enlace".</em>
-            </span>
+            <span style="font-size: 10px; color: #94a3b8; display: block;">💡 Asegúrate de que el enlace en Google Drive tenga permiso "Cualquier persona con el enlace".</span>
           </div>
+        </div>
 
-          <!-- ======================================================== -->
-          <!-- SECCIÓN YOUTUBE MUSIC DJ (VIRTUAL DJ / YOUTUBE PREMIUM)   -->
-          <!-- ======================================================== -->
-          <div class="form-group" style="margin-bottom: 12px; background: rgba(220, 38, 38, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: 10px; padding: 10px;">
+        <!-- PANEL CRATE 4: RITMOS PROCEDURALES -->
+        <div id="crate-page-synth" class="crate-page" style="display: none;">
+          <p style="font-size: 11px; color: #94a3b8; margin: 0 0 8px 0;">
+            Activa ritmos bailables sintetizados al vuelo si deseas que la pista baile sin poner una canción grabada.
+          </p>
+          <div class="dj-genre-grid">
+            <button type="button" class="btn-dj-genre is-active" data-genre="EDM">
+              <span>🔥 EDM Festival</span>
+              <span class="genre-bpm">128 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="GUARACHA">
+              <span>🌴 Guaracha Tribal</span>
+              <span class="genre-bpm">130 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="REGGAETON">
+              <span>💃 Reggaetón Dembow</span>
+              <span class="genre-bpm">96 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="DISCO">
+              <span>🕺 Nu-Disco Funk</span>
+              <span class="genre-bpm">122 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="TECH_HOUSE" style="grid-column: span 2;">
+              <span>⚡ Tech House Club</span>
+              <span class="genre-bpm">126 BPM</span>
+            </button>
+          </div>
+          <div class="dj-transport-row" style="margin-top: 8px;">
+            <button type="button" id="btn-dj-play-synth" class="btn-dj-play"><span>▶ REPRODUCIR RITMO</span></button>
+            <button type="button" id="btn-dj-stop-synth" class="btn-dj-stop"><span>⏹ DETENER</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================
+           DERECHA: RACK COMPACTO DE ESTUDIO (32%)
+           ============================================== -->
+      <aside class="vdj-side-rack">
+        <!-- Tabs del Rack Compacto -->
+        <div class="vdj-rack-tabs">
+          <button type="button" class="vdj-rack-tab-btn is-active" data-rack="mic">🎙️ Voz & Mic</button>
+          <button type="button" class="vdj-rack-tab-btn" data-rack="fx">🎛️ FX DJ</button>
+          <button type="button" class="vdj-rack-tab-btn" data-rack="sim">🎁 Regalos</button>
+          <button type="button" class="vdj-rack-tab-btn" data-rack="cam">🎥 Cámaras</button>
+        </div>
+
+        <!-- RACK TAB 1: MICRÓFONO EN VIVO & VOZ -->
+        <div id="rack-page-mic" class="vdj-rack-page is-active">
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label for="yt-search-input" style="font-size: 11px; font-weight: 800; color: #f87171; display: flex; align-items: center; gap: 6px;">
-                <span style="background: #dc2626; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 900;">▶ YouTube</span>
-                Buscador & Reproductor Virtual DJ (Sin Anuncios con Premium)
-              </label>
-              <div style="display: flex; gap: 8px;">
-                <button type="button" id="btn-toggle-admin-audio-mute" class="btn-text-action" style="font-size: 10px; color: #38bdf8; font-weight: 800;" title="Silencia el audio en esta pestaña de Admin si tienes /show o OBS abierto en la misma PC">
-                  🎧 Monitor Admin: 🔊 ON
-                </button>
-                <button type="button" id="btn-toggle-yt-player-view" class="btn-text-action" style="font-size: 10px; color: #fca5a5;">
-                  👁️ Ver Reproductor
-                </button>
+              <strong style="font-size: 12px; color: #38bdf8;">🎙️ Micrófono en Vivo (Voz Humana)</strong>
+              <span id="mic-air-status" class="status-badge" style="font-size: 9px; background: #1e293b; color: #94a3b8;">⚪ Silenciado</span>
+            </div>
+            <p style="font-size: 10.5px; color: #94a3b8; margin: 0 0 8px 0;">
+              Habla por tu micrófono: TikTok detectará voz humana real, el muñeco DJ moverá la boca y la música bajará automáticamente (auto-ducking).
+            </p>
+
+            <button type="button" id="btn-toggle-mic" class="btn-mic-main" style="padding: 10px; font-size: 11px;">
+              <span id="mic-icon" style="font-size: 18px;">🎙️</span>
+              <span id="mic-text">ACTIVAR MICRÓFONO EN VIVO</span>
+            </button>
+
+            <!-- Vúmetro de Voz Humana -->
+            <div class="mic-vu-meter-box" style="margin-top: 8px;">
+              <div class="mic-status-label" style="font-size: 10px;">
+                <span>Nivel de Voz Humana</span>
+                <span id="mic-db-label">0%</span>
+              </div>
+              <div class="mic-vu-meter-track" style="height: 10px;">
+                <div id="mic-vu-fill" class="mic-vu-meter-fill"></div>
               </div>
             </div>
 
+            <!-- Opciones del Micrófono -->
+            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+              <div>
+                <label style="font-size: 10px; color: #cbd5e1; font-weight: 700;">Modo</label>
+                <select id="mic-mode-select" style="width: 100%; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;">
+                  <option value="toggle" selected>🔘 Modo Interruptor (Clic para Hablar / Silenciar)</option>
+                  <option value="ptt">👆 Push-to-Talk (Mantener presionado)</option>
+                </select>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #cbd5e1; font-weight: 700;">
+                  <span>Sensibilidad</span>
+                  <span id="mic-gain-label" style="color: #38bdf8;">120%</span>
+                </div>
+                <input type="range" id="mic-gain-slider" min="50" max="250" value="120" style="width: 100%; accent-color: #38bdf8;" />
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <label style="display: flex; align-items: center; gap: 5px; font-size: 10px; cursor: pointer;">
+                  <input type="checkbox" id="mic-webrtc-stream" checked />
+                  <span>🔊 Transmitir a ventana /show</span>
+                </label>
+                <span style="font-size: 9.5px; color: #f59e0b;">Atajo: [Espacio]</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Silenciar / Activar Voz Automática del DJ -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 11px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 5px;">
+                <span id="dj-voice-status-icon">🔇</span> Voz Automática del DJ
+              </div>
+              <span style="font-size: 9.5px; color: #94a3b8;">Saludos y frases automáticas del muñeco</span>
+            </div>
+            <button type="button" id="btn-toggle-dj-voice" style="padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 900; cursor: pointer; border: 1.5px solid #ef4444; background: #450a0a; color: #fca5a5;">
+              🔇 SILENCIADA (MUTE)
+            </button>
+          </div>
+        </div>
+
+        <!-- RACK TAB 2: LAUNCHPAD DE EFECTOS DJ -->
+        <div id="rack-page-fx" class="vdj-rack-page">
+          <div style="font-size: 11px; font-weight: 800; color: #facc15; margin-bottom: 4px;">
+            🎛️ Launchpad de Efectos Visuales & Sonido
+          </div>
+          <div class="dj-soundboard-pads" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
+            <button type="button" class="btn-dj-pad" data-fx="horn" style="padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">📢</span>
+              <span style="font-size: 11px;">Air Horn</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="siren" style="padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">🚨</span>
+              <span style="font-size: 11px;">Sirena Rave</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="scratch" style="padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">💿</span>
+              <span style="font-size: 11px;">Scratch</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="drop" style="padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">💣</span>
+              <span style="font-size: 11px;">Bass Drop</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="confetti" style="padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">🎉</span>
+              <span style="font-size: 11px;">Confeti</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="applause" style="padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">👏</span>
+              <span style="font-size: 11px;">Ovación</span>
+            </button>
+            <button type="button" class="btn-dj-pad" id="btn-dj-hype-hands" style="background: linear-gradient(135deg, #a855f7, #6366f1); padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">🙌</span>
+              <span style="font-size: 11px;">¡Manos Arriba!</span>
+            </button>
+            <button type="button" class="btn-dj-pad" id="btn-dj-dance-move" style="background: linear-gradient(135deg, #ec4899, #f43f5e); padding: 10px 4px;">
+              <span class="pad-icon" style="font-size: 18px;">💃</span>
+              <span style="font-size: 11px;">¡Paso de Baile!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- RACK TAB 3: REGALOS, SIMULACIÓN & TIKTOK LIVE -->
+        <div id="rack-page-sim" class="vdj-rack-page">
+          <!-- Conexión TikTok LIVE -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong style="color: #f43f5e; font-size: 11px;">🔴 Conectar TikTok LIVE</strong>
+              <span id="tiktok-live-badge" class="counter" style="font-size: 9px; padding: 1px 6px;">Desconectado</span>
+            </div>
             <div style="display: flex; gap: 6px;">
-              <input type="text" id="yt-search-input" placeholder="Escribe canción, artista o pega link de YouTube... (ej: Rodolfo Aicardi, Titanium, etc.)" style="flex: 1; padding: 7px; font-size: 11px; background: #05050d; border: 1px solid #7f1d1d; border-radius: 6px; color: #fff;" />
-              <button type="button" id="btn-yt-search" class="btn-action-small" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; font-weight: 800; white-space: nowrap;">
-                🔍 Buscar
+              <input type="text" id="tiktok-user-input" value="CreandoConIA" placeholder="@Usuario" style="flex: 1; padding: 6px 8px; font-size: 11px; background: #07090f; border: 1px solid #334155; border-radius: 6px; color: #fff;" />
+              <button type="button" id="btn-tiktok-connect" style="padding: 6px 10px; font-size: 10.5px; font-weight: 800; background: #e11d48; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Conectar</button>
+            </div>
+            <div style="margin-top: 4px;">
+              <input type="password" id="tiktok-session-input" placeholder="🔑 SessionID (Opcional - Evita 403)" style="width: 100%; box-sizing: border-box; padding: 4px 6px; font-size: 9.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
+            </div>
+            <div id="tiktok-status-pill" class="tiktok-status-pill hidden" style="margin-top: 6px; font-size: 10px; color: #22c55e;">
+              <span class="pulse-dot-green"></span>
+              <span id="tiktok-status-text">Conectado al LIVE</span>
+            </div>
+            <div id="tiktok-live-msg" style="margin-top: 6px; font-size: 10px; color: #94a3b8; display: none;"></div>
+          </div>
+
+          <!-- Simulador de Eventos de Fiesta -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
+            <strong style="color: #38bdf8; font-size: 11px; display: block; margin-bottom: 6px;">🧪 Simulador de Eventos</strong>
+            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+              <input type="text" id="sim-user" value="DancerFan" placeholder="Usuario" style="width: 45%; padding: 5px; font-size: 11px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
+              <select id="sim-gift-select" style="flex: 1; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;">
+                <option value="🌹 Rosa">🌹 Rosa (1)</option>
+                <option value="💖 Corazón">💖 Corazón (5)</option>
+                <option value="🍩 Dona">🍩 Dona (30)</option>
+                <option value="🎮 Control Retro">🎮 Control (100)</option>
+                <option value="👑 Corona VIP">👑 Corona (199)</option>
+                <option value="🦁 León del Club">🦁 León (1000)</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <button id="btn-sim-gift" class="btn-sim-gift" style="padding: 7px; font-size: 10.5px;">🎁 Regalo VIP</button>
+              <button id="btn-sim-taps" class="btn-sim-taps" style="padding: 7px; font-size: 10.5px;">🔥 +20 Likes</button>
+              <button id="btn-sim-join" class="btn-sim-gift" style="grid-column: span 2; background: linear-gradient(135deg, #7c3aed, #4f46e5); padding: 7px; font-size: 10.5px;">
+                👋 Simular Espectador en Pista
               </button>
             </div>
-            <div style="margin-top: 5px; font-size: 10px; color: #4ade80; display: flex; align-items: center; gap: 5px;">
-              <span>🛡️</span>
-              <span><strong>Modo Seguro Anti-Copyright:</strong> El video y nombres comerciales están 100% ocultos en el Live para proteger tu cuenta de sanciones o muteos en TikTok.</span>
+          </div>
+
+          <!-- Chat 3D con Bocadillos -->
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
+            <strong style="color: #06b6d4; font-size: 11px; display: block; margin-bottom: 4px;">💬 Chat 3D de Espectadores</strong>
+            <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+              <input type="text" id="chat-user-input" value="Carlos" style="width: 35%; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
+              <input type="text" id="chat-text-input" value="¡Suelte el bajo DJ! 🔥" style="flex: 1; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
             </div>
-
-            <!-- Contenedor del Reproductor de Monitoreo YouTube en Admin -->
-            <div id="admin-yt-monitor-container" style="display: none; margin-top: 10px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #7f1d1d;">
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #1e1111; border-bottom: 1px solid #7f1d1d;">
-                <span id="admin-yt-current-title" style="font-size: 11px; font-weight: 700; color: #fca5a5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">Ningún video cargado</span>
-                <div style="display: flex; gap: 4px; align-items: center;">
-                  <button type="button" id="btn-yt-pause" class="btn-action-small" style="background: #eab308; color: #000; font-weight: 800; padding: 3px 8px; font-size: 10px;">⏸ Pausar</button>
-                  <button type="button" id="btn-yt-resume" class="btn-action-small" style="background: #22c55e; color: #000; font-weight: 800; padding: 3px 8px; font-size: 10px;">▶ Play</button>
-                  <button type="button" id="btn-yt-stop" class="btn-action-small" style="background: #ef4444; color: #fff; font-weight: 800; padding: 3px 8px; font-size: 10px;">⏹ Stop</button>
-                </div>
-              </div>
-              <div style="width: 100%; height: 160px; background: #050505;">
-                <div id="admin-yt-iframe-slot"></div>
-              </div>
-            </div>
-
-            <!-- Resultados de Búsqueda de YouTube -->
-            <div id="yt-search-results" style="display: none; margin-top: 8px; max-height: 240px; overflow-y: auto; background: #0b0c16; border: 1px solid #450a0a; border-radius: 8px; padding: 4px;"></div>
-          </div>
-
-          <!-- Banner de Pista Sonando Ahora Mismo con Monitor de Audio Directo -->
-          <div id="dj-now-playing-banner" class="dj-now-playing-banner" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="overflow: hidden; margin-right: 8px;">
-                <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85;">▶ SONANDO EN VIVO (MONITOR DJ)</div>
-                <strong id="dj-now-playing-title" style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">Ninguna pista sonando</strong>
-              </div>
-              <div class="dj-equalizer-bars">
-                <span class="dj-eq-bar"></span>
-                <span class="dj-eq-bar"></span>
-                <span class="dj-eq-bar"></span>
-                <span class="dj-eq-bar"></span>
-              </div>
-            </div>
-            <!-- Reproductor HTML5 Nativo visible para escuchar de inmediato en el panel -->
-            <audio id="admin-native-audio" controls preload="auto" style="width: 100%; height: 32px; border-radius: 6px; outline: none;"></audio>
-          </div>
-
-          <!-- Control de Volumen Maestro de Música -->
-          <div class="form-group" style="margin-bottom: 12px;">
-            <div class="label-with-counter">
-              <label for="dj-master-volume" style="font-size: 11px;">Volumen de Música en /show</label>
-              <span id="dj-volume-label" class="counter">85%</span>
-            </div>
-            <input type="range" id="dj-master-volume" min="0" max="100" value="85" />
-          </div>
-
-          <!-- Lista de Canciones Subidas -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">
-              BIBLIOTECA DE PISTAS SUBIDAS
-            </label>
-            <button type="button" id="btn-refresh-playlist" class="btn-text-action" style="font-size: 10px;">
-              🔄 Actualizar
-            </button>
-          </div>
-
-          <!-- Buscador en Tiempo Real Estilo Virtual DJ -->
-          <div class="dj-search-container" style="margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; background: #0b1120; border: 1.5px solid #0284c7; border-radius: 8px; padding: 6px 10px; gap: 8px; box-shadow: 0 0 10px rgba(2, 132, 199, 0.25);">
-              <span style="font-size: 14px; color: #38bdf8;">🔍</span>
-              <input type="text" id="dj-search-input" placeholder="Buscar canción, artista o ritmo (Estilo Virtual DJ)... [Atajo: /]" style="flex: 1; background: transparent; border: none; color: #f8fafc; font-size: 11.5px; font-weight: 700; outline: none;" />
-              <button type="button" id="btn-clear-search" style="display: none; background: #334155; border: none; color: #cbd5e1; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; align-items: center; justify-content: center; cursor: pointer;" title="Limpiar búsqueda">✕</button>
-              <span id="dj-search-count-badge" style="font-size: 10px; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 6px; white-space: nowrap;">0 pistas</span>
-            </div>
-          </div>
-
-          <div id="dj-playlist-list" class="dj-playlist-container">
-            <div style="padding: 18px; text-align: center; color: #64748b; font-size: 11px;">
-              Cargando pistas de música...
-            </div>
-          </div>
-
-          <div class="dj-transport-controls" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
-            <button type="button" id="btn-pause-music" class="btn-dj-pause" style="padding: 10px 8px; font-weight: 800; border-radius: 8px; border: 1.5px solid #facc15; background: #854d0e; color: #fef08a; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px;">
-              ⏸️ PAUSAR MÚSICA
-            </button>
-            <button type="button" id="btn-stop-all-music" class="btn-dj-stop" style="padding: 10px 8px; font-weight: 800; border-radius: 8px; border: 1.5px solid #ef4444; background: #991b1b; color: #fee2e2; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px;">
-              ⏹️ STOP DEFINITIVO (0:00)
-            </button>
-          </div>
-        </div>
-
-        <!-- Sintetizador de Ritmos Procedurales de Club -->
-        <h2 class="card-title mt-4" style="color: #38bdf8;">⚡ Ritmos Electrónicos del Club</h2>
-        <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
-          Activa ritmos bailables sintetizados al vuelo si no tienes canciones a mano.
-        </p>
-
-        <div class="dj-genre-grid">
-          <button type="button" class="btn-dj-genre is-active" data-genre="EDM">
-            <span>🔥 EDM Festival</span>
-            <span class="genre-bpm">128 BPM</span>
-          </button>
-          <button type="button" class="btn-dj-genre" data-genre="GUARACHA">
-            <span>🌴 Guaracha Tribal</span>
-            <span class="genre-bpm">130 BPM</span>
-          </button>
-          <button type="button" class="btn-dj-genre" data-genre="REGGAETON">
-            <span>💃 Reggaetón Dembow</span>
-            <span class="genre-bpm">96 BPM</span>
-          </button>
-          <button type="button" class="btn-dj-genre" data-genre="DISCO">
-            <span>🕺 Nu-Disco Funk</span>
-            <span class="genre-bpm">122 BPM</span>
-          </button>
-          <button type="button" class="btn-dj-genre" data-genre="TECH_HOUSE" style="grid-column: span 2;">
-            <span>⚡ Tech House Club</span>
-            <span class="genre-bpm">126 BPM</span>
-          </button>
-        </div>
-
-        <div class="dj-transport-row">
-          <button type="button" id="btn-dj-play-synth" class="btn-dj-play">
-            <span>▶ REPRODUCIR RITMO</span>
-          </button>
-          <button type="button" id="btn-dj-stop-synth" class="btn-dj-stop">
-            <span>⏹ DETENER</span>
-          </button>
-        </div>
-      </section>
-
-      <!-- ==========================================
-           COLUMNA 2: MICRÓFONO EN VIVO & CONSOLA DE EFECTOS DJ
-           ========================================== -->
-      <section class="admin-card">
-        <!-- MÓDULO: MICRÓFONO EN VIVO (VOZ HUMANA - ANTI-BAN TIKTOK) -->
-        <div id="card-human-mic" class="mic-control-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h2 style="font-size: 15px; font-weight: 900; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
-              🎙️ Hablar en Vivo (Micrófono Humano)
-            </h2>
-            <span id="mic-air-status" class="status-badge" style="background: #1e293b; color: #94a3b8; font-size: 10px;">
-              ⚪ Micrófono Silenciado
-            </span>
-          </div>
-          <p class="card-desc" style="font-size: 11px; margin-bottom: 10px;">
-            Habla cuando desees: TikTok detectará voz humana real en vivo, el muñeco DJ moverá la boca a tu ritmo y la música bajará automáticamente (auto-ducking).
-          </p>
-
-          <button type="button" id="btn-toggle-mic" class="btn-mic-main">
-            <span id="mic-icon" style="font-size: 20px;">🎙️</span>
-            <span id="mic-text">ACTIVAR MICRÓFONO EN VIVO</span>
-          </button>
-
-          <!-- Vúmetro LED de Volumen de Voz en Tiempo Real -->
-          <div class="mic-vu-meter-box">
-            <div class="mic-status-label">
-              <span>Nivel de Voz Humana</span>
-              <span id="mic-db-label">0%</span>
-            </div>
-            <div class="mic-vu-meter-track">
-              <div id="mic-vu-fill" class="mic-vu-meter-fill"></div>
-            </div>
-          </div>
-
-          <!-- Opciones del Micrófono (Diseño Limpio Sin Desfases) -->
-          <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label for="mic-mode-select" style="font-size: 11px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 3px;">
-                Modo de Activación
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button type="button" id="btn-send-chat-msg" style="flex: 1; padding: 6px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+                💬 Enviar Viñeta 3D
+              </button>
+              <label style="font-size: 10px; color: #facc15; display: flex; align-items: center; gap: 3px; cursor: pointer;">
+                <input type="checkbox" id="chat-is-vip" />
+                <span>👑 VIP</span>
               </label>
-              <select id="mic-mode-select" style="width: 100%; box-sizing: border-box; padding: 7px 9px; font-size: 11px; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: #f8fafc;">
-                <option value="toggle" selected>🔘 Modo Interruptor (Clic para Hablar / Silenciar)</option>
-                <option value="ptt">👆 Push-to-Talk (Mantener presionado)</option>
-              </select>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <div class="label-with-counter" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                <label for="mic-gain-slider" style="font-size: 11px; font-weight: 700; color: #cbd5e1;">Sensibilidad del Mic</label>
-                <span id="mic-gain-label" class="counter" style="font-size: 11px; font-weight: 800; color: #38bdf8;">120%</span>
+          </div>
+        </div>
+
+        <!-- RACK TAB 4: CÁMARAS & CONFIGURACIÓN DEL CLUB -->
+        <div id="rack-page-cam" class="vdj-rack-page">
+          <div style="font-size: 11px; font-weight: 800; color: #e2e8f0; margin-bottom: 6px;">🎥 Cámaras TikTok LIVE</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+            <button class="btn-camera active" data-shot="AUTO" style="font-size: 10px; padding: 8px 4px;">🎬 Auto Director</button>
+            <button class="btn-camera" data-shot="FRONT_DANCE" style="font-size: 10px; padding: 8px 4px;">💃 Baile Frontal</button>
+            <button class="btn-camera" data-shot="DRONE_TOP" style="font-size: 10px; padding: 8px 4px;">🚁 Dron Cenital</button>
+            <button class="btn-camera" data-shot="SIDE_TRACK" style="font-size: 10px; padding: 8px 4px;">👀 Lateral Rasante</button>
+            <button class="btn-camera" data-shot="ORBIT" style="font-size: 10px; padding: 8px 4px;">🔄 Giro 360 Órbita</button>
+            <button class="btn-camera" data-shot="WIDE" style="font-size: 10px; padding: 8px 4px;">🏟️ General Club</button>
+          </div>
+
+          <div style="margin-top: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
+            <div style="margin-bottom: 6px;">
+              <label for="singer-name" style="font-size: 10px; font-weight: 700; color: #cbd5e1;">Nombre del DJ en Pantalla</label>
+              <input type="text" id="singer-name" value="DJ GARABATO" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <div style="flex: 1;">
+                <label for="singer-color" style="font-size: 10px; font-weight: 700; color: #cbd5e1;">Color Neón</label>
+                <input type="color" id="singer-color" value="#00f0ff" style="width: 100%; height: 28px; border: none; border-radius: 4px; cursor: pointer; background: transparent;" />
               </div>
-              <input type="range" id="mic-gain-slider" min="50" max="250" value="120" style="width: 100%; box-sizing: border-box;" />
+              <div style="flex: 2;">
+                <label for="singer-dance" style="font-size: 10px; font-weight: 700; color: #cbd5e1;">Postura DJ</label>
+                <select id="singer-dance" style="width: 100%; padding: 5px; font-size: 10px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;">
+                  <option value="standup" selected>🎧 Mezclando</option>
+                  <option value="wave">👋 Saludar</option>
+                  <option value="robot">🤖 Robot</option>
+                  <option value="jump">🦘 Brinco</option>
+                  <option value="salsa">💃 Baile Latino</option>
+                </select>
+              </div>
             </div>
           </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-            <label class="checkbox-label" style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer;">
-              <input type="checkbox" id="mic-webrtc-stream" checked />
-              <span>🔊 Transmitir audio del mic a la ventana /show</span>
-            </label>
-            <span style="font-size: 10px; color: #f59e0b;">⌨ Atajo: Tecla [Espacio] o [M]</span>
-          </div>
         </div>
+      </aside>
+    </div>
 
-        <!-- MÓDULO: CONTROL DE VOZ AUTOMÁTICA DEL DJ (ACTIVAR / SILENCIAR) -->
-        <div class="dj-voice-card" style="margin-top: 10px; background: rgba(15, 23, 42, 0.7); border: 1.5px solid #334155; border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-          <div>
-            <div style="font-size: 13px; font-weight: 900; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
-              <span id="dj-voice-status-icon">🔊</span> Voz Automática del DJ
-            </div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
-              Saludos y frases del muñeco en pantalla (Desactívala para hablar tú solo)
-            </div>
-          </div>
-          <button type="button" id="btn-toggle-dj-voice" class="btn-voice-toggle" style="padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 900; cursor: pointer; border: 1.5px solid #22c55e; background: #14532d; color: #86efac; transition: all 0.2s; white-space: nowrap;">
-            🔊 ACTIVADA
-          </button>
-        </div>
-
-        <!-- Launchpads de Efectos DJ (Soundboard) -->
-        <h2 class="card-title mt-4" style="color: #facc15;">🎛️ Launchpad de Efectos DJ en Vivo</h2>
-        <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
-          Lanza efectos de festival en directo para prender la transmisión de TikTok.
-        </p>
-
-        <div class="dj-soundboard-pads">
-          <button type="button" class="btn-dj-pad" data-fx="horn">
-            <span class="pad-icon">📢</span>
-            <span>Air Horn</span>
-          </button>
-          <button type="button" class="btn-dj-pad" data-fx="siren">
-            <span class="pad-icon">🚨</span>
-            <span>Sirena Rave</span>
-          </button>
-          <button type="button" class="btn-dj-pad" data-fx="scratch">
-            <span class="pad-icon">💿</span>
-            <span>Scratch</span>
-          </button>
-          <button type="button" class="btn-dj-pad" data-fx="drop">
-            <span class="pad-icon">💣</span>
-            <span>Bass Drop</span>
-          </button>
-          <button type="button" class="btn-dj-pad" data-fx="confetti">
-            <span class="pad-icon">🎉</span>
-            <span>Confeti</span>
-          </button>
-          <button type="button" class="btn-dj-pad" data-fx="applause">
-            <span class="pad-icon">👏</span>
-            <span>Ovación</span>
-          </button>
-          <button type="button" class="btn-dj-pad" id="btn-dj-hype-hands" style="grid-column: span 1.5; background: linear-gradient(135deg, #a855f7, #6366f1);">
-            <span class="pad-icon">🙌</span>
-            <span>¡Manos Arriba!</span>
-          </button>
-          <button type="button" class="btn-dj-pad" id="btn-dj-dance-move" style="grid-column: span 1.5; background: linear-gradient(135deg, #ec4899, #f43f5e);">
-            <span class="pad-icon">💃</span>
-            <span>¡Paso de Baile!</span>
-          </button>
-        </div>
-
-        <!-- Configuración del DJ & Escenario -->
-        <h2 class="card-title mt-4">🎧 Configuración del DJ & Luces</h2>
-        <div class="form-group">
-          <label for="singer-name">Nombre del DJ en Pantalla</label>
-          <input type="text" id="singer-name" value="DJ GARABATO" placeholder="Ej: DJ Garabato, DJ Master, etc." />
-          <span class="input-hint">Aparece en letras de neón gigante en la pantalla LED del club</span>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group flex-1">
-            <label for="singer-color">Color Neón del Club</label>
-            <input type="color" id="singer-color" value="#00f0ff" />
-          </div>
-          <div class="form-group flex-2">
-            <label for="singer-dance">Postura en Cabina</label>
-            <select id="singer-dance">
-              <option value="standup" selected>🎧 Mezclando en Cabina</option>
-              <option value="wave">👋 Saludando a la Multitud</option>
-              <option value="robot">🤖 Paso Robótico</option>
-              <option value="jump">🦘 Brinco de Euforia</option>
-              <option value="salsa">💃 Baile Latino</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Cámaras Cinematográficas del Club (TikTok Live) -->
-        <h2 class="card-title mt-4">🎥 Cámaras en Vivo (Ángulos TikTok LIVE)</h2>
-        <div class="button-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-          <button class="btn-camera active" data-shot="AUTO" style="font-weight: 800; font-size: 10.5px;">🎬 Auto Director</button>
-          <button class="btn-camera" data-shot="FRONT_DANCE" style="font-weight: 800; font-size: 10.5px;">💃 Baile Frontal</button>
-          <button class="btn-camera" data-shot="DRONE_TOP" style="font-weight: 800; font-size: 10.5px;">🚁 Dron Cenital</button>
-          <button class="btn-camera" data-shot="SIDE_TRACK" style="font-weight: 800; font-size: 10.5px;">👀 Lateral Rasante</button>
-          <button class="btn-camera" data-shot="ORBIT" style="font-weight: 800; font-size: 10.5px;">🔄 Giro 360 Órbita</button>
-          <button class="btn-camera" data-shot="WIDE" style="font-weight: 800; font-size: 10.5px;">🏟️ General Club</button>
-        </div>
-      </section>
-
-      <!-- ==========================================
-           COLUMNA 3: CHAT 3D DE ESPECTADORES & TIKTOK LIVE
-           ========================================== -->
-      <section class="admin-card">
-        <!-- MÓDULO: CHAT EN VIVO DE ESPECTADORES (BOCADILLO 3D) -->
-        <div class="chat-sim-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <h2 style="font-size: 14px; font-weight: 900; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
-              💬 Chat en Vivo de Espectadores
-            </h2>
-            <span style="font-size: 9px; background: #0891b2; color: #fff; padding: 2px 7px; border-radius: 8px; font-weight: 800;">
-              BOCADILLO 3D
-            </span>
-          </div>
-          <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
-            Cada espectador que habla en el chat aparece en la pista de baile 3D con su mensaje flotando en una viñeta cómica arriba de su cabeza mientras baila.
-          </p>
-
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="chat-user-input" style="font-size: 11px;">Nombre Espectador</label>
-              <input type="text" id="chat-user-input" placeholder="Ej: Carlos" value="Carlos" style="padding: 7px; font-size: 12px;" />
-            </div>
-            <div class="form-group flex-2">
-              <label for="chat-text-input" style="font-size: 11px;">Mensaje que dice en el chat</label>
-              <input type="text" id="chat-text-input" placeholder="Ej: ¡Suelte el bajo DJ! 🔥" value="¡Suelte el bajo DJ! 🔥" style="padding: 7px; font-size: 12px;" />
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
-            <button type="button" id="btn-send-chat-msg" class="btn-sim-gift" style="flex: 1; background: linear-gradient(135deg, #06b6d4, #2563eb); font-weight: 800; padding: 9px;">
-              💬 Enviar al Chat (Aparece sobre su cabeza en 3D)
-            </button>
-            <label class="checkbox-label" style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; white-space: nowrap;">
-              <input type="checkbox" id="chat-is-vip" />
-              <span style="color: #facc15;">👑 VIP</span>
-            </label>
-          </div>
-
-          <!-- Píldoras de mensajes rápidos para probar con 1 clic -->
-          <div class="chat-quick-pills">
-            <button type="button" class="btn-chat-pill" data-msg="¡Suelte el bajo DJ! 🔥">🔥 ¡Suelte el bajo!</button>
-            <button type="button" class="btn-chat-pill" data-msg="¡DJ ponte una guaracha! 🌴">🌴 ¡Ponte una guaracha!</button>
-            <button type="button" class="btn-chat-pill" data-msg="¡Saludos desde Colombia! 🇨🇴">🇨🇴 Saludos Colombia</button>
-            <button type="button" class="btn-chat-pill" data-msg="¡Saludos desde México! 🇲🇽">🇲🇽 Saludos México</button>
-            <button type="button" class="btn-chat-pill" data-msg="¡Qué temazo tan brutal! 💃">💃 ¡Qué temazo!</button>
-            <button type="button" class="btn-chat-pill" data-msg="¡Tira confeti DJ! 🎉">🎉 ¡Tira confeti!</button>
-            <button type="button" class="btn-chat-pill" data-msg="¡Arriba las manos todos! 🙌">🙌 ¡Manos arriba!</button>
-            <button type="button" class="btn-chat-pill" data-msg="¡DJ pon reggaetón! 🎵">🎵 ¡Pon reggaetón!</button>
-          </div>
-
-          <button type="button" id="btn-quick-simulation" class="btn-action-small" style="width: 100%; margin-top: 10px; background: #1e293b; border: 1px solid #38bdf8; color: #38bdf8; font-weight: 800; padding: 7px;">
-            ✨ Simular Entrada de 5 Espectadores Hablando en la Pista
-          </button>
-        </div>
-
-        <!-- CONEXIÓN REAL TIKTOK LIVE -->
-        <h2 class="card-title mt-4" style="color: #f43f5e;">🔴 Conexión TikTok LIVE</h2>
-        <div class="tiktok-connect-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <strong style="color: #f43f5e; font-size: 13px;">Transmisión en Vivo</strong>
-            <span id="tiktok-live-badge" class="counter" style="background: #334155; color: #cbd5e1; font-size: 9px; padding: 2px 8px; border-radius: 10px;">Desconectado</span>
-          </div>
-          <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
-            Ingresa tu usuario de TikTok para leer en tiempo real comentarios (bocadillos 3D), regalos y espectadores de tu LIVE.
-          </p>
-          <div class="tiktok-input-row" style="display: flex; gap: 8px;">
-            <input type="text" id="tiktok-user-input" value="CreandoConIA" placeholder="Ej: @CreandoConIA" style="flex: 1; padding: 7px; font-size: 12px;" />
-            <button type="button" id="btn-tiktok-connect" class="btn-connect-tiktok" style="padding: 7px 12px; font-size: 11px; font-weight: 800; background: #e11d48; color: #fff; border: none; border-radius: 8px; cursor: pointer;">🔴 Conectar Live</button>
-          </div>
-
-          <div style="margin-top: 6px;">
-            <input type="password" id="tiktok-session-input" placeholder="🔑 SessionID de TikTok (Opcional - Evita 403)" style="width: 100%; padding: 5px 8px; font-size: 10px; background: rgba(15,23,42,0.8); border: 1px solid #334155; border-radius: 6px; color: #fff;" title="Si TikTok devuelve error 403 por IP de hosting, pega tu cookie sessionid de tiktok.com para saltar el bloqueo por completo." />
-          </div>
-          <div id="tiktok-status-pill" class="tiktok-status-pill hidden" style="margin-top: 8px; font-size: 11px; color: #22c55e;">
-            <span class="pulse-dot-green"></span>
-            <span id="tiktok-status-text">Conectado al LIVE de @CreandoConIA</span>
-          </div>
-          <div id="tiktok-live-msg" style="margin-top: 8px; font-size: 11px; color: #94a3b8; display: none;"></div>
-        </div>
-
-        <!-- SIMULADOR DE EVENTOS TIKTOK -->
-        <h2 class="card-title mt-4">🧪 Simulador de Eventos de Fiesta</h2>
-        <div class="simulator-box">
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="sim-user">Nombre Espectador</label>
-              <input type="text" id="sim-user" value="DancerFan" />
-            </div>
-            <div class="form-group flex-2">
-              <label for="sim-gift-select">Regalo a Simular</label>
-              <select id="sim-gift-select">
-                <option value="🌹 Rosa">🌹 Rosa (1 Moneda)</option>
-                <option value="💖 Corazón">💖 Corazón (5 Monedas)</option>
-                <option value="🍩 Dona">🍩 Dona (30 Monedas)</option>
-                <option value="🎮 Control Retro">🎮 Control Retro (100 Monedas)</option>
-                <option value="👑 Corona VIP">👑 Corona VIP (199 Monedas)</option>
-                <option value="🦁 León del Club">🦁 León del Club (1000 Monedas)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="sim-buttons-grid">
-            <button id="btn-sim-join" class="btn-sim-gift" style="background: linear-gradient(135deg, #7c3aed, #4f46e5); grid-column: span 2;">
-              👋 Simular Nuevo Espectador en la Pista
-            </button>
-            <button id="btn-sim-gift" class="btn-sim-gift">
-              🎁 Simular Regalo VIP
-            </button>
-            <button id="btn-sim-taps" class="btn-sim-taps">
-              🔥 Simular +20 Likes (Fuego)
-            </button>
-          </div>
-        </div>
-      </section>
-    </main>
+    <!-- Elementos Ocultos de Compatibilidad de Audio Nativo & YouTube -->
+    <audio id="admin-audio-deck-a" preload="auto" style="display: none;"></audio>
+    <audio id="admin-audio-deck-b" preload="auto" style="display: none;"></audio>
+    <audio id="admin-native-audio" preload="auto" style="display: none;"></audio>
+    <div id="admin-yt-iframe-slot" style="display: none;"></div>
+    <div id="admin-yt-monitor-container" style="display: none;"></div>
+    <span id="admin-yt-current-title" style="display: none;"></span>
+    <button type="button" id="btn-yt-pause" style="display: none;"></button>
+    <button type="button" id="btn-yt-resume" style="display: none;"></button>
+    <button type="button" id="btn-yt-stop" style="display: none;"></button>
+    <button type="button" id="btn-toggle-yt-player-view" style="display: none;"></button>
+    <div id="dj-now-playing-banner" style="display: none;"></div>
+    <span id="dj-now-playing-title" style="display: none;"></span>
+    <button type="button" id="btn-pause-music" style="display: none;"></button>
+    <button type="button" id="btn-quick-simulation" style="display: none;"></button>
   </div>
 
   <script type="module" src="./src/adminApp.js"></script>

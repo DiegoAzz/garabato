@@ -107,7 +107,8 @@ export class AudioEngine {
     this.bgMusicStep = 0;
     this.bgBpm = 82; // Tempo relajado, tranquilo y elegante para narración
     this.autoDuckingEnabled = true; // Baja el volumen automáticamente cuando habla el comediante
-    this.isVoiceMuted = false; // Control para desactivar la voz del DJ cuando el usuario lo desee
+    this.isVoiceMuted = true; // Voz del DJ desactivada por defecto (Modo limpio: solo música + micro en vivo)
+    this.isYTPlaying = false; // Indica si hay una pista de YouTube reproduciéndose
 
     this.initSpeech();
   }
@@ -1630,7 +1631,7 @@ export class AudioEngine {
    * Soporta historias largas sin límite de tiempo (utiliza chunking + keepalive anti-congelamiento).
    */
   speakJokeProfessional(setupText, punchlineText, options = {}, onEndCallback = null) {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    if (this.isVoiceMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
       if (onEndCallback) onEndCallback();
       return;
     }
@@ -1932,6 +1933,8 @@ export class AudioEngine {
    */
   pauseDjTrack() {
     this.stopDiscoBeat();
+    this.isYTPlaying = false;
+    this.audioLevels = { bass: 0, mid: 0, treble: 0, overall: 0 };
     if (this.audioElement) {
       this.audioElement.pause();
       this.isPlayingImported = false;
@@ -1945,6 +1948,8 @@ export class AudioEngine {
    */
   stopDjTrack() {
     this.stopDiscoBeat();
+    this.isYTPlaying = false;
+    this.audioLevels = { bass: 0, mid: 0, treble: 0, overall: 0 };
     if (this.audioElement) {
       this.audioElement.pause();
       this.audioElement.currentTime = 0;
@@ -2073,14 +2078,23 @@ export class AudioEngine {
     this.audioLevels.treble = (trebleSum / ((count - mEnd) * 255));
     this.audioLevels.overall = (this.audioLevels.bass * 0.5 + this.audioLevels.mid * 0.3 + this.audioLevels.treble * 0.2);
 
-    // Si está sonando música importada y los niveles del analyser son bajos (por reproducción nativa directa),
-    // sintetizar pulso rítmico vivo al compás para que la pista LED, luces y bailarines sigan el beat
-    if (this.isPlayingImported && this.audioLevels.overall < 0.12) {
-      const beat = Math.abs(Math.sin(Date.now() * 0.0075));
-      this.audioLevels.bass = 0.55 + beat * 0.45;
-      this.audioLevels.mid = 0.4 + beat * 0.35;
-      this.audioLevels.treble = 0.35;
-      this.audioLevels.overall = 0.55 + beat * 0.4;
+    // Si está sonando música importada o YouTube y los niveles del analyser son bajos (por reproducción nativa directa o iframe),
+    // sintetizar pulso rítmico vivo al compás para que la pista LED, luces, vúmetros y espectro sigan el beat
+    if ((this.isPlayingImported || this.isYTPlaying) && this.audioLevels.overall < 0.12) {
+      const now = Date.now();
+      const beat = Math.abs(Math.sin(now * 0.008));
+      const midWave = Math.abs(Math.cos(now * 0.0055));
+      const trebWave = Math.abs(Math.sin(now * 0.012));
+      this.audioLevels.bass = 0.52 + beat * 0.48;
+      this.audioLevels.mid = 0.38 + midWave * 0.42;
+      this.audioLevels.treble = 0.32 + trebWave * 0.38;
+      this.audioLevels.overall = (this.audioLevels.bass * 0.5 + this.audioLevels.mid * 0.3 + this.audioLevels.treble * 0.2);
+    } else if (!this.isPlayingImported && !this.isYTPlaying && !this.isPlayingBeat && !this.bgMusicPlaying && !this.isSpeaking) {
+      // Si la música está pausada o detenida, decaer suavemente a 0
+      this.audioLevels.bass = Math.max(0, this.audioLevels.bass - 0.08);
+      this.audioLevels.mid = Math.max(0, this.audioLevels.mid - 0.08);
+      this.audioLevels.treble = Math.max(0, this.audioLevels.treble - 0.08);
+      this.audioLevels.overall = Math.max(0, this.audioLevels.overall - 0.08);
     }
 
     return this.audioLevels;
