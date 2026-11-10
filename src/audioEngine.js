@@ -851,6 +851,22 @@ export class AudioEngine {
       } else if (beatStep === 8) {
         this.playWarmRhodesChord(currentChord.slice(1), now, 1.2, 0.16);
       }
+    } else if (this.bgMusicPreset === 'merengue') {
+      // 4. MODO: MERENGUE TÍPICO / RIPIAO (Güira rápida, tambora y acordeón dominicano)
+      this.playSoftBrushShaker(now, 0.04, (beatStep % 4 === 2 || beatStep % 4 === 0) ? 0.06 : 0.03);
+      if (beatStep % 4 === 2) {
+        this.playSoftWoodTick(now, 0.06);
+      } else if (beatStep % 4 === 0) {
+        this.playSoftUprightBass(98.00, now, 0.12, 0.26);
+      }
+      const merengueRoots = [65.41, 73.42, 98.00, 65.41];
+      const mBass = merengueRoots[bar % merengueRoots.length];
+      if (beatStep === 2 || beatStep === 6 || beatStep === 10 || beatStep === 14) {
+        this.playSoftUprightBass(mBass, now, 0.16, 0.24);
+      }
+      if (beatStep === 0 || beatStep === 3 || beatStep === 6 || beatStep === 8 || beatStep === 11 || beatStep === 14) {
+        this.playWarmRhodesChord(currentChord.slice(0, 3), now, 0.18, 0.18, false);
+      }
     }
   }
 

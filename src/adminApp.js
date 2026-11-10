@@ -315,7 +315,7 @@ export function initAdminApp() {
           li.className = 'admin-joke-card';
           li.innerHTML = `
             <div class="admin-joke-info">
-              <span class="admin-joke-tag tag-free">🎯 ${joke.requiredTaps} Taps${joke.region ? ` · ${joke.region}` : ''}</span>
+              <span class="admin-joke-tag tag-free">😂 ${joke.requiredTaps} Risas${joke.region ? ` · ${joke.region}` : ''}</span>
               <strong class="admin-joke-title">${joke.title}</strong>
               <span class="admin-joke-cue">${joke.setup}</span>
             </div>
@@ -357,7 +357,6 @@ export function initAdminApp() {
 
       if (!title || !setup || !punch) return;
 
-      // Comprobar si se ingresó un regalo personalizado
       const isCustomGift = groupCustomGift && !groupCustomGift.classList.contains('hidden') && customGiftInput?.value?.trim();
       let giftId = 'rosa';
       let giftName = '🌹 Rosa';
@@ -372,7 +371,6 @@ export function initAdminApp() {
       }
 
       if (currentEditingJokeId) {
-        // ACTUALIZACIÓN DE CUENTO EXISTENTE
         jokeManager.updateJoke(currentEditingJokeId, {
           title,
           category,
@@ -385,7 +383,6 @@ export function initAdminApp() {
         resetJokeForm();
         renderAdminJokes();
       } else {
-        // AGREGAR NUEVO CUENTO
         jokeManager.addJoke({
           title,
           category,
@@ -499,7 +496,6 @@ export function initAdminApp() {
       voiceSelectEl.appendChild(opt);
     });
 
-    // Si no había selección guardada, preseleccionar la mejor recomendada
     if (!currentSavedURI && voiceSelectEl.options.length > 0) {
       const bestIdx = voicesToShow.findIndex(v => {
         const n = (v.name || '').toLowerCase();
@@ -540,7 +536,6 @@ export function initAdminApp() {
     }
   }
 
-  // Restaurar sliders guardados
   try {
     const savedP = localStorage.getItem('garabato_voice_pitch');
     const savedR = localStorage.getItem('garabato_voice_rate');
@@ -590,7 +585,6 @@ export function initAdminApp() {
         } catch (err) {}
       }
 
-      // Enviar también a la pantalla Show
       syncBridge.send('TEST_IDLE_PHRASE', { phrase: testPhrase });
     });
   }
@@ -599,7 +593,6 @@ export function initAdminApp() {
   syncBridge.on('QUEUE_STATE_UPDATE', (data) => {
     if (!data) return;
 
-    // Chiste Activo
     if (data.active) {
       if (adminActiveTitle) adminActiveTitle.textContent = `${data.active.icon || '🎙️'} ${data.active.title || 'Chiste'}`;
       if (adminActiveMeta) adminActiveMeta.textContent = `Pedido por @${data.active.user || 'Espectador'} — "${data.active.setup || ''}"`;
@@ -610,7 +603,6 @@ export function initAdminApp() {
       if (btnSkipCurrentJoke) btnSkipCurrentJoke.disabled = true;
     }
 
-    // Colas VIP y Gratis
     if (queueVipBadge) queueVipBadge.textContent = data.vipCount || 0;
     if (queueFreeBadge) queueFreeBadge.textContent = data.normalCount || 0;
 
@@ -677,7 +669,7 @@ export function initAdminApp() {
       syncBridge.send('TIKTOK_EVENT', {
         action: 'LIKE',
         count: 15,
-        user: (simUser && simUser.value) || 'TapperFan'
+        user: (simUser && simUser.value) || 'RisasFan'
       });
     });
   }
@@ -786,16 +778,16 @@ export function initAdminApp() {
   // 13. SISTEMA ANTI-INACTIVIDAD TIKTOK (LLAMADOS JOCOSOS AL PÚBLICO)
   // ==========================================
   const DEFAULT_IDLE_PHRASES = [
-    "¡Oigan! ¿Se durmieron todos o qué? ¡Denle taps a la pantalla que los chistes son gratis!",
-    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Tiren taps al corazón!",
-    "¿Qué pasó con los dedos de este público? ¡Taps a la pantalla muchachos, que el actor tiene que comer!",
-    "¡Epa! ¿Están congelados como estatuas? ¡Tóquenme la pantalla que quiero contar el chiste de los paisas!",
-    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o denle taps a la pantalla.",
-    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Taps, taps, taps a la pantalla!",
+    "¡Oigan! ¿Se durmieron todos o qué? ¡Manden risas y corazones al chat que los chistes son gratis!",
+    "¡A ver mi gente! Si me quedo callado aquí parado TikTok me apaga el live. ¡Dejen su buena vibra en el chat!",
+    "¿Dónde está el público más alegre de TikTok? ¡Manden sus risas que el show está que arde!",
+    "¡Epa! ¿Están congelados como estatuas? ¡Manden risas al chat que quiero contar el chiste de los paisas!",
+    "¡Aquí el público manda! Tiren una Rosa para tirarme tomates a la cara o dejen sus risas en el chat.",
+    "¡No me dejen solo en la tarima que me da miedo la oscuridad! ¡Hagan ruido en el chat con sus risas!",
     "¡Oigan, una Rosa cuesta una monedita y me ponen a llorar o a bailar! ¡Anímense!",
-    "¡El comediante más barato de TikTok está aquí! ¡Taps gratis a la pantalla para desbloquear chistes!",
-    "¡Mueve los dedos, mi rey! ¡Taps a la pantalla que la comedia no para!",
-    "¡Si llegamos a la meta de taps suelto un chiste bomba! ¡A tocar la pantalla todo el mundo!"
+    "¡El show de humor interactivo más prendido de TikTok! ¡Desbloqueen chistes gratis con sus risas!",
+    "¡Mueve los dedos, mi rey! ¡Manda corazones y risas para que la fiesta no pare!",
+    "¡Si llegamos a la meta de risas suelto un chiste bomba! ¡A reírse todo el mundo!"
   ];
 
   const IDLE_STORAGE_KEY = 'garabato_idle_config_v1';
@@ -887,7 +879,6 @@ export function initAdminApp() {
 
         syncBridge.send('TEST_IDLE_PHRASE', { phrase });
 
-        // Reproducir también en la pestaña de Admin para verificación auditiva inmediata
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
           try {
             window.speechSynthesis.cancel();
@@ -1340,6 +1331,150 @@ export function initAdminApp() {
     });
   });
 
+  // ==========================================
+  // CONEXIÓN CON TIKTOK LIVE REAL (SERVIDOR / SOCKET)
+  // ==========================================
+  const tiktokUserInput = document.getElementById('tiktok-user-input');
+  const tiktokSessionInput = document.getElementById('tiktok-session-input');
+  const btnTiktokConnect = document.getElementById('btn-tiktok-connect');
+  const tiktokLiveBadge = document.getElementById('tiktok-live-badge');
+  const tiktokStatusPill = document.getElementById('tiktok-status-pill');
+  const tiktokStatusText = document.getElementById('tiktok-status-text');
+  const tiktokLiveMsg = document.getElementById('tiktok-live-msg');
+
+  let currentTikTokConnected = false;
+
+  if (tiktokUserInput) {
+    const savedUser = localStorage.getItem('garabato_tiktok_user');
+    if (savedUser) tiktokUserInput.value = savedUser;
+    const savedSession = localStorage.getItem('garabato_tiktok_session');
+    if (savedSession && tiktokSessionInput) tiktokSessionInput.value = savedSession;
+  }
+
+  function updateTikTokUI(state) {
+    if (!state) return;
+    const isConn = state.status === 'connected';
+    const isConnecting = state.status === 'connecting';
+    const isErr = state.status === 'error';
+
+    currentTikTokConnected = isConn;
+
+    if (tiktokLiveBadge) {
+      if (isConn) {
+        tiktokLiveBadge.textContent = '🟢 EN VIVO';
+        tiktokLiveBadge.style.background = '#22c55e';
+        tiktokLiveBadge.style.color = '#000';
+      } else if (isConnecting) {
+        tiktokLiveBadge.textContent = '🟡 Conectando...';
+        tiktokLiveBadge.style.background = '#f59e0b';
+        tiktokLiveBadge.style.color = '#000';
+      } else if (isErr) {
+        tiktokLiveBadge.textContent = '🔴 Error';
+        tiktokLiveBadge.style.background = '#ef4444';
+        tiktokLiveBadge.style.color = '#fff';
+      } else {
+        tiktokLiveBadge.textContent = 'Desconectado';
+        tiktokLiveBadge.style.background = '#334155';
+        tiktokLiveBadge.style.color = '#cbd5e1';
+      }
+    }
+
+    if (btnTiktokConnect) {
+      if (isConn) {
+        btnTiktokConnect.textContent = '⏹️ Desconectar';
+        btnTiktokConnect.style.background = '#ef4444';
+        btnTiktokConnect.disabled = false;
+      } else if (isConnecting) {
+        btnTiktokConnect.textContent = '⌛ Conectando...';
+        btnTiktokConnect.style.background = '#f59e0b';
+        btnTiktokConnect.disabled = true;
+      } else {
+        btnTiktokConnect.textContent = '🔴 Conectar Live';
+        btnTiktokConnect.style.background = 'linear-gradient(135deg, #f43f5e, #ec4899)';
+        btnTiktokConnect.disabled = false;
+      }
+    }
+
+    if (tiktokStatusPill && tiktokStatusText) {
+      if (isConn) {
+        tiktokStatusPill.classList.remove('hidden');
+        tiktokStatusText.textContent = `En vivo conectado a @${state.username || 'usuario'}`;
+      } else {
+        tiktokStatusPill.classList.add('hidden');
+      }
+    }
+
+    if (tiktokLiveMsg) {
+      if (state.message) {
+        let msg = state.message;
+        if (typeof msg === 'string' && msg.toLowerCase().includes('live has ended')) {
+          msg = `⚠️ El usuario @${state.username || 'indicado'} no está transmitiendo en vivo en TikTok en este momento. Inicia tu LIVE en la app de TikTok y vuelve a pulsar Conectar.`;
+        }
+        tiktokLiveMsg.textContent = msg;
+        tiktokLiveMsg.style.display = 'block';
+        tiktokLiveMsg.style.color = isConn ? '#4ade80' : isErr ? '#f87171' : '#94a3b8';
+      } else {
+        tiktokLiveMsg.style.display = 'none';
+      }
+    }
+  }
+
+  // BOTÓN DE PRUEBA RÁPIDA DE PÚBLICO 3D & GLOBOS DE TEXTO
+  const btnQuickSimulation = document.getElementById('btn-quick-simulation');
+  if (btnQuickSimulation) {
+    btnQuickSimulation.addEventListener('click', () => {
+      const demoUsers = [
+        { name: 'Andrea', text: '¡Hola a todos en el club! 👋' },
+        { name: 'Chema', text: '¡Suelte el bajo DJ! 🔥' },
+        { name: 'Sofi', text: '¡DJ pon una guaracha! 🌴' },
+        { name: 'Carlos', text: '¡Saludos desde Colombia! 🇨🇴' },
+        { name: 'David', text: '¡Qué temazo! 💃' }
+      ];
+
+      demoUsers.forEach((item, idx) => {
+        setTimeout(() => {
+          syncBridge.send('CHAT_MESSAGE', {
+            user: item.name,
+            text: item.text,
+            isVip: false
+          });
+        }, idx * 700);
+      });
+    });
+  }
+
+  // Escuchar estado enviado por WebSocket
+  syncBridge.on('TIKTOK_STATUS', (status) => {
+    updateTikTokUI(status);
+  });
+
+  // Consultar estado inicial vía REST si está disponible
+  if (typeof fetch !== 'undefined') {
+    fetch('/api/tiktok/status')
+      .then(res => res.json())
+      .then(data => updateTikTokUI(data))
+      .catch(() => {});
+  }
+
+  if (btnTiktokConnect) {
+    btnTiktokConnect.addEventListener('click', () => {
+      if (currentTikTokConnected) {
+        syncBridge.disconnectTikTok();
+        updateTikTokUI({ status: 'disconnected', message: 'Desconectado de TikTok LIVE.' });
+      } else {
+        const username = (tiktokUserInput && tiktokUserInput.value || '').trim();
+        const sessionId = (tiktokSessionInput && tiktokSessionInput.value || '').trim();
+        if (!username) {
+          alert('Por favor ingresa tu nombre de usuario de TikTok (ej: CreandoConIA)');
+          return;
+        }
+        localStorage.setItem('garabato_tiktok_user', username);
+        if (sessionId) localStorage.setItem('garabato_tiktok_session', sessionId);
+        updateTikTokUI({ status: 'connecting', username, message: `Conectando con @${username}...` });
+        syncBridge.connectTikTok(username, sessionId);
+      }
+    });
+  }
   // Render inicial
   renderAdminJokes();
 }

@@ -1,15 +1,20 @@
 {
   "name": "garabato-fest-3d",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173 --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   },
   "dependencies": {
-    "three": "^0.170.0"
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.170.0",
+    "tiktok-live-connector": "^2.5.0"
   },
   "devDependencies": {
     "vite": "^6.0.0"

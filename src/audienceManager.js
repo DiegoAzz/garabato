@@ -2,20 +2,20 @@ import * as THREE from 'three';
 import { createStickman } from './garabatoCharacter.js';
 
 /**
- * Gestor del Público de Garabatos (Público Muy Animado)
- * Permite audiencia ilimitada creciendo hacia atrás en filas organizadas,
- * nombres siempre visibles, y resaltado/enfoque de espectadores individuales
- * sin obstruir al cantante ni la tarima.
+ * Gestor del Público de Garabatos en 3D — Formato Anfiteatro / Arena Circular
+ * Cada espectador de TikTok aparece como un personaje 3D en círculos concéntricos.
+ * Cuando escriben en el chat, aparece un globo cómic de diálogo sobre su cabeza (Speech Bubble).
+ * Soporta comandos de personalización: "chica", "chico", bailes y roles VIP por regalo.
  */
 export class AudienceManager {
   constructor(scene) {
     this.scene = scene;
     this.crowd = [];
-    this.currentProfile = 'NORMAL'; // 'LIGERO' | 'NORMAL' | 'FIESTA'
-    this.collectiveEnergy = 50; // 0 a 100%
+    this.currentProfile = 'NORMAL';
+    this.collectiveEnergy = 50;
     this.isMusicPlaying = false;
 
-    // Colores vibrantes cartoon para el público
+    // Colores vibrantes cartoon estilo streaming
     this.palette = [
       0x00f0ff, 0xec4899, 0xfacc15, 0x22c55e, 0x8b5cf6,
       0xf97316, 0x38bdf8, 0x4ade80, 0xa855f7, 0xfb7185
@@ -23,11 +23,57 @@ export class AudienceManager {
 
     this.danceMoves = ['robot', 'salsa', 'jump', 'helicopter', 'wave'];
 
-    // Grupo para auras y focos de espectadores destacados
+    // Grupo para auras y focos VIP
     this.highlightGroup = new THREE.Group();
     this.scene.add(this.highlightGroup);
 
     this.setProfile('NORMAL');
+  }
+
+  /**
+   * Calcula la posición y rotación de cada espectador en círculos concéntricos
+   * mirando hacia la tarima central (0, 0, -2.2) donde se encuentra el comediante.
+   * Todos apoyados con los pies firmes sobre el piso en Y = 0.00 (sin hundirse).
+   */
+  calculateSlotPosition(index) {
+    const stageCenterZ = -2.2;
+    const rings = [
+      { count: 12, radius: 3.5, yOffset: 0.0 },
+      { count: 18, radius: 4.8, yOffset: 0.0 },
+      { count: 24, radius: 6.2, yOffset: 0.0 },
+      { count: 32, radius: 7.8, yOffset: 0.0 },
+      { count: 40, radius: 9.6, yOffset: 0.0 }
+    ];
+
+    let currentIdx = index;
+    let ringIdx = 0;
+    while (ringIdx < rings.length - 1 && currentIdx >= rings[ringIdx].count) {
+      currentIdx -= rings[ringIdx].count;
+      ringIdx++;
+    }
+
+    const ring = rings[ringIdx];
+    const totalInRing = ring.count;
+    // Escalonado angular para máxima visibilidad entre filas
+    const stagger = (ringIdx % 2 === 1) ? (Math.PI / totalInRing) : 0;
+    let angle = (currentIdx / totalInRing) * Math.PI * 2 + stagger;
+
+    let posX = Math.sin(angle) * ring.radius;
+    let posZ = stageCenterZ + Math.cos(angle) * ring.radius;
+
+    // Pasillo despejado para la cámara frontal principal
+    if (posZ > 0 && Math.abs(posX) < 0.6) {
+      angle += (posX >= 0 ? 0.16 : -0.16);
+      posX = Math.sin(angle) * ring.radius;
+      posZ = stageCenterZ + Math.cos(angle) * ring.radius;
+    }
+
+    // Altura del suelo nivelada para que ningún personaje salga cortado por la mitad
+    const posY = 0.0;
+    // Mirando exactamente hacia el comediante en el centro de la tarima
+    const rotY = Math.atan2(-posX, stageCenterZ - posZ);
+
+    return { posX, posY, posZ, rotY };
   }
 
   setProfile(profile) {
@@ -36,45 +82,33 @@ export class AudienceManager {
     if (profile === 'LIGERO') targetCount = 15;
     if (profile === 'FIESTA') targetCount = 50;
 
-    // Eliminar personajes sobrantes
     while (this.crowd.length > targetCount) {
       const removed = this.crowd.pop();
       this.scene.remove(removed.mesh);
     }
 
-    // Agregar personajes necesarios
     while (this.crowd.length < targetCount) {
       this.spawnSpectator();
     }
   }
 
   spawnSpectator(customName = null) {
+    const slot = this.calculateSlotPosition(this.crowd.length);
     const color = this.palette[this.crowd.length % this.palette.length];
     const stickman = createStickman(false, color);
 
-    // Posicionamiento organizado en filas que crecen hacia atrás (Z positivo)
-    // 6 columnas uniformes centradas de X = -3.2 a X = 3.2
-    // Distancia inicial Z = 2.8 para NO tapar NUNCA la tarima ni al cantante
-    const cols = 6;
-    const row = Math.floor(this.crowd.length / cols);
-    const col = this.crowd.length % cols;
-    const posX = -3.0 + (col / (cols - 1)) * 6.0;
-    const posZ = 2.8 + row * 1.15;
+    stickman.position.set(slot.posX, slot.posY, slot.posZ);
+    stickman.rotation.y = slot.rotY;
 
-    stickman.position.set(posX, 0, posZ);
-    // Mirando hacia el cantante / escenario (-Z)
-    stickman.rotation.y = Math.PI;
-
-    // Asignar baile aleatorio
+    // Baile aleatorio inicial
     stickman.animController.danceMove = this.danceMoves[Math.floor(Math.random() * this.danceMoves.length)];
 
-    // Crear etiqueta de nombre flotante SIEMPRE visible sobre la cabeza
-    const defaultNames = ['Cleo', 'Nia', 'Zane', 'Finn', 'Ty', 'Leo', 'Mía', 'Dani', 'Gara', 'Nova', 'Alex', 'Sam'];
+    // Etiqueta flotante de nombre de TikTok
+    const defaultNames = ['David', 'Andrea', 'Sofi', 'Chema', 'Gerson', 'Cleo', 'Nia', 'Zane', 'Finn', 'Mía', 'Alex', 'Sam'];
     const name = customName || defaultNames[this.crowd.length % defaultNames.length];
     const nameLabel = this.createNameSprite(name);
-    nameLabel.position.set(0, 0.70, 0);
+    nameLabel.position.set(0, 0.72, 0);
     stickman.add(nameLabel);
-    nameLabel.visible = true; // Siempre visible
 
     this.scene.add(stickman);
 
@@ -82,44 +116,52 @@ export class AudienceManager {
       mesh: stickman,
       name,
       nameLabel,
-      homePos: new THREE.Vector3(posX, 0, posZ),
+      homePos: new THREE.Vector3(slot.posX, slot.posY, slot.posZ),
+      homeRotY: slot.rotY,
       isRegisteredInMinigame: false,
-      highlightRing: null
+      speechBubble: null,
+      bubbleTimer: null,
+      skirtMesh: null,
+      ribbonMesh: null,
+      instrumentMesh: null,
+      veilMesh: null,
+      hatMesh: null,
+      crownMesh: null
     };
 
     this.crowd.push(spectator);
+    this.updateViewerCountDOM();
     return spectator;
   }
 
   createNameSprite(text, isHighlighted = false) {
     const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 56;
+    canvas.width = 220;
+    canvas.height = 60;
     const ctx = canvas.getContext('2d');
 
-    // Fondo redondeado estilo avatar TikTok compacto
     ctx.fillStyle = isHighlighted ? 'rgba(234, 179, 8, 0.95)' : 'rgba(15, 23, 42, 0.90)';
-    ctx.roundRect(4, 4, 192, 48, 14);
+    ctx.roundRect(4, 4, 212, 52, 14);
     ctx.fill();
 
     ctx.strokeStyle = isHighlighted ? '#ffffff' : '#00f0ff';
     ctx.lineWidth = isHighlighted ? 3 : 2;
     ctx.stroke();
 
-    // Texto del nombre
     ctx.fillStyle = isHighlighted ? '#000000' : '#ffffff';
     ctx.font = 'bold 22px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 100, 28);
+    ctx.fillText(text, 110, 30);
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
     const sprite = new THREE.Sprite(spriteMat);
-    sprite.scale.set(0.48, 0.14, 1);
+    sprite.scale.set(0.52, 0.14, 1);
     return sprite;
   }
 
+  /**
   /**
    * Crea una viñeta cómica de diálogo (Chat Bubble) 3D sobre la cabeza del espectador
    * con soporte multilínea, cola de bocadillo y borde neón brillante.
@@ -250,14 +292,310 @@ export class AudienceManager {
   }
 
   /**
-   * Resalta a un espectador específico con aura dorada, salto y badge VIP
-   * sin tapar la vista del cantante.
+   * Genera el Globo Cómic de Diálogo 3D (Speech Bubble)
    */
+  createSpeechBubbleSprite(text) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 380;
+    canvas.height = 140;
+    const ctx = canvas.getContext('2d');
+
+    const x = 12, y = 10, w = 356, h = 95, r = 18;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 4;
+
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+
+    // Flecha / Colita apuntando a la cabeza del personaje
+    ctx.lineTo(x + w / 2 + 18, y + h);
+    ctx.lineTo(x + w / 2, y + h + 24);
+    ctx.lineTo(x + w / 2 - 18, y + h);
+
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Texto del mensaje
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 23px "Arial Black", "Impact", "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const words = String(text || '').trim().split(/\s+/);
+    const lines = [];
+    let curLine = '';
+    const maxLineW = 310;
+
+    for (const word of words) {
+      const test = curLine ? (curLine + ' ' + word) : word;
+      if (ctx.measureText(test).width <= maxLineW) {
+        curLine = test;
+      } else {
+        if (curLine) lines.push(curLine);
+        curLine = word;
+      }
+    }
+    if (curLine) lines.push(curLine);
+
+    const displayLines = lines.slice(0, 2);
+    if (lines.length > 2) displayLines[1] += '...';
+
+    const lineH = 28;
+    const startY = y + h / 2 - ((displayLines.length - 1) * lineH) / 2;
+    displayLines.forEach((l, i) => {
+      ctx.fillText(l, x + w / 2, startY + i * lineH);
+    });
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(1.15, 0.42, 1);
+    return sprite;
+  }
+
+  showSpeechBubble(spectator, text) {
+    if (!spectator || !spectator.mesh) return;
+
+    if (spectator.speechBubble) {
+      spectator.mesh.remove(spectator.speechBubble);
+      if (spectator.speechBubble.material.map) spectator.speechBubble.material.map.dispose();
+      spectator.speechBubble.material.dispose();
+      spectator.speechBubble = null;
+    }
+    if (spectator.bubbleTimer) {
+      clearTimeout(spectator.bubbleTimer);
+    }
+
+    const bubble = this.createSpeechBubbleSprite(text);
+    // Posición flotante sobre el nombre
+    bubble.position.set(0, 1.25, 0);
+    spectator.mesh.add(bubble);
+    spectator.speechBubble = bubble;
+
+    // Animación de hablar / salto
+    spectator.mesh.animController.gesture = 'joy';
+    spectator.mesh.animController.speedMultiplier = 1.8;
+
+    spectator.bubbleTimer = setTimeout(() => {
+      if (spectator.speechBubble) {
+        spectator.mesh.remove(spectator.speechBubble);
+        if (spectator.speechBubble.material.map) spectator.speechBubble.material.map.dispose();
+        spectator.speechBubble.material.dispose();
+        spectator.speechBubble = null;
+      }
+      spectator.mesh.animController.gesture = 'none';
+      spectator.mesh.animController.speedMultiplier = 1.0;
+    }, 5500);
+  }
+
+  /**
+   * Cambia la ropa del personaje al escribir "chica" o "chico" en el chat
+   */
+  changeStyle(name, style) {
+    const spec = this.findSpectator(name);
+    if (!spec || !spec.mesh) return;
+
+    const lowerStyle = (style || '').toLowerCase();
+    const hips = spec.mesh.children.find(c => c.name === 'hips' || c.position.y > 0) || spec.mesh;
+
+    if (lowerStyle.includes('chica') || lowerStyle.includes('mujer') || lowerStyle.includes('vestido')) {
+      if (!spec.skirtMesh) {
+        const skirtGeo = new THREE.CylinderGeometry(0.08, 0.16, 0.18, 12, 1, true);
+        const skirtMat = new THREE.MeshLambertMaterial({ color: 0xec4899, side: THREE.DoubleSide });
+        const skirt = new THREE.Mesh(skirtGeo, skirtMat);
+        skirt.position.y = -0.06;
+        hips.add(skirt);
+        spec.skirtMesh = skirt;
+
+        const ribbonGeo = new THREE.BoxGeometry(0.12, 0.05, 0.04);
+        const ribbonMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+        const ribbon = new THREE.Mesh(ribbonGeo, ribbonMat);
+        ribbon.position.set(0, 0.42, 0);
+        spec.mesh.add(ribbon);
+        spec.ribbonMesh = ribbon;
+      }
+      this.showSpeechBubble(spec, '👗 ¡Ahora soy chica!');
+    } else if (lowerStyle.includes('chico') || lowerStyle.includes('hombre')) {
+      if (spec.skirtMesh) {
+        hips.remove(spec.skirtMesh);
+        spec.skirtMesh.geometry.dispose();
+        spec.skirtMesh = null;
+      }
+      if (spec.ribbonMesh) {
+        spec.mesh.remove(spec.ribbonMesh);
+        spec.ribbonMesh.geometry.dispose();
+        spec.ribbonMesh = null;
+      }
+      this.showSpeechBubble(spec, '👕 ¡Ahora soy chico!');
+    }
+  }
+
+  /**
+   * Promueve al espectador a un Rol VIP según el regalo de TikTok recibido
+   * (Músico / Acordeonista, Novia, Novio, Rey de la Sala)
+   */
+  promoteToVIP(name, role = 'musico') {
+    let spec = this.crowd.find(s => s.name.toLowerCase() === (name || '').toLowerCase());
+    if (!spec) {
+      spec = this.spawnSpectator(name);
+    }
+    if (!spec || !spec.mesh) return;
+
+    const lowerRole = role.toLowerCase();
+
+    // 1. Músico del Club (Acordeonista) por Rosa
+    if (lowerRole.includes('musico') || lowerRole.includes('acordeon')) {
+      spec.mesh.position.set(-1.8, 0.05, 1.2);
+      spec.mesh.rotation.y = Math.PI * 0.15;
+
+      if (!spec.instrumentMesh) {
+        const instGeo = new THREE.BoxGeometry(0.24, 0.18, 0.14);
+        const instMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3 });
+        const inst = new THREE.Mesh(instGeo, instMat);
+        inst.position.set(0, 0.28, 0.12);
+        spec.mesh.add(inst);
+        spec.instrumentMesh = inst;
+      }
+
+      spec.mesh.remove(spec.nameLabel);
+      spec.nameLabel = this.createNameSprite(`🪗 ${spec.name} (Músico)`, true);
+      spec.nameLabel.position.set(0, 0.76, 0);
+      spec.mesh.add(spec.nameLabel);
+
+      this.highlightSpectator(spec.name, 8000);
+      this.showSpeechBubble(spec, '🪗 ¡Llegó la música al show!');
+    }
+    // 2. Novia VIP
+    else if (lowerRole.includes('novia')) {
+      spec.mesh.position.set(1.8, 0.05, 1.2);
+      spec.mesh.rotation.y = -Math.PI * 0.15;
+
+      if (!spec.veilMesh) {
+        const veilGeo = new THREE.CylinderGeometry(0.12, 0.22, 0.35, 10, 1, true);
+        const veilMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, side: THREE.DoubleSide });
+        const veil = new THREE.Mesh(veilGeo, veilMat);
+        veil.position.set(0, 0.40, -0.05);
+        spec.mesh.add(veil);
+        spec.veilMesh = veil;
+      }
+
+      spec.mesh.remove(spec.nameLabel);
+      spec.nameLabel = this.createNameSprite(`👰 ${spec.name} (Novia VIP)`, true);
+      spec.nameLabel.position.set(0, 0.76, 0);
+      spec.mesh.add(spec.nameLabel);
+
+      this.highlightSpectator(spec.name, 9000);
+      this.showSpeechBubble(spec, '👰 ¡Soy la Novia del Club!');
+    }
+    // 3. Novio VIP
+    else if (lowerRole.includes('novio')) {
+      spec.mesh.position.set(1.8, 0.05, 1.2);
+      spec.mesh.rotation.y = -Math.PI * 0.15;
+
+      if (!spec.hatMesh) {
+        const hatGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.16, 12);
+        const hatMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+        const hat = new THREE.Mesh(hatGeo, hatMat);
+        hat.position.set(0, 0.46, 0);
+        spec.mesh.add(hat);
+        spec.hatMesh = hat;
+      }
+
+      spec.mesh.remove(spec.nameLabel);
+      spec.nameLabel = this.createNameSprite(`🤵 ${spec.name} (Novio VIP)`, true);
+      spec.nameLabel.position.set(0, 0.76, 0);
+      spec.mesh.add(spec.nameLabel);
+
+      this.highlightSpectator(spec.name, 9000);
+      this.showSpeechBubble(spec, '🤵 ¡Soy el Novio de la Fiesta!');
+    }
+    // 4. Rey de la Noche
+    else {
+      if (!spec.crownMesh) {
+        const crownGeo = new THREE.CylinderGeometry(0.14, 0.11, 0.10, 6);
+        const crownMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9, roughness: 0.1 });
+        const crown = new THREE.Mesh(crownGeo, crownMat);
+        crown.position.set(0, 0.48, 0);
+        spec.mesh.add(crown);
+        spec.crownMesh = crown;
+      }
+
+      spec.mesh.remove(spec.nameLabel);
+      spec.nameLabel = this.createNameSprite(`👑 ${spec.name} (Rey VIP)`, true);
+      spec.nameLabel.position.set(0, 0.76, 0);
+      spec.mesh.add(spec.nameLabel);
+
+      this.highlightSpectator(spec.name, 12000);
+      this.showSpeechBubble(spec, '👑 ¡El Rey de la Noche!');
+    }
+
+    this.increaseEnergy(25);
+  }
+
+  /**
+   * Procesa cualquier mensaje del chat de TikTok
+   * y muestra el globo de diálogo en tiempo real.
+   */
+  speak(name, comment) {
+    if (!name || !comment) return;
+    const cleanUser = name.replace(/^@+/, '').trim();
+    const cleanText = comment.trim();
+
+    let spec = this.crowd.find(s => s.name.toLowerCase() === cleanUser.toLowerCase());
+    if (!spec) {
+      spec = this.spawnSpectator(cleanUser);
+    }
+
+    const lower = cleanText.toLowerCase();
+
+    if (lower.includes('chica') || lower.includes('mujer') || lower.includes('vestido')) {
+      this.changeStyle(cleanUser, 'chica');
+      return;
+    }
+    if (lower.includes('chico') || lower.includes('hombre')) {
+      this.changeStyle(cleanUser, 'chico');
+      return;
+    }
+
+    if (lower.includes('perreo') || lower.includes('baile') || lower.includes('salsa') || lower.includes('robot')) {
+      spec.mesh.animController.danceMove = lower.includes('robot') ? 'robot' : 'salsa';
+      spec.mesh.animController.speedMultiplier = 2.4;
+      this.showSpeechBubble(spec, `💃 ¡A bailar! ${cleanText}`);
+      return;
+    }
+
+    if (lower.includes('entrar') || lower.includes('yo') || lower.includes('llegue')) {
+      this.highlightSpectator(cleanUser, 5000);
+      this.showSpeechBubble(spec, `👋 ¡Presente en el Club!`);
+      return;
+    }
+
+    this.showSpeechBubble(spec, cleanText);
+    this.increaseEnergy(4);
+  }
+
   highlightSpectator(name, durationMs = 4500) {
     const spec = this.findSpectator(name);
     if (!spec) return null;
 
-    // Crear anillo de luz en el suelo bajo sus pies
     const ringGeo = new THREE.RingGeometry(0.35, 0.55, 24);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xfacc15,
@@ -270,18 +608,15 @@ export class AudienceManager {
     ring.position.set(spec.mesh.position.x, 0.05, spec.mesh.position.z);
     this.highlightGroup.add(ring);
 
-    // Actualizar cartelito sobre su cabeza a versión VIP destacada
     spec.mesh.remove(spec.nameLabel);
     spec.nameLabel = this.createNameSprite(`👑 ${spec.name}`, true);
     spec.nameLabel.position.set(0, 0.76, 0);
     spec.mesh.add(spec.nameLabel);
 
-    // Animación de salto / euforia
     spec.mesh.animController.speedMultiplier = 2.6;
     spec.mesh.animController.danceMove = 'jump';
     spec.mesh.animController.gesture = 'joy';
 
-    // Limpieza al terminar la duración
     setTimeout(() => {
       this.highlightGroup.remove(ring);
       ring.geometry.dispose();
@@ -289,7 +624,7 @@ export class AudienceManager {
 
       spec.mesh.remove(spec.nameLabel);
       spec.nameLabel = this.createNameSprite(spec.name, false);
-      spec.nameLabel.position.set(0, 0.70, 0);
+      spec.nameLabel.position.set(0, 0.72, 0);
       spec.mesh.add(spec.nameLabel);
 
       spec.mesh.animController.speedMultiplier = 1.0;
@@ -308,9 +643,6 @@ export class AudienceManager {
     return new THREE.Vector3(0, 0.6, 4.0);
   }
 
-  // ==========================================
-  // COMANDOS DE INTERACCIÓN SIMULADOS / TIKTOK
-  // ==========================================
   addViewer(name) {
     let spec = this.crowd.find(s => s.name.toLowerCase() === (name || '').toLowerCase());
     if (!spec) {
@@ -325,7 +657,6 @@ export class AudienceManager {
     const target = this.findSpectator(name);
     if (target) {
       target.mesh.animController.danceMove = this.danceMoves[Math.floor(Math.random() * this.danceMoves.length)];
-      target.nameLabel.visible = true;
     }
     this.increaseEnergy(2);
   }
@@ -334,7 +665,6 @@ export class AudienceManager {
     const target = this.findSpectator(name);
     if (target) {
       target.mesh.animController.gesture = 'joy';
-      target.nameLabel.visible = true;
       setTimeout(() => {
         target.mesh.animController.gesture = 'none';
       }, 2500);
@@ -364,7 +694,6 @@ export class AudienceManager {
     if (target) {
       target.isRegisteredInMinigame = true;
       target.mesh.animController.gesture = 'catch';
-      target.nameLabel.visible = true;
       return target;
     }
     return null;
@@ -375,7 +704,6 @@ export class AudienceManager {
     for (let spec of this.crowd) {
       if (spec.isRegisteredInMinigame || Math.random() < 0.4) {
         spec.mesh.animController.gesture = 'catch';
-        spec.nameLabel.visible = true;
         count++;
       }
     }
@@ -399,20 +727,12 @@ export class AudienceManager {
     this.collectiveEnergy = Math.min(100, this.collectiveEnergy + amount);
   }
 
-  onMusicStateChange(isPlaying) {
-    this.isMusicPlaying = isPlaying;
-    if (!isPlaying) {
-      for (let s of this.crowd) {
-        if (Math.random() < 0.5) {
-          s.mesh.animController.gesture = 'anger';
-        } else {
-          s.mesh.animController.gesture = 'none';
-        }
-      }
-    } else {
-      for (let s of this.crowd) {
-        s.mesh.animController.gesture = 'none';
-      }
+  updateViewerCountDOM() {
+    if (typeof document === 'undefined') return;
+    const badge = document.getElementById('crowd-count-badge') || document.getElementById('queue-counts-badge');
+    if (badge) {
+      badge.textContent = `👥 ${this.crowd.length}`;
+      badge.classList.remove('hidden');
     }
   }
 
@@ -424,7 +744,6 @@ export class AudienceManager {
       s.mesh.animController.update(time, delta, audioLevels);
     }
 
-    // Animar auras de resaltado
     if (this.highlightGroup.children.length > 0) {
       this.highlightGroup.children.forEach(ring => {
         ring.rotation.z += delta * 2;

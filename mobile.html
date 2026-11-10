@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>GARABATO COMEDY 3D — TikTok LIVE Móvil</title>
+  <link rel="stylesheet" href="./style.css" />
+  <style>
+    /* ========================================================
+       SAFE ZONES Y ADAPTACIÓN EXCLUSIVA PARA TIKTOK LIVE MÓVIL
+       ======================================================== */
+    :root {
+      --tiktok-safe-top: 86px;     /* Evita la cabecera: avatar, @CreandoConIA, clasificación y botón salir */
+      --tiktok-safe-bottom: 145px; /* Evita la barra de chat de TikTok y botones de regalo inferiores */
+    }
+
+    html, body {
+      width: 100%;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      position: fixed;
+      touch-action: manipulation;
+    }
+
+    /* Ocultar permanentemente botones de control del show en la transmisión móvil */
+    #header-actions,
+    #btn-toggle-bgm,
+    #btn-toggle-vertical,
+    #btn-toggle-clean,
+    .admin-link {
+      display: none !important;
+    }
+
+    /* Ajustar el Header Superior debajo de la barra nativa de TikTok */
+    .show-header {
+      top: var(--tiktok-safe-top) !important;
+      padding: 0 10px !important;
+      justify-content: space-between !important;
+      pointer-events: none;
+    }
+
+    .concert-badge,
+    .queue-status-chip {
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+    }
+
+    /* Banners y Barras de Energía alineados a las Safe Zones */
+    .mission-instructions-banner {
+      top: calc(var(--tiktok-safe-top) + 34px) !important;
+      font-size: 8px !important;
+      padding: 2px 8px !important;
+    }
+
+    .energy-bar-container {
+      top: calc(var(--tiktok-safe-top) + 60px) !important;
+      max-width: 190px !important;
+    }
+
+    .energy-label {
+      font-size: 7.5px !important;
+    }
+
+    /* Paneles laterales reemplazados por el Slider Automático en móvil */
+    .jokes-side-panel {
+      display: none !important;
+    }
+
+    /* ========================================================
+       SLIDER / CARRUSEL AUTOMÁTICO DE CHISTES Y REGALOS
+       ======================================================== */
+    .jokes-auto-slider {
+      position: absolute;
+      top: calc(var(--tiktok-safe-top) + 86px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 20px);
+      max-width: 390px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92));
+      backdrop-filter: blur(10px);
+      border: 1.5px solid rgba(236, 72, 153, 0.5);
+      border-radius: 14px;
+      padding: 8px 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(236, 72, 153, 0.25);
+      z-index: 60;
+      pointer-events: auto;
+      transition: border-color 0.3s ease;
+    }
+
+    .slider-badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .slider-live-label {
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #ec4899;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .slider-index-pill {
+      font-size: 8px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.12);
+      color: #f1f5f9;
+      padding: 1px 7px;
+      border-radius: 8px;
+    }
+
+    .slider-card-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .slider-card-wrap.sliding-out {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    .slider-card-wrap.sliding-in {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+
+    .slider-number-box {
+      background: linear-gradient(135deg, #f43f5e, #ec4899);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      box-shadow: 0 3px 8px rgba(244, 63, 94, 0.4);
+    }
+
+    .slider-big-num {
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    .slider-info-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .slider-joke-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slider-joke-trigger {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9px;
+      font-weight: 800;
+      color: #facc15;
+    }
+
+    .slider-footer-row {
+      margin-top: 5px;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8px;
+      color: #cbd5e1;
+    }
+
+    .slider-progress-track {
+      width: 50px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .slider-timer-bar {
+      height: 100%;
+      width: 0%;
+      background: #ec4899;
+      transition: width 0.1s linear;
+    }
+
+    /* Subtítulos dinámicos ubicados justo sobre el chat de TikTok */
+    .subtitles-banner {
+      bottom: var(--tiktok-safe-bottom) !important;
+      font-size: 11px !important;
+      padding: 6px 14px !important;
+      max-width: 90% !important;
+    }
+
+    .audience-cta-bar {
+      bottom: calc(var(--tiktok-safe-bottom) - 26px) !important;
+      font-size: 7.5px !important;
+      padding: 2px 8px !important;
+    }
+
+    /* Botón de desbloqueo de audio flotante y discreto */
+    .btn-audio-unlock {
+      bottom: calc(var(--tiktok-safe-bottom) + 50px) !important;
+      font-size: 9px !important;
+      padding: 5px 12px !important;
+    }
+
+    /* ========================================================
+       WIDGET CIRCULAR DE RITMO / TEMPO & AUDIENCIA (TOP RIGHT)
+       ======================================================== */
+    .tempo-circle-widget {
+      position: absolute;
+      top: calc(var(--tiktok-safe-top) + 2px);
+      right: 10px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      pointer-events: auto;
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .tempo-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .tempo-bg-circle {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.15);
+      stroke-width: 4.5;
+    }
+
+    .tempo-progress-circle {
+      fill: none;
+      stroke: #22c55e;
+      stroke-width: 4.5;
+      stroke-dasharray: 188.5;
+      stroke-dashoffset: 130;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+    }
+
+    .tempo-inner-content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .tempo-icon {
+      font-size: 10px;
+    }
+
+    .tempo-speed-text {
+      font-size: 9px;
+      font-weight: 900;
+      color: #22c55e;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .tempo-viewers-count {
+      font-size: 8px;
+      font-weight: 800;
+      color: #cbd5e1;
+    }
+
+    /* Leyenda inferior izquierda de roles VIP por regalo */
+    .bottom-roles-legend {
+      position: absolute;
+      bottom: calc(var(--tiktok-safe-bottom) + 8px);
+      left: 8px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 5px 9px;
+      z-index: 50;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 130px;
+    }
+
+    .role-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 8px;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+
+    .role-legend-icon {
+      font-size: 10px;
+    }
+
+    /* Ticker inferior de instrucciones de chat */
+    .bottom-chat-instruction-banner {
+      position: absolute;
+      bottom: calc(var(--tiktok-safe-bottom) - 24px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 94%;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 8px;
+      font-weight: 700;
+      color: #cbd5e1;
+      z-index: 50;
+    }
+
+    .chat-cmd-highlight {
+      color: #facc15;
+      font-weight: 900;
+    }
+
+    /* Indicador flotante cuando el streamer habla por el micrófono */
+    .streamer-mic-badge {
+      position: absolute;
+      top: calc(var(--tiktok-safe-top) + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #ffffff;
+      font-size: 8.5px;
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 120;
+      animation: pulse-streamer-mic 1s infinite alternate;
+    }
+
+    @keyframes pulse-streamer-mic {
+      0% { transform: translateX(-50%) scale(1); }
+      100% { transform: translateX(-50%) scale(1.05); }
+    }
+  </style>
+</head>
+<body class="show-page tiktok-vertical-mode clean-stream-mode">
+  <div id="canvas-container"></div>
+
+  <div id="show-hud">
+    <!-- WIDGET CIRCULAR DE RITMO / TEMPO & AUDIENCIA (TOP RIGHT) -->
+    <div id="tempo-circle-widget" class="tempo-circle-widget">
+      <svg class="tempo-svg" viewBox="0 0 72 72">
+        <circle class="tempo-bg-circle" cx="36" cy="36" r="30"></circle>
+        <circle id="tempo-progress-circle" class="tempo-progress-circle" cx="36" cy="36" r="30"></circle>
+      </svg>
+      <div class="tempo-inner-content">
+        <span class="tempo-icon">🎵</span>
+        <span id="tempo-speed-text" class="tempo-speed-text">Lento</span>
+        <span id="tempo-viewers-count" class="tempo-viewers-count">👥 1</span>
+      </div>
+    </div>
+
+    <!-- Indicador de Micrófono del Streamer en Directo -->
+    <div id="streamer-mic-badge" class="streamer-mic-badge hidden">
+      <span class="pulse-dot"></span>
+      <span>🎙️ STREAMER EN VIVO</span>
+    </div>
+
+    <!-- Header Superior Adaptado -->
+    <header class="show-header">
+      <div class="concert-badge">
+        <span class="pulse-dot"></span>
+        <span class="live-tag">EN VIVO</span>
+        <span id="singer-nametag" class="singer-tag">EL COMEDIANTE</span>
+      </div>
+
+      <!-- Monitor de Cola Central -->
+      <div id="comedy-queue-status" class="queue-status-chip">
+        <span class="queue-dot"></span>
+        <span id="queue-status-text">🎙️ Comedy Club</span>
+        <span id="queue-counts-badge" class="queue-mini-badge hidden">0 cola</span>
+      </div>
+
+      <div id="header-actions" class="header-actions" style="display: none;">
+        <button id="btn-toggle-bgm" class="btn-hud">🎵 Música</button>
+        <button id="btn-toggle-vertical" class="btn-hud">📱 9:16</button>
+        <a href="./admin.html" class="btn-hud admin-link">🎛️ Admin</a>
+        <button id="btn-toggle-clean" class="btn-hud">👁️ Ocultar</button>
+      </div>
+    </header>
+
+    <!-- BANNER DINÁMICO DE INSTRUCCIONES -->
+    <div id="mission-instructions-banner" class="mission-instructions-banner">
+      <span class="mission-pill">👑 EL PÚBLICO MANDA</span>
+      <span id="mission-text" class="mission-text">🎁 Regalos dirigen al Actor • 😂 Risas para Chistes Gratis</span>
+    </div>
+
+    <!-- Barra de Risómetro -->
+    <div class="energy-bar-container">
+      <div class="energy-label">RISÓMETRO DEL PÚBLICO</div>
+      <div class="energy-track">
+        <div id="energy-fill" class="energy-fill" style="width: 50%;"></div>
+      </div>
+    </div>
+
+    <!-- SLIDER / CARRUSEL AUTOMÁTICO DE CHISTES EN VIVO (CON NÚMERO Y REGALO) -->
+    <div id="jokes-auto-slider" class="jokes-auto-slider">
+      <div class="slider-badge-row">
+        <span class="slider-live-label">🎡 ELIGE TU CHISTE EN EL CHAT</span>
+        <span id="slider-index-pill" class="slider-index-pill">#1 / 50</span>
+      </div>
+
+      <div class="slider-body">
+        <div id="slider-card-wrap" class="slider-card-wrap">
+          <div class="slider-number-box">
+            <span id="slider-joke-number" class="slider-big-num">#1</span>
+          </div>
+          <div class="slider-info-box">
+            <strong id="slider-joke-title" class="slider-joke-title">El calor costeño</strong>
+            <div id="slider-joke-trigger" class="slider-joke-trigger">
+              <span class="trigger-icon">🎁</span>
+              <span id="slider-trigger-text">Desbloquear: 🌹 Rosa o 30 Risas 😂</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-footer-row">
+        <span class="slider-instruction">💬 Escribe <strong id="slider-instruction-num" style="color: #facc15;">#1</strong> en el chat para pedirlo</span>
+        <div class="slider-progress-track">
+          <div id="slider-timer-bar" class="slider-timer-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA IZQUIERDA: ÓRDENES POR REGALO (VIP) -->
+    <aside id="jokes-vip-guide" class="jokes-side-panel vip-side">
+      <div class="jokes-panel-header vip-header">
+        <span class="panel-badge">👑 ÓRDENES</span>
+        <span class="panel-title">POR REGALO</span>
+      </div>
+      <div id="jokes-vip-list" class="jokes-scroll-list"></div>
+    </aside>
+
+    <!-- COLUMNA DERECHA: CHISTES GRATIS POR TAPS -->
+    <aside id="jokes-free-guide" class="jokes-side-panel free-side">
+      <div class="jokes-panel-header free-header">
+        <span class="panel-badge">🆓 GRATIS</span>
+        <span class="panel-title">CON RISAS 😂</span>
+      </div>
+      <div id="jokes-free-list" class="jokes-scroll-list"></div>
+    </aside>
+
+    <!-- Notificación Superior de Eventos y Cola -->
+    <div id="milestone-celebration" class="milestone-splash-overlay hidden">
+      <div class="milestone-splash-card">
+        <span id="milestone-celebration-icon" class="splash-icon">🎙️</span>
+        <div class="splash-texts">
+          <span id="milestone-celebration-badge" class="splash-badge">¡CHISTE EN VIVO!</span>
+          <h2 id="milestone-celebration-name" class="splash-name">STAND-UP</h2>
+        </div>
+        <span id="milestone-queue-badge" class="splash-queue-badge hidden">+1 en cola</span>
+      </div>
+    </div>
+
+    <!-- Banner de Regalo TikTok recibido -->
+    <div id="gift-shoutout" class="gift-banner hidden">
+      <span class="gift-icon">🎁</span>
+      <span class="gift-text">¡<strong id="gift-user">Espectador</strong> envió <strong id="gift-item">Rosa</strong>!</span>
+    </div>
+
+    <!-- Toast Flotante de Bienvenida -->
+    <div id="welcome-toast" class="welcome-toast-pill hidden">
+      <span class="welcome-icon">👋</span>
+      <span class="welcome-text">¡Bienvenido <strong id="welcome-user">@Usuario</strong>!</span>
+    </div>
+
+    <!-- Letrero / Subtítulos del Chiste Actual -->
+    <div id="live-subtitles" class="subtitles-banner hidden">
+      ¡Bienvenidos a Garabato Comedy Club 3D!
+    </div>
+
+    <!-- LEYENDA INFERIOR IZQUIERDA DE ROLES VIP POR REGALO -->
+    <div class="bottom-roles-legend">
+      <div class="role-legend-item">
+        <span class="role-legend-icon">🌹</span>
+        <span class="role-legend-name">Acordeonista / Músico</span>
+      </div>
+      <div class="role-legend-item">
+        <span class="role-legend-icon">🎁</span>
+        <span class="role-legend-name">Novia / Novio VIP</span>
+      </div>
+      <div class="role-legend-item">
+        <span class="role-legend-icon">👑</span>
+        <span class="role-legend-name">Rey de la Noche</span>
+      </div>
+    </div>
+
+    <!-- INSTRUCCIONES DEL CHAT INFERIOR -->
+    <div class="bottom-chat-instruction-banner">
+      <span class="chat-cmd-highlight">Escribe "entrar" / "yo"</span> para salir en el público • 
+      <span class="chat-cmd-highlight">Escribe "chica" / "chico"</span> para cambiar tu ropa
+    </div>
+
+    <!-- Llamado a la acción inferior -->
+    <div id="audience-cta-bar" class="audience-cta-bar">
+      <span id="cta-dynamic-text">❤️ Risas = Chistes Gratis | 🎁 Regalos = Órdenes al Actor</span>
+    </div>
+
+    <!-- Botón para Desbloquear Audio -->
+    <button id="btn-unlock-audio" class="btn-audio-unlock">
+      🔊 TOCA LA PANTALLA PARA ACTIVAR AUDIO
+    </button>
+  </div>
+
+  <script type="module">
+    import { initShowApp } from './src/showApp.js';
+    window.addEventListener('DOMContentLoaded', initShowApp);
+  </script>
+</body>
+</html>
