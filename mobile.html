@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>GARABATO COMEDY 3D — TikTok LIVE Móvil</title>
+  <title>GARABATO DJ CLUB 3D — TikTok LIVE Móvil</title>
   <link rel="stylesheet" href="./style.css" />
   <style>
     /* ========================================================
@@ -440,63 +440,33 @@
       </div>
     </div>
 
-    <!-- SLIDER / CARRUSEL AUTOMÁTICO DE CHISTES EN VIVO (CON NÚMERO Y REGALO) -->
-    <div id="jokes-auto-slider" class="jokes-auto-slider">
-      <div class="slider-badge-row">
-        <span class="slider-live-label">🎡 ELIGE TU CHISTE EN EL CHAT</span>
-        <span id="slider-index-pill" class="slider-index-pill">#1 / 50</span>
-      </div>
-
-      <div class="slider-body">
-        <div id="slider-card-wrap" class="slider-card-wrap">
-          <div class="slider-number-box">
-            <span id="slider-joke-number" class="slider-big-num">#1</span>
-          </div>
-          <div class="slider-info-box">
-            <strong id="slider-joke-title" class="slider-joke-title">El calor costeño</strong>
-            <div id="slider-joke-trigger" class="slider-joke-trigger">
-              <span class="trigger-icon">🎁</span>
-              <span id="slider-trigger-text">Desbloquear: 🌹 Rosa o 30 Risas 😂</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="slider-footer-row">
-        <span class="slider-instruction">💬 Escribe <strong id="slider-instruction-num" style="color: #facc15;">#1</strong> en el chat para pedirlo</span>
-        <div class="slider-progress-track">
-          <div id="slider-timer-bar" class="slider-timer-bar"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COLUMNA IZQUIERDA: ÓRDENES POR REGALO (VIP) -->
+    <!-- COLUMNA IZQUIERDA: EFECTOS Y REGALOS VIP -->
     <aside id="jokes-vip-guide" class="jokes-side-panel vip-side">
       <div class="jokes-panel-header vip-header">
-        <span class="panel-badge">👑 ÓRDENES</span>
+        <span class="panel-badge">👑 DJ EFECTOS</span>
         <span class="panel-title">POR REGALO</span>
       </div>
       <div id="jokes-vip-list" class="jokes-scroll-list"></div>
     </aside>
 
-    <!-- COLUMNA DERECHA: CHISTES GRATIS POR TAPS -->
+    <!-- COLUMNA DERECHA: MODOS DE FIESTA -->
     <aside id="jokes-free-guide" class="jokes-side-panel free-side">
       <div class="jokes-panel-header free-header">
-        <span class="panel-badge">🆓 GRATIS</span>
-        <span class="panel-title">CON RISAS 😂</span>
+        <span class="panel-badge">🔥 MODOS</span>
+        <span class="panel-title">DE PISTA 💃</span>
       </div>
       <div id="jokes-free-list" class="jokes-scroll-list"></div>
     </aside>
 
-    <!-- Notificación Superior de Eventos y Cola -->
+    <!-- Notificación Superior de Eventos y Pista -->
     <div id="milestone-celebration" class="milestone-splash-overlay hidden">
       <div class="milestone-splash-card">
-        <span id="milestone-celebration-icon" class="splash-icon">🎙️</span>
+        <span id="milestone-celebration-icon" class="splash-icon">🎧</span>
         <div class="splash-texts">
-          <span id="milestone-celebration-badge" class="splash-badge">¡CHISTE EN VIVO!</span>
-          <h2 id="milestone-celebration-name" class="splash-name">STAND-UP</h2>
+          <span id="milestone-celebration-badge" class="splash-badge">¡TEMA EN VIVO!</span>
+          <h2 id="milestone-celebration-name" class="splash-name">GARABATO DJ CLUB</h2>
         </div>
-        <span id="milestone-queue-badge" class="splash-queue-badge hidden">+1 en cola</span>
+        <span id="milestone-queue-badge" class="splash-queue-badge hidden">+1 en pista</span>
       </div>
     </div>
 
@@ -512,36 +482,36 @@
       <span class="welcome-text">¡Bienvenido <strong id="welcome-user">@Usuario</strong>!</span>
     </div>
 
-    <!-- Letrero / Subtítulos del Chiste Actual -->
+    <!-- Letrero / Subtítulos del Show Actual -->
     <div id="live-subtitles" class="subtitles-banner hidden">
-      ¡Bienvenidos a Garabato Comedy Club 3D!
+      🎧 ¡Bienvenidos a Garabato DJ Club 3D!
     </div>
 
     <!-- LEYENDA INFERIOR IZQUIERDA DE ROLES VIP POR REGALO -->
     <div class="bottom-roles-legend">
       <div class="role-legend-item">
-        <span class="role-legend-icon">🌹</span>
-        <span class="role-legend-name">Acordeonista / Músico</span>
+        <span class="role-legend-icon">💿</span>
+        <span class="role-legend-name">Scratch en Vivo</span>
       </div>
       <div class="role-legend-item">
-        <span class="role-legend-icon">🎁</span>
-        <span class="role-legend-name">Novia / Novio VIP</span>
+        <span class="role-legend-icon">💣</span>
+        <span class="role-legend-name">Bass Drop</span>
       </div>
       <div class="role-legend-item">
         <span class="role-legend-icon">👑</span>
-        <span class="role-legend-name">Rey de la Noche</span>
+        <span class="role-legend-name">Rey del Club</span>
       </div>
     </div>
 
     <!-- INSTRUCCIONES DEL CHAT INFERIOR -->
     <div class="bottom-chat-instruction-banner">
-      <span class="chat-cmd-highlight">Escribe "entrar" / "yo"</span> para salir en el público • 
-      <span class="chat-cmd-highlight">Escribe "chica" / "chico"</span> para cambiar tu ropa
+      <span class="chat-cmd-highlight">💬 Habla en el chat</span> y tu mensaje bailará sobre tu cabeza • 
+      <span class="chat-cmd-highlight">Escribe "chica" / "chico"</span> para tu avatar
     </div>
 
     <!-- Llamado a la acción inferior -->
     <div id="audience-cta-bar" class="audience-cta-bar">
-      <span id="cta-dynamic-text">❤️ Risas = Chistes Gratis | 🎁 Regalos = Órdenes al Actor</span>
+      <span id="cta-dynamic-text">🔥 Pista en Vivo | 🎁 Regalos = Efectos DJ & Drops</span>
     </div>
 
     <!-- Botón para Desbloquear Audio -->

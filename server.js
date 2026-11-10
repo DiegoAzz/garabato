@@ -70,12 +70,13 @@ app.get('/api/music/list', (_req, res) => {
 
 app.post('/api/music/upload', (req, res) => {
   try {
-    const { filename, base64Data } = req.body;
-    if (!filename || !base64Data) {
+    const filename = req.body.filename;
+    const rawData = req.body.base64Data || req.body.data;
+    if (!filename || !rawData) {
       return res.status(400).json({ success: false, error: 'Faltan datos de la canción' });
     }
 
-    const cleanBase64 = base64Data.replace(/^data:audio\/[a-zA-Z0-9.-]+;base64,/, '');
+    const cleanBase64 = rawData.replace(/^data:[^;]+;base64,/, '');
     const buffer = Buffer.from(cleanBase64, 'base64');
 
     // Nombre seguro
