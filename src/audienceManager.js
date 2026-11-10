@@ -21,7 +21,8 @@ export class AudienceManager {
       0xf97316, 0x38bdf8, 0x4ade80, 0xa855f7, 0xfb7185
     ];
 
-    this.danceMoves = ['robot', 'salsa', 'jump', 'helicopter', 'wave'];
+    // Variedad de pasos de baile festivos (Salsa, Cumbia, Perreo, Festival Jump, Conga Train)
+    this.danceMoves = ['salsa', 'cumbia', 'perreo', 'jump', 'conga', 'wave', 'helicopter'];
 
     // Grupo para auras y focos VIP
     this.highlightGroup = new THREE.Group();
@@ -677,10 +678,28 @@ export class AudienceManager {
       return;
     }
 
-    if (lower.includes('perreo') || lower.includes('baile') || lower.includes('salsa') || lower.includes('robot')) {
-      spec.mesh.animController.danceMove = lower.includes('robot') ? 'robot' : 'salsa';
+    if (lower.includes('perreo') || lower.includes('drop')) {
+      spec.mesh.animController.danceMove = 'perreo';
       spec.mesh.animController.speedMultiplier = 2.4;
-      this.showSpeechBubble(spec, `💃 ¡A bailar! ${cleanText}`);
+      this.showSpeechBubble(spec, `🔥 ¡Soltando el bajo! ${cleanText}`);
+      return;
+    }
+    if (lower.includes('salsa') || lower.includes('cumbia') || lower.includes('merengue')) {
+      spec.mesh.animController.danceMove = 'salsa';
+      spec.mesh.animController.speedMultiplier = 2.2;
+      this.showSpeechBubble(spec, `💃 ¡Sabor latino! ${cleanText}`);
+      return;
+    }
+    if (lower.includes('conga') || lower.includes('tren') || lower.includes('rueda')) {
+      spec.mesh.animController.danceMove = 'conga';
+      spec.mesh.animController.speedMultiplier = 2.0;
+      this.showSpeechBubble(spec, `🚂 ¡Súmate al tren de baile!`);
+      return;
+    }
+    if (lower.includes('baile') || lower.includes('bailar') || lower.includes('jump') || lower.includes('fiesta')) {
+      spec.mesh.animController.danceMove = 'jump';
+      spec.mesh.animController.speedMultiplier = 2.4;
+      this.showSpeechBubble(spec, `⚡ ¡A bailar! ${cleanText}`);
       return;
     }
 

@@ -295,6 +295,64 @@ export function createStickman(isSinger = false, initialColor = null, customConf
     headGroup.add(capVisor);
   }
 
+  // ==========================================
+  // ACCESORIOS FESTIVOS DE CLUB PARA ESPECTADORES
+  // (Inspirado en TikTok Live: Sombreros, Pamelas, Gorras, Gafas de Sol)
+  // ==========================================
+  if (!isSinger) {
+    const accSeed = Math.random();
+    // 1. Gafas de sol de discoteca / Gafas oscuras estilo VIP (35% de los personajes)
+    if (accSeed < 0.35) {
+      const glassesMat = new THREE.MeshBasicMaterial({ color: 0x09090b });
+      const glassesBar = new THREE.Mesh(
+        new THREE.BoxGeometry(headRadius * 1.55, headRadius * 0.42, headRadius * 0.18),
+        glassesMat
+      );
+      glassesBar.position.set(0, headRadius * 0.12, -headRadius * 0.96);
+      headGroup.add(glassesBar);
+
+      // Puente de las gafas
+      const frameMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(headRadius * 0.3, headRadius * 0.08, headRadius * 0.2), frameMat);
+      bridge.position.set(0, headRadius * 0.22, -headRadius * 0.98);
+      headGroup.add(bridge);
+    }
+    // 2. Sombreros de fiesta (35% de los personajes: Pamelas, Gorras, Sombreros de Copa / Fedora)
+    else if (accSeed < 0.70) {
+      const hatType = Math.floor(Math.random() * 3);
+      const hatColors = [0xec4899, 0xfacc15, 0x38bdf8, 0x10b981, 0xf97316, 0x8b5cf6, 0xffffff, 0xe11d48];
+      const hatColor = hatColors[Math.floor(Math.random() * hatColors.length)];
+      const hatMat = new THREE.MeshLambertMaterial({ color: hatColor });
+
+      if (hatType === 0) {
+        // Pamela / Sombrero playero festivo con lazo
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(headRadius * 0.85, headRadius * 0.95, headRadius * 0.55, 14), hatMat);
+        crown.position.set(0, headRadius * 1.05, 0);
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(headRadius * 1.85, headRadius * 1.85, headRadius * 0.08, 16), hatMat);
+        brim.position.set(0, headRadius * 0.8, 0);
+        brim.rotation.x = 0.08;
+        headGroup.add(crown);
+        headGroup.add(brim);
+      } else if (hatType === 1) {
+        // Gorra deportiva con visera hacia atrás o al frente
+        const capDome = new THREE.Mesh(new THREE.SphereGeometry(headRadius * 1.04, 12, 8), hatMat);
+        capDome.position.set(0, headRadius * 0.3, 0);
+        const capVisor = new THREE.Mesh(new THREE.BoxGeometry(headRadius * 1.1, headRadius * 0.08, headRadius * 0.6), hatMat);
+        capVisor.position.set(0, headRadius * 0.22, -headRadius * 0.92);
+        headGroup.add(capDome);
+        headGroup.add(capVisor);
+      } else {
+        // Sombrero Fedora / Estilo Fiesta Club
+        const fedora = new THREE.Mesh(new THREE.CylinderGeometry(headRadius * 0.78, headRadius * 0.92, headRadius * 0.52, 12), hatMat);
+        fedora.position.set(0, headRadius * 0.98, 0);
+        const fedoraBrim = new THREE.Mesh(new THREE.CylinderGeometry(headRadius * 1.45, headRadius * 1.45, headRadius * 0.06, 14), hatMat);
+        fedoraBrim.position.set(0, headRadius * 0.74, 0);
+        headGroup.add(fedora);
+        headGroup.add(fedoraBrim);
+      }
+    }
+  }
+
   // 4. BRAZOS STICKMAN NEGROS ARTICULADOS
   function createArm(isLeft) {
     const side = isLeft ? -1 : 1;
@@ -802,30 +860,95 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         headGroup.rotation.y = (Math.floor(t * 2) % 3 - 1) * 0.5;
         torsoGroup.rotation.y = (Math.floor(t * 2) % 2 === 0 ? 0.2 : -0.2);
         hips.position.y = this.baseY + (subPhase < 0.2 ? 0.08 : 0);
-      } else if (this.danceMove === 'salsa') {
-        const sway = Math.sin(t * 5);
-        hips.position.x = sway * 0.18;
-        hips.rotation.z = -sway * 0.12;
+      } else if (this.danceMove === 'salsa' || this.danceMove === 'cumbia') {
+        // Baile Latino / Salsa / Merengue: Meneo de caderas, rodillas elásticas y brazos al ritmo
+        const beat = t * 5.2;
+        const sway = Math.sin(beat);
+        const bounce = Math.abs(Math.sin(beat * 2)) * 0.08;
 
-        legL.hipJoint.rotation.x = Math.sin(t * 5) * 0.4;
-        legR.hipJoint.rotation.x = -Math.sin(t * 5) * 0.4;
+        hips.position.x = sway * 0.22;
+        hips.position.y = this.baseY + bounce;
+        hips.rotation.z = -sway * 0.18;
+        torsoGroup.rotation.y = sway * 0.25;
 
-        armL.shoulder.rotation.x = -0.8 + Math.cos(t * 5) * 0.4;
-        armL.shoulder.rotation.z = -0.4;
-        armR.shoulder.rotation.x = isSinger ? -1.4 : -0.8 - Math.cos(t * 5) * 0.4;
-        armR.shoulder.rotation.z = 0.4;
+        // Piernas flexionándose y dando pasos
+        legL.hipJoint.rotation.x = Math.sin(beat) * 0.45;
+        legR.hipJoint.rotation.x = -Math.sin(beat) * 0.45;
+        legL.kneeJoint.rotation.x = Math.max(0, -Math.sin(beat) * 0.6);
+        legR.kneeJoint.rotation.x = Math.max(0, Math.sin(beat) * 0.6);
 
-        headGroup.rotation.y = sway * 0.2;
-      } else if (this.danceMove === 'jump') {
-        const jump = Math.abs(Math.sin(t * 7)) * (0.35 + bassEnergy * 0.25);
+        // Brazos flexionados bombeando con sabor latino
+        armL.shoulder.rotation.x = -1.1 + Math.cos(beat) * 0.45;
+        armL.shoulder.rotation.z = -0.35 + sway * 0.2;
+        armL.elbow.rotation.x = -1.2 + Math.sin(beat) * 0.3;
+
+        armR.shoulder.rotation.x = isSinger ? -1.4 : -1.1 - Math.cos(beat) * 0.45;
+        armR.shoulder.rotation.z = 0.35 - sway * 0.2;
+        if (!isSinger) armR.elbow.rotation.x = -1.2 - Math.sin(beat) * 0.3;
+
+        headGroup.rotation.y = sway * 0.25;
+        headGroup.rotation.z = -sway * 0.15;
+      } else if (this.danceMove === 'perreo' || this.danceMove === 'drop') {
+        // Baile Urbano / Perreo / Bass Drop: Flexión profunda de rodillas al compás de los bajos
+        const beat = t * 6.0;
+        const dip = Math.abs(Math.sin(beat)) * (0.22 + bassEnergy * 0.15);
+
+        hips.position.y = this.baseY - dip;
+        torsoGroup.rotation.x = 0.25 + dip * 0.6; // Inclinación adelante
+        hips.rotation.z = Math.sin(beat * 0.5) * 0.15;
+
+        legL.hipJoint.rotation.x = -dip * 1.8;
+        legR.hipJoint.rotation.x = -dip * 1.8;
+        legL.kneeJoint.rotation.x = dip * 2.6;
+        legR.kneeJoint.rotation.x = dip * 2.6;
+
+        armL.shoulder.rotation.x = -1.4 + Math.sin(beat) * 0.3;
+        armL.shoulder.rotation.z = -0.5;
+        armL.elbow.rotation.x = -1.4;
+
+        armR.shoulder.rotation.x = isSinger ? -1.6 : -1.4 - Math.sin(beat) * 0.3;
+        armR.shoulder.rotation.z = 0.5;
+        if (!isSinger) armR.elbow.rotation.x = -1.4;
+
+        headGroup.rotation.x = 0.2 + Math.sin(beat) * 0.15;
+      } else if (this.danceMove === 'jump' || this.danceMove === 'rave') {
+        // Salto de Festival EDM con manos arriba
+        const jumpPhase = t * 6.5;
+        const jump = Math.abs(Math.sin(jumpPhase)) * (0.28 + bassEnergy * 0.25);
         hips.position.y = this.baseY + jump;
 
-        legL.knee.rotation.x = jump * 1.5;
-        legR.knee.rotation.x = jump * 1.5;
+        legL.hipJoint.rotation.x = jump * 0.8;
+        legR.hipJoint.rotation.x = jump * 0.8;
+        legL.kneeJoint.rotation.x = jump * 1.4;
+        legR.kneeJoint.rotation.x = jump * 1.4;
 
-        armL.shoulder.rotation.x = -2.2 + Math.sin(t * 7) * 0.4;
-        armR.shoulder.rotation.x = isSinger ? -1.8 : -2.2 - Math.sin(t * 7) * 0.4;
-        headGroup.rotation.x = Math.sin(t * 7) * 0.15;
+        // Manos arriba saltando
+        armL.shoulder.rotation.x = -2.6 + Math.sin(jumpPhase) * 0.35;
+        armL.shoulder.rotation.z = -0.4;
+        armR.shoulder.rotation.x = isSinger ? -1.8 : -2.6 - Math.sin(jumpPhase) * 0.35;
+        armR.shoulder.rotation.z = 0.4;
+        headGroup.rotation.x = Math.sin(jumpPhase) * 0.2;
+      } else if (this.danceMove === 'conga' || this.danceMove === 'train') {
+        // Tren / Rueda de baile estilo TikTok Live: Patada izquierda, patada derecha y salto
+        const beat = t * 4.8;
+        const step = Math.sin(beat);
+        const hop = Math.abs(Math.cos(beat * 2)) * 0.12;
+
+        hips.position.y = this.baseY + hop;
+        hips.position.x = step * 0.15;
+        torsoGroup.rotation.y = step * 0.3;
+
+        legL.hipJoint.rotation.x = Math.sin(beat) * 0.7;
+        legR.hipJoint.rotation.x = -Math.sin(beat) * 0.7;
+        legL.kneeJoint.rotation.x = Math.max(0, Math.sin(beat) * 0.8);
+        legR.kneeJoint.rotation.x = Math.max(0, -Math.sin(beat) * 0.8);
+
+        armL.shoulder.rotation.x = -0.9 + Math.cos(beat) * 0.5;
+        armL.shoulder.rotation.z = -0.3;
+        armR.shoulder.rotation.x = isSinger ? -1.4 : -0.9 - Math.cos(beat) * 0.5;
+        armR.shoulder.rotation.z = 0.3;
+
+        headGroup.rotation.y = step * 0.25;
       } else if (this.danceMove === 'helicopter') {
         const spin = Math.sin(t * 6) * 0.7;
         torsoGroup.rotation.y = spin;

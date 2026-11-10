@@ -1129,7 +1129,12 @@ export function initShowApp() {
 
   syncBridge.on('CAMERA_SHOT', (payload) => {
     if (cameraDirector && payload.shot) {
-      cameraDirector.setShot(payload.shot);
+      if (payload.shot === 'AUTO') {
+        cameraDirector.setAutoDirector(true);
+      } else {
+        cameraDirector.setAutoDirector(false);
+        cameraDirector.setShot(payload.shot);
+      }
     }
   });
 
