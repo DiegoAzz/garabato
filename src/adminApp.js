@@ -303,6 +303,7 @@ export function initAdminApp() {
         try { audio.currentTime = 0; } catch (e) {}
       }
       audio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
+      audio.muted = !!isAdminAudioMuted;
       audio.play().catch(e => {
         console.warn('[Admin Monitor] Reproducción:', e.message);
         showUploadStatus(`Haz clic en el botón ▶ Play del reproductor para escuchar "${track.name}"`);
@@ -382,16 +383,45 @@ export function initAdminApp() {
   let adminYTPlayer = null;
   let currentYTVideo = null;
   let isYTPlaying = false;
+  let isAdminAudioMuted = localStorage.getItem('garabato_admin_audio_muted') === 'true';
 
   const ytSearchInput = document.getElementById('yt-search-input');
   const btnYtSearch = document.getElementById('btn-yt-search');
   const adminYtMonitorContainer = document.getElementById('admin-yt-monitor-container');
   const adminYtCurrentTitle = document.getElementById('admin-yt-current-title');
   const btnToggleYtPlayerView = document.getElementById('btn-toggle-yt-player-view');
+  const btnToggleAdminAudioMute = document.getElementById('btn-toggle-admin-audio-mute');
   const btnYtPause = document.getElementById('btn-yt-pause');
   const btnYtResume = document.getElementById('btn-yt-resume');
   const btnYtStop = document.getElementById('btn-yt-stop');
   const ytSearchResults = document.getElementById('yt-search-results');
+
+  function updateAdminAudioMuteUI() {
+    if (!btnToggleAdminAudioMute) return;
+    if (isAdminAudioMuted) {
+      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔇 MUTE';
+      btnToggleAdminAudioMute.style.color = '#f87171';
+    } else {
+      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔊 ON';
+      btnToggleAdminAudioMute.style.color = '#38bdf8';
+    }
+    if (adminMonitorAudio) {
+      adminMonitorAudio.muted = isAdminAudioMuted;
+    }
+    if (adminYTPlayer) {
+      if (isAdminAudioMuted && adminYTPlayer.mute) adminYTPlayer.mute();
+      else if (!isAdminAudioMuted && adminYTPlayer.unMute) adminYTPlayer.unMute();
+    }
+  }
+
+  if (btnToggleAdminAudioMute) {
+    updateAdminAudioMuteUI();
+    btnToggleAdminAudioMute.addEventListener('click', () => {
+      isAdminAudioMuted = !isAdminAudioMuted;
+      localStorage.setItem('garabato_admin_audio_muted', isAdminAudioMuted ? 'true' : 'false');
+      updateAdminAudioMuteUI();
+    });
+  }
 
   function initOrLoadAdminYTPlayer(videoId, onReadyCallback) {
     if (adminYTPlayer && adminYTPlayer.loadVideoById) {
@@ -417,6 +447,8 @@ export function initAdminApp() {
             onReady: (event) => {
               const vol = djMasterVolume ? parseInt(djMasterVolume.value, 10) : 85;
               event.target.setVolume(vol);
+              if (isAdminAudioMuted) event.target.mute();
+              else event.target.unMute();
               event.target.playVideo();
               isYTPlaying = true;
               if (onReadyCallback) onReadyCallback();

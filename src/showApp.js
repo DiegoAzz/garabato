@@ -463,18 +463,39 @@ export function initShowApp() {
     }
   });
 
+  // Control Maestro de Silencio / Audio del Show
+  let isMasterMuted = false;
   const btnToggleBgm = document.getElementById('btn-toggle-bgm');
   if (btnToggleBgm) {
     btnToggleBgm.addEventListener('click', (e) => {
       e.stopPropagation();
       unlockAudio();
-      if (audioEngine.bgMusicPlaying) {
-        audioEngine.stopComedyLoungeMusic();
-        audioEngine.bgMusicPreset = 'off';
-        btnToggleBgm.textContent = '🔇 Silencio';
+      isMasterMuted = !isMasterMuted;
+
+      if (isMasterMuted) {
+        // Silenciar TODO el show (WebAudio, MP3s y YouTube)
+        if (audioEngine.masterGain && audioEngine.ctx) {
+          audioEngine.masterGain.gain.setValueAtTime(0, audioEngine.ctx.currentTime);
+        }
+        if (audioEngine.audioElement) {
+          audioEngine.audioElement.muted = true;
+        }
+        if (showYTPlayer && showYTPlayer.mute) {
+          showYTPlayer.mute();
+        }
+        btnToggleBgm.textContent = '🔇 Silenciado';
         btnToggleBgm.classList.add('btn-hud-muted');
       } else {
-        audioEngine.startComedyLoungeMusic('lounge');
+        // Restaurar volumen completo del show
+        if (audioEngine.masterGain && audioEngine.ctx) {
+          audioEngine.masterGain.gain.setValueAtTime(1.0, audioEngine.ctx.currentTime);
+        }
+        if (audioEngine.audioElement) {
+          audioEngine.audioElement.muted = false;
+        }
+        if (showYTPlayer && showYTPlayer.unMute) {
+          showYTPlayer.unMute();
+        }
         btnToggleBgm.textContent = '🎵 Música';
         btnToggleBgm.classList.remove('btn-hud-muted');
       }
@@ -643,6 +664,8 @@ export function initShowApp() {
             onReady: (event) => {
               const currentVol = audioEngine.djCustomVolume !== undefined ? Math.round(audioEngine.djCustomVolume * 100) : 85;
               event.target.setVolume(currentVol);
+              if (isMasterMuted) event.target.mute();
+              else event.target.unMute();
               event.target.playVideo();
               if (onReadyCallback) onReadyCallback();
             },
