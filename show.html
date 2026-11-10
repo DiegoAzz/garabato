@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
-  <title>GARABATO COMEDY CLUB 3D — STAND-UP TIKTOK LIVE</title>
+  <title>GARABATO DJ CLUB 3D — FIESTA TIKTOK LIVE</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body class="show-page">
@@ -15,18 +15,18 @@
       <div class="concert-badge">
         <span class="pulse-dot"></span>
         <span class="live-tag">EN VIVO</span>
-        <span id="singer-nametag" class="singer-tag">EL COMEDIANTE</span>
+        <span id="singer-nametag" class="singer-tag">🎧 DJ GARABATO</span>
       </div>
 
       <!-- Monitor de Cola Central -->
       <div id="comedy-queue-status" class="queue-status-chip">
         <span class="queue-dot"></span>
-        <span id="queue-status-text">🎙️ Comedy Club</span>
+        <span id="queue-status-text">🎧 DJ Club 3D</span>
         <span id="queue-counts-badge" class="queue-mini-badge hidden">0 cola</span>
       </div>
 
       <div id="header-actions" class="header-actions">
-        <button id="btn-toggle-bgm" class="btn-hud" title="Música de Fondo Suave (Stand-Up Lounge)">🎵 Música</button>
+        <button id="btn-toggle-bgm" class="btn-hud" title="Música / Beat">🎵 Música</button>
         <button id="btn-toggle-vertical" class="btn-hud" title="Alternar Formato TikTok 9:16">📱 9:16</button>
         <a href="./admin.html" target="_blank" class="btn-hud admin-link">🎛️ Admin</a>
         <button id="btn-toggle-clean" class="btn-hud" title="Ocultar para el Live (Presiona 'H' para mostrar/ocultar)">👁️ Ocultar</button>
@@ -35,12 +35,12 @@
 
     <!-- BANNER DINÁMICO DE INSTRUCCIONES: CÓMO FUNCIONA EL SHOW -->
     <div id="mission-instructions-banner" class="mission-instructions-banner">
-      <span class="mission-pill">👑 EL PÚBLICO MANDA</span>
-      <span id="mission-text" class="mission-text">🎁 Manda regalos para: 🍅 Tirar Tomates • 💃 Bailar • 🎤 Cantar • 😭 Llorar</span>
+      <span class="mission-pill">🎧 FIESTA EN VIVO</span>
+      <span id="mission-text" class="mission-text">🎁 Regalos: 💿 Rayar Plato • 💣 Bass Drop • 📢 Bocina • 💬 Habla en el chat</span>
     </div>
 
     <div class="energy-bar-container">
-      <div class="energy-label">RISÓMETRO DEL PÚBLICO</div>
+      <div class="energy-label">🔥 FIESTÓMETRO DEL CLUB</div>
       <div class="energy-track">
         <div id="energy-fill" class="energy-fill" style="width: 50%;"></div>
       </div>
@@ -92,14 +92,20 @@
       <span class="welcome-text">¡Bienvenido <strong id="welcome-user">@Usuario</strong>! 👑 <em>¡Tú mandas en la tarima!</em></span>
     </div>
 
-    <!-- Letrero / Subtítulos del Chiste Actual -->
-    <div id="live-subtitles" class="subtitles-banner hidden">
-      ¡Bienvenidos a Garabato Comedy Club 3D!
+    <!-- Indicador de Micrófono Humano en Vivo (DJ al Micrófono) -->
+    <div id="live-mic-hud" class="live-mic-hud-pill hidden">
+      <span class="pulse-dot" style="background: #ffffff; width: 10px; height: 10px;"></span>
+      <span>🔴 EN VIVO • DJ AL MICRÓFONO</span>
     </div>
 
-    <!-- Llamado a la acción: Cuentos por el Interno -->
+    <!-- Letrero / Subtítulos del Show Actual -->
+    <div id="live-subtitles" class="subtitles-banner hidden">
+      🎧 ¡Bienvenidos a Garabato DJ Club 3D!
+    </div>
+
+    <!-- Llamado a la acción: Chat y Música -->
     <div id="audience-cta-bar" class="audience-cta-bar">
-      <span id="cta-dynamic-text">💡 <strong>¿Cómo funciona?</strong> 👆 Taps = Chistes Gratis | 🎁 Regalos = Órdenes al Actor | 💌 Manda regalo + tu cuento</span>
+      <span id="cta-dynamic-text">💡 <strong>¿Cómo funciona?</strong> 💬 Escribe en el chat y aparecerá tu mensaje bailando sobre tu cabeza | 🎁 Regalos = Efectos DJ & Drops</span>
     </div>
 
     <!-- Botón para Desbloquear Audio del Navegador -->

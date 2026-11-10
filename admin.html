@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GARABATO COMEDY CLUB 3D — Panel de Control Administrativo</title>
+  <title>GARABATO DJ & LIVE CLUB 3D — Panel de Control Administrativo</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body class="admin-page">
@@ -11,8 +11,8 @@
     <!-- Encabezado del Panel -->
     <header class="admin-header">
       <div class="admin-title-box">
-        <h1>GARABATO COMEDY <span class="highlight">3D</span></h1>
-        <span class="admin-sub">PANEL DE CONTROL DE STAND-UP EN VIVO</span>
+        <h1>GARABATO DJ <span class="highlight">3D</span></h1>
+        <span class="admin-sub">PANEL DE CONTROL DE FIESTA Y DJ EN VIVO</span>
       </div>
       <div class="admin-header-right">
         <span id="status-show-connection" class="status-badge">● Esperando /show</span>
@@ -22,9 +22,143 @@
     </header>
 
     <main class="admin-grid">
-      <!-- COLUMNA 1: COMEDIANTE & ESCENARIO -->
+      <!-- COLUMNA 1: MICRÓFONO EN VIVO & CONSOLA DJ -->
       <section class="admin-card">
-        <h2 class="card-title">🎙️ Comediante Stand-Up</h2>
+        <!-- MÓDULO 1: MICRÓFONO EN VIVO (VOZ HUMANA - ANTI-BAN TIKTOK) -->
+        <div id="card-human-mic" class="mic-control-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h2 style="font-size: 15px; font-weight: 900; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+              🎙️ Hablar en Vivo (Micrófono Humano)
+            </h2>
+            <span id="mic-air-status" class="status-badge" style="background: #1e293b; color: #94a3b8; font-size: 10px;">
+              ⚪ Micrófono Silenciado
+            </span>
+          </div>
+          <p class="card-desc" style="font-size: 11px; margin-bottom: 10px;">
+            Habla por tu micrófono cuando desees: TikTok detectará voz humana real en vivo, el muñeco 3D abrirá la boca a tu ritmo y la música bajará automáticamente (auto-ducking).
+          </p>
+
+          <button type="button" id="btn-toggle-mic" class="btn-mic-main">
+            <span id="mic-icon" style="font-size: 20px;">🎙️</span>
+            <span id="mic-text">ACTIVAR MICRÓFONO EN VIVO</span>
+          </button>
+
+          <!-- Vúmetro LED de Volumen de Voz en Tiempo Real -->
+          <div class="mic-vu-meter-box">
+            <div class="mic-status-label">
+              <span>Nivel de Voz Humana</span>
+              <span id="mic-db-label">0%</span>
+            </div>
+            <div class="mic-vu-meter-track">
+              <div id="mic-vu-fill" class="mic-vu-meter-fill"></div>
+            </div>
+          </div>
+
+          <!-- Opciones del Micrófono -->
+          <div class="form-row mt-2" style="font-size: 11px;">
+            <div class="form-group flex-1">
+              <label for="mic-mode-select" style="font-size: 11px;">Modo de Activación</label>
+              <select id="mic-mode-select" style="padding: 6px; font-size: 11px;">
+                <option value="toggle" selected>🔘 Modo Interruptor (Clic para Hablar / Silenciar)</option>
+                <option value="ptt">👆 Push-to-Talk (Mantener presionado)</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label for="mic-gain-slider" style="font-size: 11px;">Sensibilidad del Mic</label>
+              <input type="range" id="mic-gain-slider" min="50" max="250" value="120" />
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+            <label class="checkbox-label" style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer;">
+              <input type="checkbox" id="mic-webrtc-stream" checked />
+              <span>🔊 Transmitir audio del mic a la ventana /show</span>
+            </label>
+            <span style="font-size: 10px; color: #f59e0b;">⌨ Atajo: Tecla [Espacio] o [M]</span>
+          </div>
+        </div>
+
+        <!-- MÓDULO 2: CONSOLA MAESTRA DE DJ (PISTAS & SOUNDBOARD) -->
+        <div class="dj-console-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h2 style="font-size: 15px; font-weight: 900; color: #c084fc; display: flex; align-items: center; gap: 8px;">
+              🎧 Consola Maestra de DJ (Pistas & Soundboard)
+            </h2>
+            <span id="dj-track-status" class="status-badge" style="background: #1e1b4b; color: #a78bfa; font-size: 10px;">
+              ⏹ En Pausa
+            </span>
+          </div>
+
+          <!-- Géneros Musicales -->
+          <label style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 6px; display: block;">
+            SELECCIONAR GÉNERO BAILABLE
+          </label>
+          <div class="dj-genre-grid">
+            <button type="button" class="btn-dj-genre is-active" data-genre="EDM">
+              <span>🔥 EDM Festival</span>
+              <span class="genre-bpm">128 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="GUARACHA">
+              <span>🌴 Guaracha Tribal</span>
+              <span class="genre-bpm">130 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="REGGAETON">
+              <span>💃 Reggaetón Dembow</span>
+              <span class="genre-bpm">96 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="DISCO">
+              <span>🕺 Nu-Disco Funk</span>
+              <span class="genre-bpm">122 BPM</span>
+            </button>
+            <button type="button" class="btn-dj-genre" data-genre="TECH_HOUSE" style="grid-column: span 2;">
+              <span>⚡ Tech House Club</span>
+              <span class="genre-bpm">126 BPM</span>
+            </button>
+          </div>
+
+          <!-- Reproducción / Transporte -->
+          <div class="dj-transport-row">
+            <button type="button" id="btn-dj-play" class="btn-dj-play">
+              <span>▶ REPRODUCIR PISTA DJ</span>
+            </button>
+            <button type="button" id="btn-dj-stop" class="btn-dj-stop">
+              <span>⏹ DETENER</span>
+            </button>
+          </div>
+
+          <!-- Launchpads de Efectos DJ (Soundboard) -->
+          <label style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-top: 10px; margin-bottom: 6px; display: block;">
+            PADS DE EFECTOS DJ EN VIVO
+          </label>
+          <div class="dj-soundboard-pads">
+            <button type="button" class="btn-dj-pad" data-fx="horn">
+              <span class="pad-icon">📢</span>
+              <span>Air Horn</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="siren">
+              <span class="pad-icon">🚨</span>
+              <span>Sirena Rave</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="scratch">
+              <span class="pad-icon">💿</span>
+              <span>Scratch</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="drop">
+              <span class="pad-icon">💣</span>
+              <span>Bass Drop</span>
+            </button>
+            <button type="button" class="btn-dj-pad" data-fx="confetti">
+              <span class="pad-icon">🎉</span>
+              <span>Confeti</span>
+            </button>
+            <button type="button" class="btn-dj-pad" id="btn-dj-hype-hands">
+              <span class="pad-icon">🙌</span>
+              <span>Manos Arriba</span>
+            </button>
+          </div>
+        </div>
+
+        <h2 class="card-title">🎙️ Configuración del DJ</h2>
         <div class="form-group">
           <label for="singer-name">Nombre del Comediante</label>
           <input type="text" id="singer-name" value="EL GARABATO" placeholder="Ej: Garabatox, El Tío Franco, etc." />
@@ -373,6 +507,54 @@
             <button type="button" id="btn-save-as-vip-joke" class="btn-action-small" style="flex: 1; background: #2563eb; color: #fff; font-weight: 700; cursor: pointer; padding: 8px; border-radius: 8px; border: none; font-size: 11px;" title="Pasar al editor para corregir o guardar en la lista permanente">
               ✏️ Editar en el Creador
             </button>
+          </div>
+        </div>
+
+        <!-- MÓDULO 3: SIMULADOR DE CHAT EN VIVO DE ESPECTADORES (BOCADILLO 3D) -->
+        <div class="chat-sim-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <h2 style="font-size: 14px; font-weight: 900; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+              💬 Chat en Vivo de Espectadores
+            </h2>
+            <span style="font-size: 9px; background: #0891b2; color: #fff; padding: 2px 7px; border-radius: 8px; font-weight: 800;">
+              BOCADILLO 3D
+            </span>
+          </div>
+          <p class="card-desc" style="font-size: 11px; margin-bottom: 8px;">
+            Cada espectador que habla en el chat aparece en la pista de baile 3D con su mensaje flotando en una viñeta cómica arriba de su cabeza.
+          </p>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="chat-user-input" style="font-size: 11px;">Nombre Espectador</label>
+              <input type="text" id="chat-user-input" placeholder="Ej: Carlos (Sin arroba)" value="Carlos" style="padding: 7px; font-size: 12px;" />
+            </div>
+            <div class="form-group flex-2">
+              <label for="chat-text-input" style="font-size: 11px;">Mensaje que dice en el chat</label>
+              <input type="text" id="chat-text-input" placeholder="Ej: ¡Sube el bajo DJ! 🔥" value="¡Suelte el bajo DJ! 🔥" style="padding: 7px; font-size: 12px;" />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+            <button type="button" id="btn-send-chat-msg" class="btn-sim-gift" style="flex: 1; background: linear-gradient(135deg, #06b6d4, #2563eb); font-weight: 800; padding: 9px;">
+              💬 Enviar al Chat (Aparece sobre su cabeza en 3D)
+            </button>
+            <label class="checkbox-label" style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; white-space: nowrap;">
+              <input type="checkbox" id="chat-is-vip" />
+              <span style="color: #facc15;">👑 Donador VIP</span>
+            </label>
+          </div>
+
+          <!-- Píldoras de mensajes rápidos para probar con 1 clic -->
+          <div class="chat-quick-pills">
+            <button type="button" class="btn-chat-pill" data-msg="¡Suelte el bajo DJ! 🔥">🔥 ¡Suelte el bajo!</button>
+            <button type="button" class="btn-chat-pill" data-msg="¡DJ ponte una guaracha! 🌴">🌴 ¡Ponte una guaracha!</button>
+            <button type="button" class="btn-chat-pill" data-msg="¡Saludos desde Colombia! 🇨🇴">🇨🇴 Saludos Colombia</button>
+            <button type="button" class="btn-chat-pill" data-msg="¡Saludos desde México! 🇲🇽">🇲🇽 Saludos México</button>
+            <button type="button" class="btn-chat-pill" data-msg="¡Qué temazo tan brutal! 💃">💃 ¡Qué temazo!</button>
+            <button type="button" class="btn-chat-pill" data-msg="¡Tira confeti DJ! 🎉">🎉 ¡Tira confeti!</button>
+            <button type="button" class="btn-chat-pill" data-msg="¡Arriba las manos todos! 🙌">🙌 ¡Manos arriba!</button>
+            <button type="button" class="btn-chat-pill" data-msg="¡DJ pon reggaetón! 🎵">🎵 ¡Pon reggaetón!</button>
           </div>
         </div>
 

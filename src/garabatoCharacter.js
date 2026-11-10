@@ -209,6 +209,52 @@ export function createStickman(isSinger = false, initialColor = null, customConf
     }, durationMs);
   }
 
+  // Auriculares profesionales de DJ para el personaje estrella
+  if (isSinger) {
+    const hpGroup = new THREE.Group();
+    // Diadema que cruza por arriba de la cabeza
+    const bandGeo = new THREE.TorusGeometry(headRadius * 1.08, 0.035 * scale, 8, 24, Math.PI);
+    const bandMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.8 });
+    const bandMesh = new THREE.Mesh(bandGeo, bandMat);
+    bandMesh.rotation.x = -Math.PI / 2;
+    bandMesh.position.y = headRadius * 0.12;
+    hpGroup.add(bandMesh);
+
+    // Almohadilla izquierda
+    const earPadGeo = new THREE.CylinderGeometry(0.12 * scale, 0.12 * scale, 0.08 * scale, 16);
+    const earPadMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4 });
+    const earPadL = new THREE.Mesh(earPadGeo, earPadMat);
+    earPadL.rotation.z = Math.PI / 2;
+    earPadL.position.set(-headRadius * 1.08, headRadius * 0.1, 0);
+    hpGroup.add(earPadL);
+
+    // Anillo de neón cian en auricular izquierdo
+    const neonRingL = new THREE.Mesh(
+      new THREE.RingGeometry(0.06 * scale, 0.11 * scale, 16),
+      new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide })
+    );
+    neonRingL.rotation.y = Math.PI / 2;
+    neonRingL.position.set(-headRadius * 1.13, headRadius * 0.1, 0);
+    hpGroup.add(neonRingL);
+
+    // Almohadilla derecha
+    const earPadR = new THREE.Mesh(earPadGeo, earPadMat);
+    earPadR.rotation.z = -Math.PI / 2;
+    earPadR.position.set(headRadius * 1.08, headRadius * 0.1, 0);
+    hpGroup.add(earPadR);
+
+    // Anillo de neón magenta en auricular derecho
+    const neonRingR = new THREE.Mesh(
+      new THREE.RingGeometry(0.06 * scale, 0.11 * scale, 16),
+      new THREE.MeshBasicMaterial({ color: 0xec4899, side: THREE.DoubleSide })
+    );
+    neonRingR.rotation.y = -Math.PI / 2;
+    neonRingR.position.set(headRadius * 1.13, headRadius * 0.1, 0);
+    hpGroup.add(neonRingR);
+
+    headGroup.add(hpGroup);
+  }
+
   // Gorra para el cantante estrella
   if (isSinger) {
     const capMat = new THREE.MeshLambertMaterial({ color: 0x1e3a8a });
@@ -452,6 +498,30 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         speechBubbleSprite.visible = false;
         clearTimeout(speechBubbleSprite._timer);
       }
+    },
+
+    djAction: 'idle',
+    djActionUntil: 0,
+
+    triggerDjScratch(duration = 4500) {
+      this.djAction = 'scratch';
+      this.djActionUntil = Date.now() + duration;
+      showBubbleText('💿 ¡SCRATCH EN VIVO! 🔥', '#00f0ff', duration);
+      setTimeout(() => { if (this.djAction === 'scratch') this.djAction = 'idle'; }, duration);
+    },
+
+    triggerDjHandsUp(duration = 5500) {
+      this.djAction = 'hands_up';
+      this.djActionUntil = Date.now() + duration;
+      showBubbleText('🙌 ¡MANOS ARRIBA EN LA PISTA! 🙌', '#ec4899', duration);
+      setTimeout(() => { if (this.djAction === 'hands_up') this.djAction = 'idle'; }, duration);
+    },
+
+    triggerDjDrop(duration = 6500) {
+      this.djAction = 'drop';
+      this.djActionUntil = Date.now() + duration;
+      showBubbleText('💣 ¡BASS DROP! ¡EXPLOTA LA DISCO! 💥', '#facc15', duration);
+      setTimeout(() => { if (this.djAction === 'drop') this.djAction = 'idle'; }, duration);
     },
 
     triggerWelcomeReaction(user = 'Espectador', duration = 3500) {
@@ -770,11 +840,45 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         legR.kneeJoint.rotation.x = 0;
       }
 
-      // Si es cantante, mantener micrófono en posición natural
+      // Si es el DJ principal, animar sus movimientos sobre la cabina y audífonos
       if (isSinger) {
-        armR.shoulder.rotation.x = -1.45 + Math.sin(t * 2) * 0.08;
-        armR.shoulder.rotation.z = 0.3;
-        armR.elbow.rotation.x = -1.1;
+        if (this.djAction === 'scratch') {
+          // Mano izquierda al auricular y mano derecha rayando el vinilo
+          headGroup.rotation.z = 0.2 + Math.sin(t * 8) * 0.08;
+          armL.shoulder.rotation.x = -2.1;
+          armL.shoulder.rotation.z = 0.45;
+          armL.elbow.rotation.x = -1.65;
+
+          const scratch = Math.sin(t * 16);
+          armR.shoulder.rotation.x = -1.1 + scratch * 0.35;
+          armR.shoulder.rotation.z = 0.35 + scratch * 0.12;
+          armR.elbow.rotation.x = -0.85 + scratch * 0.2;
+          hips.position.y = this.baseY + Math.abs(Math.sin(t * 8)) * 0.05;
+        } else if (this.djAction === 'hands_up' || this.djAction === 'drop') {
+          // Ambos brazos arriba animando el drop del festival
+          const pump = Math.sin(t * 9) * 0.3;
+          armL.shoulder.rotation.x = -2.6 + pump;
+          armL.shoulder.rotation.z = -0.4;
+          armR.shoulder.rotation.x = -2.6 + pump;
+          armR.shoulder.rotation.z = 0.4;
+          headGroup.rotation.x = Math.sin(t * 9) * 0.2;
+          hips.position.y = this.baseY + Math.abs(Math.sin(t * 9)) * 0.16;
+        } else if (this.gesture === 'none' && this.danceMove === 'none') {
+          // Postura natural de DJ en cabina: cabeceo al beat, mano en faders y mano en plato
+          const beatBounce = Math.abs(Math.sin(t * 6)) * 0.04;
+          hips.position.y = this.baseY + beatBounce;
+          headGroup.rotation.x = Math.sin(t * 6) * 0.12;
+
+          // Mano izquierda cerca al mezclador
+          armL.shoulder.rotation.x = -0.95 + Math.sin(t * 2) * 0.08;
+          armL.shoulder.rotation.z = -0.25;
+          armL.elbow.rotation.x = -0.9;
+
+          // Mano derecha en la tornamesa
+          armR.shoulder.rotation.x = -1.05 + Math.sin(t * 4) * 0.12;
+          armR.shoulder.rotation.z = 0.3;
+          armR.elbow.rotation.x = -0.85;
+        }
       }
     }
   };

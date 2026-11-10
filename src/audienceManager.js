@@ -121,6 +121,135 @@ export class AudienceManager {
   }
 
   /**
+   * Crea una viñeta cómica de diálogo (Chat Bubble) 3D sobre la cabeza del espectador
+   * con soporte multilínea, cola de bocadillo y borde neón brillante.
+   */
+  createChatBubbleSprite(text, isVip = false) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 384;
+    canvas.height = 160;
+    const ctx = canvas.getContext('2d');
+
+    // Fondo de la viñeta con colita apuntando al espectador
+    const bubbleW = 372;
+    const bubbleH = 126;
+    const radius = 18;
+
+    ctx.fillStyle = isVip ? 'rgba(30, 20, 50, 0.95)' : 'rgba(15, 23, 42, 0.94)';
+    ctx.strokeStyle = isVip ? '#facc15' : '#00f0ff';
+    ctx.lineWidth = 4;
+
+    // Cuerpo redondeado de la burbuja
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(6, 6, bubbleW, bubbleH, radius);
+    } else {
+      ctx.rect(6, 6, bubbleW, bubbleH);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Triangulito de la cola del bocadillo apuntando hacia la cabeza del muñeco
+    ctx.beginPath();
+    ctx.moveTo(172, bubbleH + 6);
+    ctx.lineTo(192, 156);
+    ctx.lineTo(212, bubbleH + 6);
+    ctx.fillStyle = isVip ? 'rgba(30, 20, 50, 0.95)' : 'rgba(15, 23, 42, 0.94)';
+    ctx.fill();
+    ctx.stroke();
+
+    // Texto del mensaje con ajuste de líneas
+    ctx.fillStyle = isVip ? '#fef08a' : '#ffffff';
+    let fontSize = 24;
+    const clean = String(text || '').trim();
+    if (clean.length > 50) fontSize = 17;
+    else if (clean.length > 30) fontSize = 20;
+
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Algoritmo de partición en líneas
+    const words = clean.split(' ');
+    const lines = [];
+    let currentLine = '';
+    const maxLineW = bubbleW - 40;
+
+    for (let w of words) {
+      const test = currentLine ? `${currentLine} ${w}` : w;
+      if (ctx.measureText(test).width <= maxLineW) {
+        currentLine = test;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = w;
+        if (lines.length >= 2) break;
+      }
+    }
+    if (currentLine && lines.length < 3) lines.push(currentLine);
+
+    const lineH = fontSize * 1.35;
+    const startY = 16 + (bubbleH - lines.length * lineH) / 2 + lineH / 2;
+
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], 192, startY + i * lineH);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(1.25, 0.52, 1);
+    return sprite;
+  }
+
+  /**
+   * Muestra el mensaje del chat del espectador directamente flotando ARRIBA DE SU CABEZA
+   */
+  sayChatMessage(name, text, isVip = false) {
+    if (!name || !text) return;
+    const cleanUser = String(name).replace(/^@+/, '').trim();
+    const cleanText = String(text).trim();
+
+    // 1. Si el espectador no existe en la pista, crearlo de inmediato
+    let spec = this.crowd.find(s => s.name.toLowerCase() === cleanUser.toLowerCase());
+    if (!spec) {
+      spec = this.spawnSpectator(cleanUser);
+    }
+
+    // 2. Si ya tenía una viñeta activa, removerla limpiamente
+    if (spec.chatBubble) {
+      spec.mesh.remove(spec.chatBubble);
+      clearTimeout(spec.chatBubbleTimer);
+      spec.chatBubble = null;
+    }
+
+    // 3. Crear nueva viñeta de diálogo 3D sobre su cabeza
+    const bubbleSprite = this.createChatBubbleSprite(cleanText, isVip);
+    bubbleSprite.position.set(0, 1.05, 0);
+    spec.mesh.add(bubbleSprite);
+    spec.chatBubble = bubbleSprite;
+
+    // 4. Animar al muñeco mientras habla (saltito o baile)
+    spec.mesh.animController.gesture = 'joy';
+    spec.mesh.animController.speedMultiplier = 1.8;
+    this.increaseEnergy(6);
+
+    // 5. Destacar con anillo de luz
+    this.highlightSpectator(cleanUser, 3000);
+
+    // 6. Temporizador para ocultar la burbuja suavemente a los 6.5 segundos
+    spec.chatBubbleTimer = setTimeout(() => {
+      if (spec.chatBubble === bubbleSprite) {
+        spec.mesh.remove(bubbleSprite);
+        spec.chatBubble = null;
+        spec.mesh.animController.gesture = 'none';
+        spec.mesh.animController.speedMultiplier = 1.0;
+      }
+    }, 6500);
+
+    return spec;
+  }
+
+  /**
    * Resalta a un espectador específico con aura dorada, salto y badge VIP
    * sin tapar la vista del cantante.
    */

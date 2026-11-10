@@ -972,6 +972,374 @@ export function initAdminApp() {
   renderIdlePhrases();
   setTimeout(() => saveIdleConfig(), 600);
 
+  // ==========================================
+  // MÓDULO DE MICRÓFONO EN VIVO (VOZ HUMANA - ANTI-BAN TIKTOK)
+  // ==========================================
+  const btnToggleMic = document.getElementById('btn-toggle-mic');
+  const micIcon = document.getElementById('mic-icon');
+  const micText = document.getElementById('mic-text');
+  const micAirStatus = document.getElementById('mic-air-status');
+  const micVuFill = document.getElementById('mic-vu-fill');
+  const micDbLabel = document.getElementById('mic-db-label');
+  const micModeSelect = document.getElementById('mic-mode-select');
+  const micGainSlider = document.getElementById('mic-gain-slider');
+  const micWebrtcStream = document.getElementById('mic-webrtc-stream');
+  const cardHumanMic = document.getElementById('card-human-mic');
+
+  let isMicActive = false;
+  let micAudioContext = null;
+  let micMediaStream = null;
+  let micAnalyser = null;
+  let micGainNode = null;
+  let micDataArray = null;
+  let micAnimFrame = null;
+  let adminRtcPeer = null;
+
+  async function initWebRtcStream() {
+    if (!micMediaStream || !micWebrtcStream || !micWebrtcStream.checked) return;
+    try {
+      if (adminRtcPeer) {
+        adminRtcPeer.close();
+        adminRtcPeer = null;
+      }
+      adminRtcPeer = new RTCPeerConnection();
+      micMediaStream.getAudioTracks().forEach(track => {
+        adminRtcPeer.addTrack(track, micMediaStream);
+      });
+      adminRtcPeer.onicecandidate = (event) => {
+        if (event.candidate) {
+          syncBridge.send('RTC_ICE_CANDIDATE', { candidate: event.candidate, sender: 'admin' });
+        }
+      };
+      const offer = await adminRtcPeer.createOffer();
+      await adminRtcPeer.setLocalDescription(offer);
+      syncBridge.send('RTC_OFFER', { offer });
+    } catch (e) {
+      console.warn('[WebRTC Admin Error]:', e);
+    }
+  }
+
+  syncBridge.on('RTC_ANSWER', async (payload) => {
+    if (adminRtcPeer && payload && payload.answer) {
+      try {
+        await adminRtcPeer.setRemoteDescription(new RTCSessionDescription(payload.answer));
+      } catch (e) {
+        console.warn('[WebRTC Answer Error]:', e);
+      }
+    }
+  });
+
+  syncBridge.on('RTC_ICE_CANDIDATE', async (payload) => {
+    if (adminRtcPeer && payload && payload.sender === 'show' && payload.candidate) {
+      try {
+        await adminRtcPeer.addIceCandidate(new RTCIceCandidate(payload.candidate));
+      } catch (e) {
+        console.warn('[WebRTC Candidate Error]:', e);
+      }
+    }
+  });
+
+  async function startHumanMic() {
+    if (isMicActive) return;
+    try {
+      micMediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      micAudioContext = new AudioCtx();
+      const source = micAudioContext.createMediaStreamSource(micMediaStream);
+
+      micGainNode = micAudioContext.createGain();
+      const gainVal = micGainSlider ? (parseFloat(micGainSlider.value) / 100) : 1.2;
+      micGainNode.gain.setValueAtTime(gainVal, micAudioContext.currentTime);
+
+      micAnalyser = micAudioContext.createAnalyser();
+      micAnalyser.fftSize = 256;
+      micAnalyser.smoothingTimeConstant = 0.4;
+      micDataArray = new Uint8Array(micAnalyser.frequencyBinCount);
+
+      source.connect(micGainNode);
+      micGainNode.connect(micAnalyser);
+
+      isMicActive = true;
+      updateMicUI(true);
+
+      if (micWebrtcStream && micWebrtcStream.checked) {
+        initWebRtcStream();
+      }
+
+      function analyzeMic() {
+        if (!isMicActive || !micAnalyser) return;
+        micAnalyser.getByteFrequencyData(micDataArray);
+
+        let sum = 0;
+        for (let i = 0; i < micDataArray.length; i++) {
+          sum += micDataArray[i];
+        }
+        const avg = sum / micDataArray.length;
+        const normalized = Math.min(1.0, (avg / 128) * (micGainSlider ? (parseFloat(micGainSlider.value) / 100) : 1.2));
+
+        if (micVuFill) {
+          micVuFill.style.width = `${Math.round(normalized * 100)}%`;
+        }
+        if (micDbLabel) {
+          micDbLabel.textContent = normalized > 0.05 ? `${Math.round(normalized * 100)}% (Detectando voz)` : '0% (Silencio)';
+          micDbLabel.style.color = normalized > 0.05 ? '#22c55e' : '#94a3b8';
+        }
+
+        // Enviar nivel de voz en tiempo real para animar la boca del muñeco 3D
+        syncBridge.send('HUMAN_MIC_LEVEL', {
+          active: true,
+          level: normalized
+        });
+
+        micAnimFrame = requestAnimationFrame(analyzeMic);
+      }
+      analyzeMic();
+    } catch (err) {
+      console.error('Error al acceder al micrófono:', err);
+      alert('No se pudo acceder al micrófono. Por favor permite los permisos de audio en tu navegador.');
+      stopHumanMic();
+    }
+  }
+
+  function stopHumanMic() {
+    isMicActive = false;
+    if (micAnimFrame) cancelAnimationFrame(micAnimFrame);
+    if (micMediaStream) {
+      micMediaStream.getTracks().forEach(t => t.stop());
+      micMediaStream = null;
+    }
+    if (micAudioContext) {
+      micAudioContext.close().catch(() => {});
+      micAudioContext = null;
+    }
+    if (adminRtcPeer) {
+      adminRtcPeer.close();
+      adminRtcPeer = null;
+    }
+    updateMicUI(false);
+    syncBridge.send('HUMAN_MIC_LEVEL', { active: false, level: 0 });
+  }
+
+  function updateMicUI(active) {
+    if (cardHumanMic) {
+      if (active) cardHumanMic.classList.add('is-live');
+      else cardHumanMic.classList.remove('is-live');
+    }
+    if (btnToggleMic) {
+      if (active) {
+        btnToggleMic.classList.add('is-active');
+        if (micIcon) micIcon.textContent = '🔴';
+        if (micText) micText.textContent = 'EN EL AIRE • HABLANDO EN VIVO (CLIC PARA SILENCIAR)';
+      } else {
+        btnToggleMic.classList.remove('is-active');
+        if (micIcon) micIcon.textContent = '🎙️';
+        if (micText) micText.textContent = 'ACTIVAR MICRÓFONO EN VIVO';
+      }
+    }
+    if (micAirStatus) {
+      if (active) {
+        micAirStatus.textContent = '🔴 EN EL AIRE (HUMANO)';
+        micAirStatus.style.background = '#ef4444';
+        micAirStatus.style.color = '#ffffff';
+      } else {
+        micAirStatus.textContent = '⚪ Micrófono Silenciado';
+        micAirStatus.style.background = '#1e293b';
+        micAirStatus.style.color = '#94a3b8';
+      }
+    }
+    if (!active && micVuFill) {
+      micVuFill.style.width = '0%';
+    }
+    if (!active && micDbLabel) {
+      micDbLabel.textContent = '0%';
+      micDbLabel.style.color = '#94a3b8';
+    }
+  }
+
+  if (btnToggleMic) {
+    btnToggleMic.addEventListener('click', () => {
+      const mode = micModeSelect ? micModeSelect.value : 'toggle';
+      if (mode === 'toggle') {
+        if (isMicActive) stopHumanMic();
+        else startHumanMic();
+      }
+    });
+
+    btnToggleMic.addEventListener('mousedown', () => {
+      const mode = micModeSelect ? micModeSelect.value : 'toggle';
+      if (mode === 'ptt' && !isMicActive) {
+        startHumanMic();
+      }
+    });
+
+    btnToggleMic.addEventListener('mouseup', () => {
+      const mode = micModeSelect ? micModeSelect.value : 'toggle';
+      if (mode === 'ptt' && isMicActive) {
+        stopHumanMic();
+      }
+    });
+  }
+
+  if (micGainSlider) {
+    micGainSlider.addEventListener('input', () => {
+      if (micGainNode && micAudioContext) {
+        const val = parseFloat(micGainSlider.value) / 100;
+        micGainNode.gain.setValueAtTime(val, micAudioContext.currentTime);
+      }
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    if (e.code === 'Space' || e.key.toLowerCase() === 'm') {
+      const mode = micModeSelect ? micModeSelect.value : 'toggle';
+      if (mode === 'ptt') {
+        if (!isMicActive) {
+          e.preventDefault();
+          startHumanMic();
+        }
+      } else if (e.key.toLowerCase() === 'm' && !e.repeat) {
+        e.preventDefault();
+        if (isMicActive) stopHumanMic();
+        else startHumanMic();
+      }
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    if (e.code === 'Space' || e.key.toLowerCase() === 'm') {
+      const mode = micModeSelect ? micModeSelect.value : 'toggle';
+      if (mode === 'ptt' && isMicActive) {
+        e.preventDefault();
+        stopHumanMic();
+      }
+    }
+  });
+
+  // ==========================================
+  // CONSOLA MAESTRA DE DJ (PISTAS & SOUNDBOARD)
+  // ==========================================
+  const djGenreBtns = document.querySelectorAll('.btn-dj-genre');
+  const btnDjPlay = document.getElementById('btn-dj-play');
+  const btnDjStop = document.getElementById('btn-dj-stop');
+  const djTrackStatus = document.getElementById('dj-track-status');
+  const djPads = document.querySelectorAll('.btn-dj-pad');
+  const btnDjHypeHands = document.getElementById('btn-dj-hype-hands');
+
+  let selectedDjGenre = 'EDM';
+  let isDjPlaying = false;
+
+  djGenreBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      djGenreBtns.forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      selectedDjGenre = btn.dataset.genre || 'EDM';
+      if (isDjPlaying) {
+        syncBridge.send('DJ_PLAY_TRACK', { genre: selectedDjGenre });
+        if (djTrackStatus) djTrackStatus.textContent = `▶ Sonando: ${selectedDjGenre}`;
+      }
+    });
+  });
+
+  if (btnDjPlay) {
+    btnDjPlay.addEventListener('click', () => {
+      isDjPlaying = true;
+      if (djTrackStatus) {
+        djTrackStatus.textContent = `▶ Sonando: ${selectedDjGenre}`;
+        djTrackStatus.style.background = '#065f46';
+        djTrackStatus.style.color = '#34d399';
+      }
+      syncBridge.send('DJ_PLAY_TRACK', { genre: selectedDjGenre });
+    });
+  }
+
+  if (btnDjStop) {
+    btnDjStop.addEventListener('click', () => {
+      isDjPlaying = false;
+      if (djTrackStatus) {
+        djTrackStatus.textContent = '⏹ En Pausa';
+        djTrackStatus.style.background = '#1e1b4b';
+        djTrackStatus.style.color = '#a78bfa';
+      }
+      syncBridge.send('DJ_STOP_TRACK', {});
+    });
+  }
+
+  djPads.forEach(pad => {
+    pad.addEventListener('click', () => {
+      const fx = pad.dataset.fx;
+      if (fx) {
+        syncBridge.send('DJ_SOUND_FX', { effect: fx });
+      }
+    });
+  });
+
+  if (btnDjHypeHands) {
+    btnDjHypeHands.addEventListener('click', () => {
+      syncBridge.send('DJ_STICKMAN_ACTION', { action: 'handsup', duration: 3500 });
+    });
+  }
+
+  // ==========================================
+  // SIMULADOR DE CHAT EN VIVO DE ESPECTADORES
+  // ==========================================
+  const chatUserInput = document.getElementById('chat-user-input');
+  const chatTextInput = document.getElementById('chat-text-input');
+  const btnSendChatMsg = document.getElementById('btn-send-chat-msg');
+  const chatIsVip = document.getElementById('chat-is-vip');
+  const chatPills = document.querySelectorAll('.btn-chat-pill');
+
+  function emitChatMessage(user, text, isVip) {
+    const cleanUser = String(user || 'Fan').replace(/^@+/, '').trim();
+    const cleanText = String(text || '').trim();
+    if (!cleanUser || !cleanText) return;
+
+    syncBridge.send('CHAT_MESSAGE', {
+      user: cleanUser,
+      text: cleanText,
+      isVip: Boolean(isVip)
+    });
+  }
+
+  if (btnSendChatMsg) {
+    btnSendChatMsg.addEventListener('click', () => {
+      const user = chatUserInput ? chatUserInput.value : 'Carlos';
+      const text = chatTextInput ? chatTextInput.value : '¡Suelte el bajo DJ! 🔥';
+      const isVip = chatIsVip ? chatIsVip.checked : false;
+      emitChatMessage(user, text, isVip);
+    });
+  }
+
+  if (chatTextInput) {
+    chatTextInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const user = chatUserInput ? chatUserInput.value : 'Carlos';
+        const text = chatTextInput.value;
+        const isVip = chatIsVip ? chatIsVip.checked : false;
+        emitChatMessage(user, text, isVip);
+      }
+    });
+  }
+
+  chatPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const msg = pill.dataset.msg;
+      if (chatTextInput) chatTextInput.value = msg;
+      const user = chatUserInput ? chatUserInput.value : 'Carlos';
+      const isVip = chatIsVip ? chatIsVip.checked : false;
+      emitChatMessage(user, msg, isVip);
+    });
+  });
+
   // Render inicial
   renderAdminJokes();
 }

@@ -1777,6 +1777,114 @@ export class AudioEngine {
   }
 
   // ==========================================
+  // MÓDULO DE DJ EN VIVO (SOUNDBOARD & PISTAS)
+  // ==========================================
+  playAirHorn() {
+    this.initContext();
+    if (!this.ctx) return;
+    const blasts = [0, 0.22, 0.44];
+    const freqs = [466.16, 523.25, 622.25]; // Bb4, C5, Eb5
+    blasts.forEach(offset => {
+      freqs.forEach(f => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, this.ctx.currentTime + offset);
+        gain.gain.setValueAtTime(0.22, this.ctx.currentTime + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + offset + 0.18);
+        osc.connect(gain);
+        gain.connect(this.sfxGain || this.masterGain);
+        osc.start(this.ctx.currentTime + offset);
+        osc.stop(this.ctx.currentTime + offset + 0.18);
+      });
+    });
+  }
+
+  playRaveSiren() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(450, now);
+    osc.frequency.linearRampToValueAtTime(1100, now + 0.8);
+    osc.frequency.linearRampToValueAtTime(450, now + 1.6);
+    osc.frequency.linearRampToValueAtTime(1200, now + 2.4);
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 2.6);
+    osc.connect(gain);
+    gain.connect(this.sfxGain || this.masterGain);
+    osc.start(now);
+    osc.stop(now + 2.6);
+  }
+
+  playVinylScratch() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const t = now + i * 0.18;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1200, t);
+      osc.type = 'triangle';
+      const startF = i % 2 === 0 ? 250 : 900;
+      const endF = i % 2 === 0 ? 1100 : 200;
+      osc.frequency.setValueAtTime(startF, t);
+      osc.frequency.exponentialRampToValueAtTime(endF, t + 0.14);
+      gain.gain.setValueAtTime(0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.14);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.sfxGain || this.masterGain);
+      osc.start(t);
+      osc.stop(t + 0.15);
+    }
+  }
+
+  playBassDrop() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(32, now + 0.9);
+    gain.gain.setValueAtTime(1.0, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+    osc.connect(gain);
+    gain.connect(this.sfxGain || this.masterGain);
+    osc.start(now);
+    osc.stop(now + 2.2);
+  }
+
+  startDjTrack(genre = 'EDM') {
+    this.initContext();
+    if (this.bgMusicPlaying) this.stopComedyLoungeMusic();
+    const g = String(genre).toUpperCase();
+    if (g.includes('GUARA')) {
+      this.bpm = 130;
+    } else if (g.includes('REGGAE') || g.includes('PERREO')) {
+      this.bpm = 96;
+    } else if (g.includes('DISCO') || g.includes('FUNK')) {
+      this.bpm = 122;
+    } else if (g.includes('TECH')) {
+      this.bpm = 126;
+    } else {
+      this.bpm = 128; // EDM Festival
+    }
+    this.startDiscoBeat();
+  }
+
+  stopDjTrack() {
+    this.stopDiscoBeat();
+  }
+
+  // ==========================================
   // ACTUALIZACIÓN DE ENERGÍA Y ANÁLISIS POR FRAME
   // ==========================================
   update() {

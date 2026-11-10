@@ -857,6 +857,152 @@ export function initShowApp() {
     enqueueActorAction(payload.action, payload.user || 'Admin', false);
   });
 
+  // ==========================================
+  // EVENTOS DEL MÓDULO DJ & SOUNDBOARD
+  // ==========================================
+  syncBridge.on('DJ_PLAY_TRACK', (payload) => {
+    markActivity();
+    audioEngine.initContext();
+    const genre = (payload && payload.genre) ? payload.genre : 'EDM';
+    audioEngine.startDjTrack(genre);
+    singer.animController.triggerDjHandsUp(2500);
+    if (queueStatusText) queueStatusText.textContent = `🎧 DJ Mix: ${genre}`;
+  });
+
+  syncBridge.on('DJ_STOP_TRACK', () => {
+    audioEngine.stopDjTrack();
+    singer.animController.resetToIdle();
+    if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
+  });
+
+  syncBridge.on('DJ_SOUND_FX', (payload) => {
+    markActivity();
+    if (!payload || !payload.effect) return;
+    const fx = payload.effect.toLowerCase();
+    if (fx === 'horn') {
+      audioEngine.playAirHorn();
+      singer.animController.triggerDjHandsUp(2200);
+    } else if (fx === 'siren') {
+      audioEngine.playRaveSiren();
+      singer.animController.triggerDjHandsUp(2600);
+    } else if (fx === 'scratch') {
+      audioEngine.playVinylScratch();
+      singer.animController.triggerDjScratch(2200);
+    } else if (fx === 'drop') {
+      audioEngine.playBassDrop();
+      stage.burstConfetti(new THREE.Vector3(0, 4.5, -2));
+      singer.animController.triggerDjDrop(3800);
+    } else if (fx === 'confetti') {
+      audioEngine.playConfettiPop();
+      stage.burstConfetti(new THREE.Vector3(0, 4.5, -2));
+      singer.animController.triggerDjHandsUp(2500);
+    }
+  });
+
+  syncBridge.on('DJ_STICKMAN_ACTION', (payload) => {
+    markActivity();
+    if (!payload || !payload.action) return;
+    const act = payload.action.toLowerCase();
+    if (act === 'scratch') {
+      singer.animController.triggerDjScratch(payload.duration || 3200);
+      audioEngine.playVinylScratch();
+    } else if (act === 'handsup') {
+      singer.animController.triggerDjHandsUp(payload.duration || 3500);
+    } else if (act === 'drop') {
+      singer.animController.triggerDjDrop(payload.duration || 4000);
+      audioEngine.playBassDrop();
+      stage.burstConfetti(new THREE.Vector3(0, 4.5, -2));
+    }
+  });
+
+  // Mensajes de Chat en Vivo: aparecen flotando en viñeta 3D sobre la cabeza del espectador
+  syncBridge.on('CHAT_MESSAGE', (payload) => {
+    if (!payload || !payload.text) return;
+    markActivity();
+    const cleanUser = String(payload.user || 'Fan').replace(/^@+/, '').trim();
+    const text = String(payload.text).trim();
+    const isVip = Boolean(payload.isVip);
+
+    audience.sayChatMessage(cleanUser, text, isVip);
+
+    if (!audioEngine.isSpeaking && !eventQueue.isBusy) {
+      singer.animController.triggerDjScratch(1600);
+    }
+  });
+
+  // ==========================================
+  // VOZ HUMANA EN VIVO (MICRÓFONO DEL STREAMER / DJ)
+  // ==========================================
+  const liveMicHud = document.getElementById('live-mic-hud');
+  let showRtcPeer = null;
+  let showRemoteAudio = null;
+  let isHumanMicActive = false;
+
+  syncBridge.on('RTC_OFFER', async (payload) => {
+    if (!payload || !payload.offer) return;
+    try {
+      if (showRtcPeer) {
+        showRtcPeer.close();
+        showRtcPeer = null;
+      }
+      showRtcPeer = new RTCPeerConnection();
+      showRtcPeer.ontrack = (event) => {
+        if (!showRemoteAudio) {
+          showRemoteAudio = new Audio();
+          showRemoteAudio.autoplay = true;
+        }
+        showRemoteAudio.srcObject = event.streams[0];
+        showRemoteAudio.play().catch(() => {});
+      };
+      showRtcPeer.onicecandidate = (event) => {
+        if (event.candidate) {
+          syncBridge.send('RTC_ICE_CANDIDATE', { candidate: event.candidate, sender: 'show' });
+        }
+      };
+      await showRtcPeer.setRemoteDescription(new RTCSessionDescription(payload.offer));
+      const answer = await showRtcPeer.createAnswer();
+      await showRtcPeer.setLocalDescription(answer);
+      syncBridge.send('RTC_ANSWER', { answer });
+    } catch (e) {
+      console.warn('[WebRTC Show Error]:', e);
+    }
+  });
+
+  syncBridge.on('RTC_ICE_CANDIDATE', async (payload) => {
+    if (showRtcPeer && payload && payload.sender === 'admin' && payload.candidate) {
+      try {
+        await showRtcPeer.addIceCandidate(new RTCIceCandidate(payload.candidate));
+      } catch (e) {
+        console.warn('[WebRTC Candidate Error]:', e);
+      }
+    }
+  });
+
+  syncBridge.on('HUMAN_MIC_LEVEL', (payload) => {
+    if (!payload) return;
+    markActivity();
+    isHumanMicActive = Boolean(payload.active);
+    const level = payload.level || 0;
+
+    if (liveMicHud) {
+      if (isHumanMicActive) liveMicHud.classList.remove('hidden');
+      else liveMicHud.classList.add('hidden');
+    }
+
+    if (isHumanMicActive) {
+      // Auto-ducking en show: baja música para que la voz humana resalte con claridad
+      if (audioEngine.masterGain && audioEngine.ctx) {
+        audioEngine.masterGain.gain.setTargetAtTime(0.35, audioEngine.ctx.currentTime, 0.08);
+      }
+      // Animar boca del personaje al compás de la voz humana real
+      singer.animController.setMouthOpen(Math.min(1.0, level * 2.2));
+    } else {
+      if (audioEngine.masterGain && audioEngine.ctx) {
+        audioEngine.masterGain.gain.setTargetAtTime(1.0, audioEngine.ctx.currentTime, 0.2);
+      }
+    }
+  });
+
   // Eventos de TikTok (Likes, Regalos, Tomates)
   syncBridge.on('TIKTOK_EVENT', (evt) => {
     if (!evt) return;
@@ -1139,7 +1285,7 @@ export function initShowApp() {
 
   // Verificación continua cada 1 segundo (evita que TikTok penalice por inactividad)
   setInterval(() => {
-    if (!idleConfig.enabled || isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking) {
+    if (!idleConfig.enabled || isIdleCalling || eventQueue.isBusy || audioEngine.isSpeaking || isHumanMicActive) {
       return;
     }
     const elapsedSeconds = (Date.now() - lastActivityTime) / 1000;
@@ -1164,9 +1310,11 @@ export function initShowApp() {
       // Niveles de audio reactivos
       const audioLevels = audioEngine.update();
 
-      // Sincronización de boca del comediante con la voz
-      const mouthAmount = audioEngine.isSpeaking ? audioEngine.vocalAmplitude : 0;
-      singer.animController.setMouthOpen(mouthAmount);
+      // Sincronización de boca del DJ con la voz (TTS o Micrófono Humano en Vivo)
+      if (!isHumanMicActive) {
+        const mouthAmount = audioEngine.isSpeaking ? audioEngine.vocalAmplitude : 0;
+        singer.animController.setMouthOpen(mouthAmount);
+      }
 
       // Actualizar comediante, escenario, público
       singer.animController.update(time, delta, audioLevels);

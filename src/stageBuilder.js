@@ -60,6 +60,125 @@ export function buildDiscoStage(scene) {
     stageGroup.add(panel);
   }
 
+  // ==========================================
+  // 2B. CABINA PROFESIONAL DE DJ (DJ BOOTH & DECKS)
+  // ==========================================
+  const djBoothGroup = new THREE.Group();
+  djBoothGroup.position.set(0, stageHeight, -2.4);
+
+  // Mueble principal de la cabina (Desk)
+  const deskGeo = new THREE.BoxGeometry(2.3, 0.95, 0.9);
+  const deskMat = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    roughness: 0.3,
+    metalness: 0.7
+  });
+  const deskMesh = new THREE.Mesh(deskGeo, deskMat);
+  deskMesh.position.y = 0.95 / 2;
+  deskMesh.castShadow = true;
+  deskMesh.receiveShadow = true;
+  djBoothGroup.add(deskMesh);
+
+  // Borde de neón frontal de la mesa
+  const neonDeskBorder = new THREE.Mesh(
+    new THREE.BoxGeometry(2.34, 0.05, 0.94),
+    new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+  );
+  neonDeskBorder.position.y = 0.95;
+  djBoothGroup.add(neonDeskBorder);
+
+  // Cartel frontal luminoso en la cabina
+  const signCanvas = document.createElement('canvas');
+  signCanvas.width = 512;
+  signCanvas.height = 128;
+  const signCtx = signCanvas.getContext('2d');
+  signCtx.fillStyle = '#090d16';
+  signCtx.fillRect(0, 0, 512, 128);
+  signCtx.strokeStyle = '#ec4899';
+  signCtx.lineWidth = 6;
+  signCtx.strokeRect(6, 6, 500, 116);
+  signCtx.fillStyle = '#ffffff';
+  signCtx.font = '900 48px sans-serif';
+  signCtx.textAlign = 'center';
+  signCtx.textBaseline = 'middle';
+  signCtx.fillText('🎧 DJ LIVE CLUB 🔥', 256, 64);
+  const signTex = new THREE.CanvasTexture(signCanvas);
+  const signMat = new THREE.MeshBasicMaterial({ map: signTex, transparent: true });
+  const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.42), signMat);
+  signMesh.position.set(0, 0.52, 0.46);
+  djBoothGroup.add(signMesh);
+
+  // Plato DJ Izquierdo (Jog Wheel / Tornamesa)
+  const platterGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.04, 24);
+  const platterMatL = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.9 });
+  const platterL = new THREE.Mesh(platterGeo, platterMatL);
+  platterL.position.set(-0.65, 0.97, 0.05);
+  djBoothGroup.add(platterL);
+
+  const ringL = new THREE.Mesh(
+    new THREE.RingGeometry(0.18, 0.26, 24),
+    new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide })
+  );
+  ringL.rotation.x = -Math.PI / 2;
+  ringL.position.y = 0.022;
+  platterL.add(ringL);
+
+  // Plato DJ Derecho (Jog Wheel / Tornamesa)
+  const platterMatR = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.9 });
+  const platterR = new THREE.Mesh(platterGeo, platterMatR);
+  platterR.position.set(0.65, 0.97, 0.05);
+  djBoothGroup.add(platterR);
+
+  const ringR = new THREE.Mesh(
+    new THREE.RingGeometry(0.18, 0.26, 24),
+    new THREE.MeshBasicMaterial({ color: 0xec4899, side: THREE.DoubleSide })
+  );
+  ringR.rotation.x = -Math.PI / 2;
+  ringR.position.y = 0.022;
+  platterR.add(ringR);
+
+  // Mezclador Central (Mixer Unit)
+  const mixerGeo = new THREE.BoxGeometry(0.48, 0.03, 0.65);
+  const mixerMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.8 });
+  const mixerMesh = new THREE.Mesh(mixerGeo, mixerMat);
+  mixerMesh.position.set(0, 0.97, 0.05);
+  djBoothGroup.add(mixerMesh);
+
+  // Vúmetros LED en el mezclador (VU Meters que reaccionan al audio)
+  const vuLeds = [];
+  const vuColors = [0x22c55e, 0x22c55e, 0x22c55e, 0xfacc15, 0xfacc15, 0xef4444];
+  for (let ch = -1; ch <= 1; ch += 2) {
+    for (let l = 0; l < 6; l++) {
+      const led = new THREE.Mesh(
+        new THREE.BoxGeometry(0.04, 0.015, 0.025),
+        new THREE.MeshBasicMaterial({ color: vuColors[l] })
+      );
+      led.position.set(ch * 0.07, 0.99, -0.15 + l * 0.045);
+      djBoothGroup.add(led);
+      vuLeds.push({ mesh: led, level: (l + 1) / 6, origColor: vuColors[l] });
+    }
+  }
+
+  // Laptop del DJ sobre la mesa
+  const laptopBase = new THREE.Mesh(
+    new THREE.BoxGeometry(0.35, 0.02, 0.25),
+    new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
+  );
+  laptopBase.position.set(-0.75, 1.0, -0.22);
+  laptopBase.rotation.y = 0.25;
+  djBoothGroup.add(laptopBase);
+
+  const laptopScreen = new THREE.Mesh(
+    new THREE.BoxGeometry(0.35, 0.24, 0.015),
+    new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+  );
+  laptopScreen.position.set(-0.75, 1.12, -0.32);
+  laptopScreen.rotation.x = -0.25;
+  laptopScreen.rotation.y = 0.25;
+  djBoothGroup.add(laptopScreen);
+
+  stageGroup.add(djBoothGroup);
+
   let ledData = {
     singerName: 'EL GARABATO',
     personality: 'COMEDY CLUB',
@@ -293,6 +412,16 @@ export function buildDiscoStage(scene) {
         if (extremeTimer <= 0) {
           isExtremeMode = false;
         }
+      }
+
+      // 0. Tornamesas de DJ girando en tiempo real y Vúmetros reactivos al beat
+      const platterSpeed = 3.5 + (audioLevels.bass || 0) * 4.5;
+      platterL.rotation.y += platterSpeed * delta;
+      platterR.rotation.y += platterSpeed * 0.9 * delta;
+
+      const vuLevel = Math.min(1.0, (audioLevels.bass || 0) * 1.35 + (audioLevels.mid || 0) * 0.4);
+      for (let v of vuLeds) {
+        v.mesh.visible = vuLevel >= (v.level * 0.7);
       }
 
       // 1. Bola de discoteca rotando (más rápida en modo extremo)
