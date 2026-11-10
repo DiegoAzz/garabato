@@ -181,8 +181,9 @@ export function initAdminApp() {
     const loadAPI = () => {
       if (window.YT && window.YT.Player) {
         if (deck.key === 'A') {
-          if (adminYTPlayerA && adminYTPlayerA.loadVideoById) {
-            adminYTPlayerA.loadVideoById(videoId);
+          if (adminYTPlayerA && adminYTPlayerA.cueVideoById) {
+            if (deck.isPlaying) adminYTPlayerA.loadVideoById(videoId);
+            else adminYTPlayerA.cueVideoById(videoId);
             deck.ytPlayer = adminYTPlayerA;
             return;
           }
@@ -190,20 +191,25 @@ export function initAdminApp() {
             width: '1',
             height: '1',
             videoId: videoId,
-            playerVars: { autoplay: 1, controls: 0, playsinline: 1 },
+            playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
             events: {
               onReady: (e) => {
                 const { effA } = calculateEffectiveVolumes();
                 e.target.setVolume(Math.round(effA * 100));
                 if (isAdminAudioMuted) e.target.mute();
-                e.target.playVideo();
+                if (deck.isPlaying) {
+                  e.target.playVideo();
+                } else {
+                  e.target.pauseVideo();
+                }
                 deck.ytPlayer = e.target;
               }
             }
           });
         } else {
-          if (adminYTPlayerB && adminYTPlayerB.loadVideoById) {
-            adminYTPlayerB.loadVideoById(videoId);
+          if (adminYTPlayerB && adminYTPlayerB.cueVideoById) {
+            if (deck.isPlaying) adminYTPlayerB.loadVideoById(videoId);
+            else adminYTPlayerB.cueVideoById(videoId);
             deck.ytPlayer = adminYTPlayerB;
             return;
           }
@@ -211,13 +217,17 @@ export function initAdminApp() {
             width: '1',
             height: '1',
             videoId: videoId,
-            playerVars: { autoplay: 1, controls: 0, playsinline: 1 },
+            playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
             events: {
               onReady: (e) => {
                 const { effB } = calculateEffectiveVolumes();
                 e.target.setVolume(Math.round(effB * 100));
                 if (isAdminAudioMuted) e.target.mute();
-                e.target.playVideo();
+                if (deck.isPlaying) {
+                  e.target.playVideo();
+                } else {
+                  e.target.pauseVideo();
+                }
                 deck.ytPlayer = e.target;
               }
             }
@@ -425,26 +435,29 @@ export function initAdminApp() {
   // ==========================================
   // OPERACIONES DE CARGA, PLAY, PAUSE Y STOP
   // ==========================================
-  function loadTrackToDeck(deck, track, autoPlay = true) {
+  function loadTrackToDeck(deck, track, autoPlay = false) {
     deck.title = track.name || track.title || 'Canción DJ';
     deck.type = track.videoId ? 'youtube' : 'audio';
     deck.url = track.url || null;
     deck.videoId = track.videoId || null;
+
+    deck.isPlaying = false;
+    deck.isPaused = false;
 
     if (deck.type === 'youtube') {
       if (deck.audioEl) deck.audioEl.pause();
       loadYouTubeToAdminDeck(deck, deck.videoId);
     } else {
       const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
-      if (player && player.stopVideo) player.stopVideo();
+      if (player && typeof player.pauseVideo === 'function') try { player.pauseVideo(); } catch (e) {}
+      if (player && typeof player.stopVideo === 'function') try { player.stopVideo(); } catch (e) {}
       if (deck.audioEl && deck.url) {
         deck.audioEl.src = deck.url;
         deck.audioEl.load();
+        deck.audioEl.pause();
       }
     }
 
-    deck.isPlaying = false;
-    deck.isPaused = false;
     updateDeckUI(deck);
     updateDeckTimeDisplay(deck);
 
@@ -473,7 +486,7 @@ export function initAdminApp() {
 
     if (deck.type === 'youtube' && deck.videoId) {
       const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
-      if (player && player.playVideo) {
+      if (player && typeof player.playVideo === 'function') {
         player.playVideo();
       } else {
         loadYouTubeToAdminDeck(deck, deck.videoId);
@@ -500,9 +513,12 @@ export function initAdminApp() {
 
     if (deck.type === 'youtube') {
       const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
-      if (player && player.pauseVideo) player.pauseVideo();
-    } else if (deck.audioEl) {
-      deck.audioEl.pause();
+      if (player && typeof player.pauseVideo === 'function') {
+        try { player.pauseVideo(); } catch (e) {}
+      }
+    }
+    if (deck.audioEl) {
+      try { deck.audioEl.pause(); } catch (e) {}
     }
 
     updateDeckUI(deck);
@@ -515,10 +531,16 @@ export function initAdminApp() {
 
     if (deck.type === 'youtube') {
       const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
-      if (player && player.stopVideo) player.stopVideo();
-    } else if (deck.audioEl) {
-      deck.audioEl.pause();
-      deck.audioEl.currentTime = 0;
+      if (player) {
+        if (typeof player.pauseVideo === 'function') try { player.pauseVideo(); } catch (e) {}
+        if (typeof player.stopVideo === 'function') try { player.stopVideo(); } catch (e) {}
+      }
+    }
+    if (deck.audioEl) {
+      try {
+        deck.audioEl.pause();
+        deck.audioEl.currentTime = 0;
+      } catch (e) {}
     }
 
     updateDeckUI(deck);
@@ -528,12 +550,17 @@ export function initAdminApp() {
 
   function cueDeck(deck) {
     if (deck.audioEl) {
-      deck.audioEl.pause();
-      deck.audioEl.currentTime = 0;
+      try {
+        deck.audioEl.pause();
+        deck.audioEl.currentTime = 0;
+      } catch (e) {}
     }
     if (deck.type === 'youtube') {
       const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
-      if (player && player.seekTo) player.seekTo(0);
+      if (player) {
+        if (typeof player.pauseVideo === 'function') try { player.pauseVideo(); } catch (e) {}
+        if (typeof player.seekTo === 'function') try { player.seekTo(0); } catch (e) {}
+      }
     }
     deck.isPlaying = false;
     deck.isPaused = false;
@@ -734,11 +761,11 @@ export function initAdminApp() {
       `;
 
       row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
-        loadTrackToDeck(deckA, track, true);
+        loadTrackToDeck(deckA, track, false);
       });
 
       row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
-        loadTrackToDeck(deckB, track, true);
+        loadTrackToDeck(deckB, track, false);
       });
 
       row.querySelector('[data-action="delete"]')?.addEventListener('click', () => {
@@ -880,11 +907,11 @@ export function initAdminApp() {
         `;
 
         row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
-          loadTrackToDeck(deckA, { name: item.title, videoId: item.id }, true);
+          loadTrackToDeck(deckA, { name: item.title, videoId: item.id }, false);
         });
 
         row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
-          loadTrackToDeck(deckB, { name: item.title, videoId: item.id }, true);
+          loadTrackToDeck(deckB, { name: item.title, videoId: item.id }, false);
         });
 
         ytSearchResults.appendChild(row);
@@ -937,8 +964,8 @@ export function initAdminApp() {
       if (data.success && data.track) {
         showUploadStatus(`¡Pista importada: "${data.track.name}"!`, false);
         await fetchMusicPlaylist();
-        if (!deckA.isPlaying) loadTrackToDeck(deckA, data.track, true);
-        else loadTrackToDeck(deckB, data.track, true);
+        if (!deckA.isPlaying) loadTrackToDeck(deckA, data.track, false);
+        else loadTrackToDeck(deckB, data.track, false);
       } else {
         showUploadStatus(data.error || 'Error al importar pista.', true);
       }
@@ -1296,6 +1323,7 @@ export function initAdminApp() {
       document.querySelectorAll('.btn-camera').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const shot = btn.dataset.shot || 'AUTO';
+      syncBridge.send('CAMERA_SHOT', { shot });
       syncBridge.send('SET_CAMERA_SHOT', { shot });
     });
   });

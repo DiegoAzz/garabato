@@ -488,8 +488,11 @@ export function initShowApp() {
         if (audioEngine.audioElement) {
           audioEngine.audioElement.muted = true;
         }
-        if (showYTPlayer && showYTPlayer.mute) {
-          showYTPlayer.mute();
+        if (showYTPlayerA && showYTPlayerA.mute) {
+          showYTPlayerA.mute();
+        }
+        if (showYTPlayerB && showYTPlayerB.mute) {
+          showYTPlayerB.mute();
         }
         btnToggleBgm.textContent = '🔇 Silenciado';
         btnToggleBgm.classList.add('btn-hud-muted');
@@ -501,8 +504,11 @@ export function initShowApp() {
         if (audioEngine.audioElement) {
           audioEngine.audioElement.muted = false;
         }
-        if (showYTPlayer && showYTPlayer.unMute) {
-          showYTPlayer.unMute();
+        if (showYTPlayerA && showYTPlayerA.unMute) {
+          showYTPlayerA.unMute();
+        }
+        if (showYTPlayerB && showYTPlayerB.unMute) {
+          showYTPlayerB.unMute();
         }
         btnToggleBgm.textContent = '🎵 Música';
         btnToggleBgm.classList.remove('btn-hud-muted');
@@ -640,6 +646,8 @@ export function initShowApp() {
   // ==========================================
   let showYTPlayerA = null;
   let showYTPlayerB = null;
+  let showDeckAIsPlaying = false;
+  let showDeckBIsPlaying = false;
   let deckAVolume = 0.85;
   let deckBVolume = 0.85;
 
@@ -659,8 +667,12 @@ export function initShowApp() {
     const loadAPI = () => {
       if (window.YT && window.YT.Player) {
         if (isA) {
-          if (showYTPlayerA && showYTPlayerA.loadVideoById) {
-            showYTPlayerA.loadVideoById(videoId);
+          if (showYTPlayerA && showYTPlayerA.cueVideoById) {
+            if (showDeckAIsPlaying) {
+              if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(videoId);
+            } else {
+              showYTPlayerA.cueVideoById(videoId);
+            }
             if (onReadyCallback) onReadyCallback(showYTPlayerA);
             return;
           }
@@ -668,14 +680,18 @@ export function initShowApp() {
             width: '100%',
             height: '100%',
             videoId: videoId,
-            playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+            playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
             events: {
               onReady: (event) => {
                 const vol = Math.round(deckAVolume * 100);
                 event.target.setVolume(vol);
                 if (isMasterMuted) event.target.mute();
                 else event.target.unMute();
-                event.target.playVideo();
+                if (showDeckAIsPlaying) {
+                  event.target.playVideo();
+                } else {
+                  event.target.pauseVideo();
+                }
                 if (onReadyCallback) onReadyCallback(event.target);
               },
               onStateChange: (event) => {
@@ -691,8 +707,12 @@ export function initShowApp() {
             }
           });
         } else {
-          if (showYTPlayerB && showYTPlayerB.loadVideoById) {
-            showYTPlayerB.loadVideoById(videoId);
+          if (showYTPlayerB && showYTPlayerB.cueVideoById) {
+            if (showDeckBIsPlaying) {
+              if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(videoId);
+            } else {
+              showYTPlayerB.cueVideoById(videoId);
+            }
             if (onReadyCallback) onReadyCallback(showYTPlayerB);
             return;
           }
@@ -700,14 +720,18 @@ export function initShowApp() {
             width: '100%',
             height: '100%',
             videoId: videoId,
-            playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+            playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
             events: {
               onReady: (event) => {
                 const vol = Math.round(deckBVolume * 100);
                 event.target.setVolume(vol);
                 if (isMasterMuted) event.target.mute();
                 else event.target.unMute();
-                event.target.playVideo();
+                if (showDeckBIsPlaying) {
+                  event.target.playVideo();
+                } else {
+                  event.target.pauseVideo();
+                }
                 if (onReadyCallback) onReadyCallback(event.target);
               },
               onStateChange: (event) => {
@@ -742,6 +766,7 @@ export function initShowApp() {
     unlockAudio();
     if (!payload || !payload.videoId) return;
 
+    showDeckAIsPlaying = true;
     audioEngine.stopDjTrack();
     initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
       if (p && p.playVideo) p.playVideo();
@@ -763,13 +788,21 @@ export function initShowApp() {
   deckBAudio.loop = true;
 
   function stopAllShowAudio() {
+    showDeckAIsPlaying = false;
+    showDeckBIsPlaying = false;
     audioEngine.stopDjTrack();
     if (deckBAudio) {
       deckBAudio.pause();
       deckBAudio.currentTime = 0;
     }
-    if (showYTPlayerA && showYTPlayerA.stopVideo) try { showYTPlayerA.stopVideo(); } catch (e) {}
-    if (showYTPlayerB && showYTPlayerB.stopVideo) try { showYTPlayerB.stopVideo(); } catch (e) {}
+    if (showYTPlayerA) {
+      try { if (showYTPlayerA.pauseVideo) showYTPlayerA.pauseVideo(); } catch (e) {}
+      try { if (showYTPlayerA.stopVideo) showYTPlayerA.stopVideo(); } catch (e) {}
+    }
+    if (showYTPlayerB) {
+      try { if (showYTPlayerB.pauseVideo) showYTPlayerB.pauseVideo(); } catch (e) {}
+      try { if (showYTPlayerB.stopVideo) showYTPlayerB.stopVideo(); } catch (e) {}
+    }
     audioEngine.isYTPlaying = false;
     singer.animController.resetToIdle();
     if (queueStatusText) queueStatusText.textContent = '🎧 DJ Club 3D';
@@ -778,12 +811,41 @@ export function initShowApp() {
     }
   }
 
+  // Pre-montaje silencioso de pista en el plato (Cue a 0:00 sin sonar)
+  syncBridge.on('DJ_DECK_LOAD', (payload) => {
+    if (!payload || !payload.deck) return;
+    if (payload.deck === 'A') {
+      showDeckAIsPlaying = false;
+      if (payload.type === 'youtube' && payload.videoId) {
+        initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
+          if (p && p.pauseVideo) p.pauseVideo();
+        });
+      } else if (payload.url) {
+        if (showYTPlayerA && showYTPlayerA.stopVideo) showYTPlayerA.stopVideo();
+      }
+    } else if (payload.deck === 'B') {
+      showDeckBIsPlaying = false;
+      if (payload.type === 'youtube' && payload.videoId) {
+        initOrLoadShowYTPlayer('B', payload.videoId, (p) => {
+          if (p && p.pauseVideo) p.pauseVideo();
+        });
+      } else if (payload.url) {
+        if (showYTPlayerB && showYTPlayerB.stopVideo) showYTPlayerB.stopVideo();
+        if (!deckBAudio.src.endsWith(payload.url)) {
+          deckBAudio.src = payload.url;
+          deckBAudio.load();
+        }
+      }
+    }
+  });
+
   syncBridge.on('DJ_DECK_PLAY', (payload) => {
     markActivity();
     unlockAudio();
     if (!payload) return;
 
     if (payload.deck === 'A') {
+      showDeckAIsPlaying = true;
       if (payload.type === 'youtube' && payload.videoId) {
         audioEngine.stopDjTrack();
         audioEngine.isYTPlaying = true;
@@ -795,6 +857,7 @@ export function initShowApp() {
         audioEngine.playCustomAudioTrack(payload.url, payload.title || 'Deck A', payload.resume || false);
       }
     } else if (payload.deck === 'B') {
+      showDeckBIsPlaying = true;
       if (payload.type === 'youtube' && payload.videoId) {
         if (deckBAudio) deckBAudio.pause();
         audioEngine.isYTPlaying = true;
@@ -822,11 +885,17 @@ export function initShowApp() {
   syncBridge.on('DJ_DECK_PAUSE', (payload) => {
     if (!payload) return;
     if (payload.deck === 'A') {
+      showDeckAIsPlaying = false;
       audioEngine.pauseDjTrack();
-      if (showYTPlayerA && showYTPlayerA.pauseVideo) showYTPlayerA.pauseVideo();
+      if (showYTPlayerA && typeof showYTPlayerA.pauseVideo === 'function') {
+        try { showYTPlayerA.pauseVideo(); } catch (e) {}
+      }
     } else if (payload.deck === 'B') {
+      showDeckBIsPlaying = false;
       deckBAudio.pause();
-      if (showYTPlayerB && showYTPlayerB.pauseVideo) showYTPlayerB.pauseVideo();
+      if (showYTPlayerB && typeof showYTPlayerB.pauseVideo === 'function') {
+        try { showYTPlayerB.pauseVideo(); } catch (e) {}
+      }
     }
     singer.animController.resetToIdle();
     if (queueStatusText) queueStatusText.textContent = '⏸️ DJ en Pausa';
@@ -838,12 +907,20 @@ export function initShowApp() {
   syncBridge.on('DJ_DECK_STOP', (payload) => {
     if (!payload) return;
     if (payload.deck === 'A') {
+      showDeckAIsPlaying = false;
       audioEngine.stopDjTrack();
-      if (showYTPlayerA && showYTPlayerA.stopVideo) showYTPlayerA.stopVideo();
+      if (showYTPlayerA) {
+        try { if (showYTPlayerA.pauseVideo) showYTPlayerA.pauseVideo(); } catch (e) {}
+        try { if (showYTPlayerA.stopVideo) showYTPlayerA.stopVideo(); } catch (e) {}
+      }
     } else if (payload.deck === 'B') {
+      showDeckBIsPlaying = false;
       deckBAudio.pause();
       deckBAudio.currentTime = 0;
-      if (showYTPlayerB && showYTPlayerB.stopVideo) showYTPlayerB.stopVideo();
+      if (showYTPlayerB) {
+        try { if (showYTPlayerB.pauseVideo) showYTPlayerB.pauseVideo(); } catch (e) {}
+        try { if (showYTPlayerB.stopVideo) showYTPlayerB.stopVideo(); } catch (e) {}
+      }
     }
     singer.animController.resetToIdle();
   });
@@ -851,13 +928,21 @@ export function initShowApp() {
   syncBridge.on('DJ_DECK_CUE', (payload) => {
     if (!payload) return;
     if (payload.deck === 'A') {
+      showDeckAIsPlaying = false;
       audioEngine.pauseDjTrack();
       if (audioEngine.audioElement) audioEngine.audioElement.currentTime = 0;
-      if (showYTPlayerA && showYTPlayerA.seekTo) showYTPlayerA.seekTo(0);
+      if (showYTPlayerA) {
+        try { if (showYTPlayerA.pauseVideo) showYTPlayerA.pauseVideo(); } catch (e) {}
+        try { if (showYTPlayerA.seekTo) showYTPlayerA.seekTo(0); } catch (e) {}
+      }
     } else if (payload.deck === 'B') {
+      showDeckBIsPlaying = false;
       deckBAudio.pause();
       deckBAudio.currentTime = 0;
-      if (showYTPlayerB && showYTPlayerB.seekTo) showYTPlayerB.seekTo(0);
+      if (showYTPlayerB) {
+        try { if (showYTPlayerB.pauseVideo) showYTPlayerB.pauseVideo(); } catch (e) {}
+        try { if (showYTPlayerB.seekTo) showYTPlayerB.seekTo(0); } catch (e) {}
+      }
     }
   });
 
@@ -1292,16 +1377,19 @@ export function initShowApp() {
     }
   });
 
-  syncBridge.on('CAMERA_SHOT', (payload) => {
-    if (cameraDirector && payload.shot) {
+  const handleCameraShot = (payload) => {
+    if (cameraDirector && payload && payload.shot) {
       if (payload.shot === 'AUTO') {
         cameraDirector.setAutoDirector(true);
+        cameraDirector.unlockShot();
       } else {
         cameraDirector.setAutoDirector(false);
         cameraDirector.setShot(payload.shot);
       }
     }
-  });
+  };
+  syncBridge.on('CAMERA_SHOT', handleCameraShot);
+  syncBridge.on('SET_CAMERA_SHOT', handleCameraShot);
 
   syncBridge.send('SHOW_READY', { timestamp: Date.now() });
 

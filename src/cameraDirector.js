@@ -84,6 +84,7 @@ export class CameraDirector {
   }
 
   focusOnEvent(spectatorPos = null, durationMs = 4500) {
+    if (!this.autoDirector) return; // Respeta el plano manual elegido por el DJ
     this.isEventFocus = true;
     const targetX = spectatorPos ? spectatorPos.x * 0.5 : 0;
     const targetZ = spectatorPos ? spectatorPos.z : 0;
@@ -117,6 +118,9 @@ export class CameraDirector {
   }
 
   setShot(name) {
+    this.isEventFocus = false;
+    this.eventFocusShot = null;
+    this.lockedUntil = 0;
     const shots = this.isVertical ? this.verticalShots : this.landscapeShots;
     if (shots[name]) {
       this.currentShotName = name;
@@ -132,6 +136,8 @@ export class CameraDirector {
   }
 
   unlockShot() {
+    this.isEventFocus = false;
+    this.eventFocusShot = null;
     this.lockedUntil = 0;
     this.setShot('WIDE');
   }
