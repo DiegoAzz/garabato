@@ -8,61 +8,61 @@ export class CameraDirector {
     this.camera = camera;
     this.isVertical = false;
 
-    // Planos para formato Horizontal (Escritorio)
+    // Planos para formato Horizontal (Escritorio / Stream Pantalla Ancha)
     this.landscapeShots = {
       WIDE: {
-        pos: new THREE.Vector3(0, 5.2, 11.0),
-        target: new THREE.Vector3(0, 1.5, -1.8)
-      },
-      SINGER: {
-        pos: new THREE.Vector3(0, 2.2, 1.8),
-        target: new THREE.Vector3(0, 1.5, -2.2)
-      },
-      PRIMERA_PLANA: {
-        pos: new THREE.Vector3(0, 1.8, 0.8),
-        target: new THREE.Vector3(0, 1.4, -2.2)
-      },
-      CROWD: {
-        pos: new THREE.Vector3(-3.2, 2.8, 8.0),
-        target: new THREE.Vector3(0, 1.6, -1.8)
-      },
-      SIDE: {
-        pos: new THREE.Vector3(6.5, 3.8, 2.0),
-        target: new THREE.Vector3(0, 1.6, -2.0)
-      },
-      DIVE: {
-        pos: new THREE.Vector3(2.8, 2.6, 6.0),
-        target: new THREE.Vector3(0, 1.4, 0.0)
-      }
-    };
-
-    // Planos para formato Vertical 9:16 (Celular / TikTok LIVE)
-    // Siempre frontales y perfectamente centrados (X = 0) para no perder nunca al cantante ni la tarima
-    this.verticalShots = {
-      WIDE: {
-        pos: new THREE.Vector3(0, 7.8, 11.2),
+        pos: new THREE.Vector3(0.8, 6.5, 11.2),
         target: new THREE.Vector3(0, 1.4, -1.8)
       },
       SINGER: {
-        pos: new THREE.Vector3(0, 2.6, 2.8),
-        target: new THREE.Vector3(0, 1.6, -2.2)
+        pos: new THREE.Vector3(0, 2.4, 0.2),
+        target: new THREE.Vector3(0, 1.8, -3.5)
       },
       PRIMERA_PLANA: {
-        // Enfoque frontal directo sin público delante, capturando cuerpo completo y tarima con máximo detalle
-        pos: new THREE.Vector3(0, 1.9, 1.2),
-        target: new THREE.Vector3(0, 1.5, -2.2)
+        pos: new THREE.Vector3(0, 2.0, -0.6),
+        target: new THREE.Vector3(0, 1.7, -3.5)
       },
       CROWD: {
-        pos: new THREE.Vector3(0, 7.0, 13.5),
-        target: new THREE.Vector3(0, 1.4, -1.5)
+        pos: new THREE.Vector3(2.5, 6.0, 9.8),
+        target: new THREE.Vector3(-0.5, 1.4, -1.2)
       },
       SIDE: {
-        pos: new THREE.Vector3(0, 7.2, 14.0), // En 9:16 se mantiene centrado en X para no salir de encuadre
-        target: new THREE.Vector3(0, 1.5, -1.8)
+        pos: new THREE.Vector3(-4.5, 5.2, 6.5),
+        target: new THREE.Vector3(0.5, 1.5, -2.0)
       },
       DIVE: {
-        pos: new THREE.Vector3(0, 4.0, 7.5),
-        target: new THREE.Vector3(0, 1.5, -0.5)
+        pos: new THREE.Vector3(2.2, 4.2, 6.8),
+        target: new THREE.Vector3(0, 1.3, -0.8)
+      }
+    };
+
+    // Planos para formato Vertical 9:16 (Celular / TikTok LIVE / mobile.html)
+    // Encuadre isométrico de discoteca real: el DJ en tarima se ve arriba nítido,
+    // y la pista de baile LED con hasta 200 personas se ve llena y vibrante abajo
+    this.verticalShots = {
+      WIDE: {
+        pos: new THREE.Vector3(0.4, 9.5, 12.4),
+        target: new THREE.Vector3(0, 1.3, -1.6)
+      },
+      SINGER: {
+        pos: new THREE.Vector3(0, 2.6, 0.6),
+        target: new THREE.Vector3(0, 1.8, -3.5)
+      },
+      PRIMERA_PLANA: {
+        pos: new THREE.Vector3(0, 2.1, -0.4),
+        target: new THREE.Vector3(0, 1.7, -3.5)
+      },
+      CROWD: {
+        pos: new THREE.Vector3(0.8, 8.8, 13.0),
+        target: new THREE.Vector3(-0.2, 1.2, -0.8)
+      },
+      SIDE: {
+        pos: new THREE.Vector3(-2.2, 8.2, 11.5),
+        target: new THREE.Vector3(0.4, 1.4, -1.8)
+      },
+      DIVE: {
+        pos: new THREE.Vector3(0, 5.5, 8.5),
+        target: new THREE.Vector3(0, 1.3, -1.0)
       }
     };
 

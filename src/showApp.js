@@ -43,10 +43,9 @@ export function initShowApp() {
   // 3. Escenario del Club
   const stage = buildDiscoStage(scene);
 
-  // 4. Comediante Stickman (en tarima)
+  // 4. DJ Estrella Stickman (detrás de la cabina de mezclas en tarima)
   const singer = createStickman(true, 0xffffff);
-  // Comediante posicionado exactamente encima de la tarima (Y = 0.35, Z = -2.2)
-  singer.position.set(0, 0.35, -2.2);
+  singer.position.set(0, 0.55, -4.0);
   scene.add(singer);
 
   // 5. Público de Garabatos (Espectadores)

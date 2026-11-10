@@ -1961,12 +1961,16 @@ export class AudioEngine {
    */
   playCustomAudioTrack(srcUrl, title = 'Canción Personalizada', resume = false) {
     this.initContext();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+
     this.stopDiscoBeat();
     if (this.bgMusicPlaying) this.stopComedyLoungeMusic();
 
     if (!this.audioElement) {
       this.audioElement = new Audio();
-      this.audioElement.crossOrigin = 'anonymous';
+      this.audioElement.preload = 'auto';
 
       if (this.ctx && !this.audioSourceNode) {
         try {
@@ -1989,6 +1993,7 @@ export class AudioEngine {
     }
 
     this.audioElement.loop = true;
+    this.audioElement.volume = this.musicGain ? this.musicGain.gain.value : 0.85;
 
     const playPromise = this.audioElement.play();
     if (playPromise !== undefined) {
@@ -1997,7 +2002,12 @@ export class AudioEngine {
         this.isPlayingBeat = true;
         console.info(`[AudioEngine] Reproduciendo audio (${resume && isSameSource ? 'Reanudado' : 'Desde 0:00'}): ${title}`);
       }).catch(err => {
-        console.warn('[AudioEngine] Autoplay bloqueado o error en archivo de audio:', err);
+        console.warn('[AudioEngine] Intento de reproducción bloqueado, reintentando:', err);
+        // Despertar AudioContext y reintentar
+        if (this.ctx) this.ctx.resume().catch(() => {});
+        this.audioElement.play().catch(e2 => {
+          console.warn('[AudioEngine] Error final de reproducción:', e2);
+        });
       });
     }
   }

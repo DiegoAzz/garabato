@@ -1,137 +1,240 @@
 import * as THREE from 'three';
 
 /**
- * Constructor del Escenario 3D de Discoteca para GARABATO FEST 3D
- * Tarima, pantalla LED dinámica, bola de discoteca, bocinas con bajos físicos,
- * focos móviles simulados, pista iluminada y confeti.
+ * Constructor del Escenario 3D de Discoteca / Club Nocturno Real para GARABATO FEST 3D
+ * Inspirado en los 3 estilos de discoteca club isométrico:
+ * 1. Tarima elevada de DJ con barandas de seguridad metálicas, bocinas gigantes y tornamesas.
+ * 2. Pista de baile central de LED iluminada con baldosas que parpadean al ritmo de los bajos (estilo disco grid).
+ * 3. Barra de bar VIP iluminada con estantería de botellas neón y taburetes altos.
+ * 4. Mesas altas de cóctel VIP en el área lounge.
+ * 5. Bola de discoteca giratoria de espejos y focos móviles volumétricos.
  */
 export function buildDiscoStage(scene) {
   const stageGroup = new THREE.Group();
   stageGroup.name = 'DiscoStage';
 
-  // ==========================================
-  // 1. TARIMA CENTRAL
-  // ==========================================
-  const stageRadius = 2.3;
-  const stageHeight = 0.35;
-  const stageCenterZ = -2.2;
+  const stageCenterZ = -3.8;
+  const stageElevation = 0.55;
 
-  // Base de la tarima circular de comedia
-  const stageGeo = new THREE.CylinderGeometry(stageRadius, stageRadius + 0.15, stageHeight, 36);
-  const stageMat = new THREE.MeshStandardMaterial({
-    color: 0x111827,
-    roughness: 0.25,
-    metalness: 0.6
+  // ==========================================
+  // 1. PISO GENERAL DEL CLUB NOCTURNO
+  // ==========================================
+  const mainFloorGeo = new THREE.PlaneGeometry(32, 36);
+  const mainFloorMat = new THREE.MeshStandardMaterial({
+    color: 0x070b14,
+    roughness: 0.35,
+    metalness: 0.65
   });
-  const stageMesh = new THREE.Mesh(stageGeo, stageMat);
-  stageMesh.position.set(0, stageHeight / 2, stageCenterZ);
-  stageMesh.receiveShadow = true;
-  stageGroup.add(stageMesh);
+  const mainFloor = new THREE.Mesh(mainFloorGeo, mainFloorMat);
+  mainFloor.rotation.x = -Math.PI / 2;
+  mainFloor.position.set(0, 0, 0);
+  mainFloor.receiveShadow = true;
+  stageGroup.add(mainFloor);
 
-  // Borde neon brillante tubular (Torus) alrededor de la tarima (no cubre el piso)
-  const rimGeo = new THREE.TorusGeometry(stageRadius + 0.02, 0.035, 10, 36);
-  const rimMat = new THREE.MeshBasicMaterial({ color: 0xec4899 });
-  const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-  rimMesh.rotation.x = Math.PI / 2;
-  rimMesh.position.set(0, stageHeight, stageCenterZ);
-  stageGroup.add(rimMesh);
+  // Pared de fondo acústica del club con luces arquitectónicas verticales
+  const backWallGeo = new THREE.BoxGeometry(26, 12, 0.5);
+  const backWallMat = new THREE.MeshStandardMaterial({ color: 0x050811, roughness: 0.9 });
+  const backWall = new THREE.Mesh(backWallGeo, backWallMat);
+  backWall.position.set(0, 6, -7.5);
+  stageGroup.add(backWall);
 
-  // ==========================================
-  // 2. FONDO ELEGANTE DE TEATRO STAND-UP (Cero parpadeos ni pantallas molestas)
-  // ==========================================
-  const backWallGeo = new THREE.BoxGeometry(16, 9, 0.4);
-  const backWallMat = new THREE.MeshStandardMaterial({
-    color: 0x0a0f1d,
-    roughness: 0.9,
-    metalness: 0.1
-  });
-  const backWallMesh = new THREE.Mesh(backWallGeo, backWallMat);
-  backWallMesh.position.set(0, 4.5, -6.0);
-  stageGroup.add(backWallMesh);
+  // Columnas arquitectónicas con tiras de neón verticales
+  for (let x = -10; x <= 10; x += 4) {
+    const col = new THREE.Mesh(
+      new THREE.BoxGeometry(0.6, 11, 0.6),
+      new THREE.MeshStandardMaterial({ color: 0x0b1120, metalness: 0.8 })
+    );
+    col.position.set(x, 5.5, -7.2);
+    stageGroup.add(col);
 
-  // Paneles acústicos decorativos oscuros y elegantes (sin texto que parpadee)
-  for (let i = -6; i <= 6; i += 2.4) {
-    const panelGeo = new THREE.BoxGeometry(1.6, 7.5, 0.1);
-    const panelMat = new THREE.MeshStandardMaterial({
-      color: 0x060913,
-      roughness: 0.95
-    });
-    const panel = new THREE.Mesh(panelGeo, panelMat);
-    panel.position.set(i, 4.2, -5.8);
-    stageGroup.add(panel);
+    const neonStrip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 10, 0.04),
+      new THREE.MeshBasicMaterial({ color: x % 8 === 0 ? 0x00f0ff : 0xec4899 })
+    );
+    neonStrip.position.set(x, 5.5, -6.88);
+    stageGroup.add(neonStrip);
   }
 
   // ==========================================
-  // 2B. CABINA PROFESIONAL DE DJ (DJ BOOTH & DECKS)
+  // 2. PISTA DE BAILE CENTRAL DE LED ILUMINADA (DISCO LED GRID)
+  // ==========================================
+  // Cuadrícula de 8x10 baldosas de LED que pulsan y cambian de color con la música
+  const ledTiles = [];
+  const tileCols = 8;
+  const tileRows = 10;
+  const tileSize = 0.95;
+  const tileGap = 0.05;
+  const gridW = tileCols * (tileSize + tileGap);
+  const gridD = tileRows * (tileSize + tileGap);
+  const gridOriginX = -gridW / 2 + tileSize / 2;
+  const gridOriginZ = -2.2;
+
+  const tilePalette = [0x00f0ff, 0xec4899, 0xa855f7, 0xfacc15, 0x10b981, 0x3b82f6];
+
+  for (let r = 0; r < tileRows; r++) {
+    for (let c = 0; c < tileCols; c++) {
+      const posX = gridOriginX + c * (tileSize + tileGap);
+      const posZ = gridOriginZ + r * (tileSize + tileGap);
+
+      // Marco oscuro de la baldosa
+      const frameGeo = new THREE.BoxGeometry(tileSize + 0.02, 0.04, tileSize + 0.02);
+      const frameMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+      const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+      frameMesh.position.set(posX, 0.02, posZ);
+      stageGroup.add(frameMesh);
+
+      // Superficie translúcida luminosa de la baldosa LED
+      const initialColor = tilePalette[(r + c) % tilePalette.length];
+      const tileMat = new THREE.MeshBasicMaterial({
+        color: initialColor,
+        transparent: true,
+        opacity: 0.65
+      });
+      const tileMesh = new THREE.Mesh(new THREE.BoxGeometry(tileSize * 0.92, 0.045, tileSize * 0.92), tileMat);
+      tileMesh.position.set(posX, 0.025, posZ);
+      stageGroup.add(tileMesh);
+
+      ledTiles.push({
+        mesh: tileMesh,
+        mat: tileMat,
+        row: r,
+        col: c,
+        baseColor: initialColor
+      });
+    }
+  }
+
+  // Borde exterior de neón brillante de toda la pista de baile LED
+  const borderPistaGeo = new THREE.BoxGeometry(gridW + 0.3, 0.06, gridD + 0.3);
+  const borderPistaMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+  const borderPista = new THREE.Mesh(borderPistaGeo, borderPistaMat);
+  borderPista.position.set(0, 0.03, gridOriginZ + (gridD / 2) - (tileSize / 2));
+  stageGroup.add(borderPista);
+
+  // ==========================================
+  // 3. TARIMA ELEVADA DEL DJ CON BARANDAS METÁLICAS
+  // ==========================================
+  const stageW = 8.5;
+  const stageD = 3.6;
+  const stagePlatGeo = new THREE.BoxGeometry(stageW, stageElevation, stageD);
+  const stagePlatMat = new THREE.MeshStandardMaterial({
+    color: 0x111827,
+    roughness: 0.25,
+    metalness: 0.75
+  });
+  const stagePlat = new THREE.Mesh(stagePlatGeo, stagePlatMat);
+  stagePlat.position.set(0, stageElevation / 2, stageCenterZ);
+  stagePlat.receiveShadow = true;
+  stageGroup.add(stagePlat);
+
+  // Línea de neón frontal de la tarima
+  const stageNeonFront = new THREE.Mesh(
+    new THREE.BoxGeometry(stageW + 0.1, 0.06, 0.06),
+    new THREE.MeshBasicMaterial({ color: 0xec4899 })
+  );
+  stageNeonFront.position.set(0, stageElevation, stageCenterZ + stageD / 2);
+  stageGroup.add(stageNeonFront);
+
+  // Barandas metálicas de discoteca (lado izquierdo, derecho y trasero)
+  function createMetalRailing(x1, z1, x2, z2) {
+    const railGroup = new THREE.Group();
+    const length = Math.hypot(x2 - x1, z2 - z1);
+    const angle = Math.atan2(x2 - x1, z2 - z1);
+
+    // Barra superior
+    const topBarGeo = new THREE.CylinderGeometry(0.03, 0.03, length, 12);
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+    const topBar = new THREE.Mesh(topBarGeo, metalMat);
+    topBar.rotation.z = Math.PI / 2;
+    topBar.rotation.y = angle;
+    topBar.position.set((x1 + x2) / 2, stageElevation + 0.75, (z1 + z2) / 2);
+    railGroup.add(topBar);
+
+    // Postes verticales
+    const postCount = Math.max(2, Math.floor(length / 1.0));
+    for (let p = 0; p <= postCount; p++) {
+      const t = p / postCount;
+      const px = x1 + (x2 - x1) * t;
+      const pz = z1 + (z2 - z1) * t;
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.75, 10), metalMat);
+      post.position.set(px, stageElevation + 0.375, pz);
+      railGroup.add(post);
+    }
+    stageGroup.add(railGroup);
+  }
+
+  // Baranda lateral izquierda y derecha de la tarima
+  createMetalRailing(-stageW / 2 + 0.1, stageCenterZ - stageD / 2, -stageW / 2 + 0.1, stageCenterZ + stageD / 2);
+  createMetalRailing(stageW / 2 - 0.1, stageCenterZ - stageD / 2, stageW / 2 - 0.1, stageCenterZ + stageD / 2);
+  // Baranda trasera
+  createMetalRailing(-stageW / 2 + 0.1, stageCenterZ - stageD / 2 + 0.1, stageW / 2 - 0.1, stageCenterZ - stageD / 2 + 0.1);
+
+  // ==========================================
+  // 4. CABINA PROFESIONAL DEL DJ (BOOTH, TORNAMESAS, MEZCLADOR)
   // ==========================================
   const djBoothGroup = new THREE.Group();
-  djBoothGroup.position.set(0, stageHeight, -2.4);
+  djBoothGroup.position.set(0, stageElevation, stageCenterZ + 0.3);
 
-  // Mueble principal de la cabina (Desk)
-  const deskGeo = new THREE.BoxGeometry(2.3, 0.95, 0.9);
-  const deskMat = new THREE.MeshStandardMaterial({
-    color: 0x0f172a,
-    roughness: 0.3,
-    metalness: 0.7
-  });
+  // Mueble de la cabina
+  const deskGeo = new THREE.BoxGeometry(2.4, 0.98, 0.95);
+  const deskMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.3, metalness: 0.8 });
   const deskMesh = new THREE.Mesh(deskGeo, deskMat);
-  deskMesh.position.y = 0.95 / 2;
+  deskMesh.position.y = 0.98 / 2;
   deskMesh.castShadow = true;
-  deskMesh.receiveShadow = true;
   djBoothGroup.add(deskMesh);
 
-  // Borde de neón frontal de la mesa
+  // Borde neón de la mesa
   const neonDeskBorder = new THREE.Mesh(
-    new THREE.BoxGeometry(2.34, 0.05, 0.94),
+    new THREE.BoxGeometry(2.44, 0.05, 0.98),
     new THREE.MeshBasicMaterial({ color: 0x00f0ff })
   );
-  neonDeskBorder.position.y = 0.95;
+  neonDeskBorder.position.y = 0.98;
   djBoothGroup.add(neonDeskBorder);
 
-  // Cartel frontal luminoso en la cabina
+  // Cartel LED frontal brillante del club
   const signCanvas = document.createElement('canvas');
   signCanvas.width = 512;
   signCanvas.height = 128;
   const signCtx = signCanvas.getContext('2d');
-  signCtx.fillStyle = '#090d16';
+  signCtx.fillStyle = '#050811';
   signCtx.fillRect(0, 0, 512, 128);
   signCtx.strokeStyle = '#ec4899';
   signCtx.lineWidth = 6;
   signCtx.strokeRect(6, 6, 500, 116);
   signCtx.fillStyle = '#ffffff';
-  signCtx.font = '900 48px sans-serif';
+  signCtx.font = '900 46px sans-serif';
   signCtx.textAlign = 'center';
   signCtx.textBaseline = 'middle';
   signCtx.fillText('🎧 DJ LIVE CLUB 🔥', 256, 64);
   const signTex = new THREE.CanvasTexture(signCanvas);
   const signMat = new THREE.MeshBasicMaterial({ map: signTex, transparent: true });
-  const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.42), signMat);
-  signMesh.position.set(0, 0.52, 0.46);
+  const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.46), signMat);
+  signMesh.position.set(0, 0.52, 0.49);
   djBoothGroup.add(signMesh);
 
-  // Plato DJ Izquierdo (Jog Wheel / Tornamesa)
-  const platterGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.04, 24);
+  // Plato DJ Izquierdo (Tornamesa Jog Wheel)
+  const platterGeo = new THREE.CylinderGeometry(0.29, 0.29, 0.04, 24);
   const platterMatL = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.9 });
   const platterL = new THREE.Mesh(platterGeo, platterMatL);
-  platterL.position.set(-0.65, 0.97, 0.05);
+  platterL.position.set(-0.68, 1.0, 0.06);
   djBoothGroup.add(platterL);
 
   const ringL = new THREE.Mesh(
-    new THREE.RingGeometry(0.18, 0.26, 24),
+    new THREE.RingGeometry(0.18, 0.27, 24),
     new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide })
   );
   ringL.rotation.x = -Math.PI / 2;
   ringL.position.y = 0.022;
   platterL.add(ringL);
 
-  // Plato DJ Derecho (Jog Wheel / Tornamesa)
+  // Plato DJ Derecho (Tornamesa Jog Wheel)
   const platterMatR = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.9 });
   const platterR = new THREE.Mesh(platterGeo, platterMatR);
-  platterR.position.set(0.65, 0.97, 0.05);
+  platterR.position.set(0.68, 1.0, 0.06);
   djBoothGroup.add(platterR);
 
   const ringR = new THREE.Mesh(
-    new THREE.RingGeometry(0.18, 0.26, 24),
+    new THREE.RingGeometry(0.18, 0.27, 24),
     new THREE.MeshBasicMaterial({ color: 0xec4899, side: THREE.DoubleSide })
   );
   ringR.rotation.x = -Math.PI / 2;
@@ -139,13 +242,13 @@ export function buildDiscoStage(scene) {
   platterR.add(ringR);
 
   // Mezclador Central (Mixer Unit)
-  const mixerGeo = new THREE.BoxGeometry(0.48, 0.03, 0.65);
+  const mixerGeo = new THREE.BoxGeometry(0.5, 0.03, 0.65);
   const mixerMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.8 });
   const mixerMesh = new THREE.Mesh(mixerGeo, mixerMat);
-  mixerMesh.position.set(0, 0.97, 0.05);
+  mixerMesh.position.set(0, 1.0, 0.06);
   djBoothGroup.add(mixerMesh);
 
-  // Vúmetros LED en el mezclador (VU Meters que reaccionan al audio)
+  // Vúmetros LED
   const vuLeds = [];
   const vuColors = [0x22c55e, 0x22c55e, 0x22c55e, 0xfacc15, 0xfacc15, 0xef4444];
   for (let ch = -1; ch <= 1; ch += 2) {
@@ -154,52 +257,287 @@ export function buildDiscoStage(scene) {
         new THREE.BoxGeometry(0.04, 0.015, 0.025),
         new THREE.MeshBasicMaterial({ color: vuColors[l] })
       );
-      led.position.set(ch * 0.07, 0.99, -0.15 + l * 0.045);
+      led.position.set(ch * 0.08, 1.02, -0.15 + l * 0.045);
       djBoothGroup.add(led);
-      vuLeds.push({ mesh: led, level: (l + 1) / 6, origColor: vuColors[l] });
+      vuLeds.push({ mesh: led, level: (l + 1) / 6 });
     }
   }
 
-  // Laptop del DJ sobre la mesa
+  // Laptop del DJ
   const laptopBase = new THREE.Mesh(
-    new THREE.BoxGeometry(0.35, 0.02, 0.25),
+    new THREE.BoxGeometry(0.36, 0.02, 0.26),
     new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
   );
-  laptopBase.position.set(-0.75, 1.0, -0.22);
+  laptopBase.position.set(-0.76, 1.03, -0.22);
   laptopBase.rotation.y = 0.25;
   djBoothGroup.add(laptopBase);
 
   const laptopScreen = new THREE.Mesh(
-    new THREE.BoxGeometry(0.35, 0.24, 0.015),
+    new THREE.BoxGeometry(0.36, 0.24, 0.015),
     new THREE.MeshBasicMaterial({ color: 0x0284c7 })
   );
-  laptopScreen.position.set(-0.75, 1.12, -0.32);
+  laptopScreen.position.set(-0.76, 1.15, -0.33);
   laptopScreen.rotation.x = -0.25;
   laptopScreen.rotation.y = 0.25;
   djBoothGroup.add(laptopScreen);
 
   stageGroup.add(djBoothGroup);
 
-  let ledData = {
-    singerName: 'EL GARABATO',
-    personality: 'COMEDY CLUB',
-    songTitle: '',
-    subtitles: ''
-  };
+  // ==========================================
+  // 5. BOCINAS GIGANTES DE CONCIERTO (CONOS PULSANTES)
+  // ==========================================
+  const speakers = [];
+  function createSpeakerTower(x, z, rotY) {
+    const spkGroup = new THREE.Group();
+    spkGroup.position.set(x, stageElevation + 1.6, z);
+    spkGroup.rotation.y = rotY;
 
-  function updateLedScreen() {
-    // Pantalla de texto eliminada a petición del usuario (fondo 100% limpio y sin parpadeos)
+    // Caja acústica de madera negra
+    const boxMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 3.2, 1.2),
+      new THREE.MeshLambertMaterial({ color: 0x090d16 })
+    );
+    boxMesh.castShadow = true;
+    spkGroup.add(boxMesh);
+
+    // Borde de neón en la bocina
+    const spkNeon = new THREE.Mesh(
+      new THREE.BoxGeometry(1.44, 0.04, 1.24),
+      new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+    );
+    spkNeon.position.y = 1.6;
+    spkGroup.add(spkNeon);
+
+    // Cono de subwoofer grande (inferior)
+    const coneGeo = new THREE.CylinderGeometry(0.48, 0.2, 0.22, 24);
+    const coneMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, metalness: 0.3, roughness: 0.5 });
+    const subCone = new THREE.Mesh(coneGeo, coneMat);
+    subCone.rotation.x = Math.PI / 2;
+    subCone.position.set(0, -0.65, 0.55);
+    spkGroup.add(subCone);
+
+    // Cono de subwoofer mediano (centro)
+    const midCone = new THREE.Mesh(coneGeo, coneMat);
+    midCone.rotation.x = Math.PI / 2;
+    midCone.position.set(0, 0.2, 0.55);
+    spkGroup.add(midCone);
+
+    // Trompeta de agudos (superior)
+    const tweetCone = new THREE.Mesh(
+      new THREE.BoxGeometry(0.75, 0.35, 0.1),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    tweetCone.position.set(0, 1.05, 0.56);
+    spkGroup.add(tweetCone);
+
+    stageGroup.add(spkGroup);
+    speakers.push({ group: spkGroup, subCone, midCone });
   }
 
+  createSpeakerTower(-3.6, stageCenterZ + 0.4, 0.25);
+  createSpeakerTower(3.6, stageCenterZ + 0.4, -0.25);
+
   // ==========================================
-  // 3. BOLA DE DISCOTECA GIRATORIA
+  // 6. BARRA DE BAR VIP ILUMINADA (ESTILO NIGHTCLUB REAL)
+  // ==========================================
+  const barGroup = new THREE.Group();
+  const barX = -5.8;
+  const barZStart = -4.5;
+  const barZEnd = 2.5;
+  const barLength = Math.abs(barZEnd - barZStart);
+
+  // Mostrador del Bar (Bar Counter)
+  const counterGeo = new THREE.BoxGeometry(1.1, 1.15, barLength);
+  const counterMat = new THREE.MeshStandardMaterial({
+    color: 0x0c1322,
+    roughness: 0.2,
+    metalness: 0.7
+  });
+  const counterMesh = new THREE.Mesh(counterGeo, counterMat);
+  counterMesh.position.set(barX, 1.15 / 2, (barZStart + barZEnd) / 2);
+  counterMesh.receiveShadow = true;
+  barGroup.add(counterMesh);
+
+  // Cubierta superior del bar (mármol negro pulido)
+  const topBarMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(1.25, 0.08, barLength + 0.1),
+    new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.1, metalness: 0.9 })
+  );
+  topBarMesh.position.set(barX, 1.18, (barZStart + barZEnd) / 2);
+  barGroup.add(topBarMesh);
+
+  // Tira de neón debajo del mostrador del bar
+  const barNeon = new THREE.Mesh(
+    new THREE.BoxGeometry(0.06, 0.06, barLength),
+    new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+  );
+  barNeon.position.set(barX + 0.58, 1.12, (barZStart + barZEnd) / 2);
+  barGroup.add(barNeon);
+
+  // Reposapiés metálico cromado del bar
+  const footRail = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.03, 0.03, barLength, 12),
+    new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 })
+  );
+  footRail.position.set(barX + 0.62, 0.22, (barZStart + barZEnd) / 2);
+  barGroup.add(footRail);
+
+  // Estantería trasera de botellas iluminadas (Back-Bar Shelves)
+  const shelfX = barX - 1.2;
+  const shelfBack = new THREE.Mesh(
+    new THREE.BoxGeometry(0.3, 3.2, barLength),
+    new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.4 })
+  );
+  shelfBack.position.set(shelfX, 1.9, (barZStart + barZEnd) / 2);
+  barGroup.add(shelfBack);
+
+  // 3 Niveles de estantes con botellas de colores iluminadas
+  const bottlePalette = [0x00f0ff, 0xec4899, 0x22c55e, 0xfacc15, 0xa855f7, 0xef4444];
+  for (let s = 0; s < 3; s++) {
+    const shelfY = 0.9 + s * 0.8;
+    const shelfBoard = new THREE.Mesh(
+      new THREE.BoxGeometry(0.4, 0.04, barLength - 0.2),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    shelfBoard.position.set(shelfX + 0.15, shelfY, (barZStart + barZEnd) / 2);
+    barGroup.add(shelfBoard);
+
+    // Botellas en el estante
+    for (let b = 0; b < 14; b++) {
+      const bZ = barZStart + 0.4 + b * ((barLength - 0.8) / 14);
+      const bColor = bottlePalette[(s * 3 + b) % bottlePalette.length];
+      const bottle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.24, 8),
+        new THREE.MeshBasicMaterial({ color: bColor })
+      );
+      bottle.position.set(shelfX + 0.15, shelfY + 0.14, bZ);
+      barGroup.add(bottle);
+    }
+  }
+
+  // Cartel de Neón sobre el bar
+  const barSignCanvas = document.createElement('canvas');
+  barSignCanvas.width = 384;
+  barSignCanvas.height = 96;
+  const bctx = barSignCanvas.getContext('2d');
+  bctx.fillStyle = '#0f172a';
+  bctx.fillRect(0, 0, 384, 96);
+  bctx.fillStyle = '#38bdf8';
+  bctx.font = '900 36px sans-serif';
+  bctx.textAlign = 'center';
+  bctx.textBaseline = 'middle';
+  bctx.fillText('🍸 VIP LOUNGE', 192, 48);
+  const barSignTex = new THREE.CanvasTexture(barSignCanvas);
+  const barSignMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.4, 0.6),
+    new THREE.MeshBasicMaterial({ map: barSignTex, transparent: true })
+  );
+  barSignMesh.position.set(barX, 3.8, (barZStart + barZEnd) / 2);
+  barSignMesh.rotation.y = Math.PI / 2;
+  barGroup.add(barSignMesh);
+
+  // Taburetes de bar cromados frente al mostrador
+  const stoolCount = 6;
+  for (let st = 0; st < stoolCount; st++) {
+    const stZ = barZStart + 0.6 + st * ((barLength - 1.2) / (stoolCount - 1));
+    const stoolGroup = new THREE.Group();
+    stoolGroup.position.set(barX + 1.0, 0, stZ);
+
+    // Pata cromada y base
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 0.65, 10),
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 })
+    );
+    leg.position.y = 0.65 / 2;
+    stoolGroup.add(leg);
+
+    const baseStool = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.2, 0.2, 0.03, 16),
+      new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 })
+    );
+    baseStool.position.y = 0.015;
+    stoolGroup.add(baseStool);
+
+    // Asiento circular de cuero rojo o azul
+    const seat = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.22, 0.22, 0.08, 16),
+      new THREE.MeshStandardMaterial({ color: st % 2 === 0 ? 0xef4444 : 0x0284c7, roughness: 0.4 })
+    );
+    seat.position.y = 0.65;
+    stoolGroup.add(seat);
+
+    barGroup.add(stoolGroup);
+  }
+
+  stageGroup.add(barGroup);
+
+  // ==========================================
+  // 7. MESAS ALTAS DE CÓCTEL VIP (LOUNGE LATERAL DERECHO)
+  // ==========================================
+  const vipTables = [];
+  const vipTableCoords = [
+    { x: 5.4, z: -3.0 },
+    { x: 5.6, z: -1.0 },
+    { x: 5.4, z: 1.0 },
+    { x: 5.6, z: 3.0 }
+  ];
+
+  vipTableCoords.forEach(pos => {
+    const tableGroup = new THREE.Group();
+    tableGroup.position.set(pos.x, 0, pos.z);
+
+    // Base y pedestal cromado
+    const pedestal = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.04, 1.05, 12),
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 })
+    );
+    pedestal.position.y = 1.05 / 2;
+    tableGroup.add(pedestal);
+
+    const tBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.35, 0.35, 0.03, 16),
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
+    );
+    tBase.position.y = 0.015;
+    tableGroup.add(tBase);
+
+    // Tapa de cristal circular con borde de neón
+    const topGlass = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.65, 0.65, 0.04, 24),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.8 })
+    );
+    topGlass.position.y = 1.05;
+    tableGroup.add(topGlass);
+
+    const tableNeonRim = new THREE.Mesh(
+      new THREE.TorusGeometry(0.66, 0.02, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0xec4899 })
+    );
+    tableNeonRim.rotation.x = Math.PI / 2;
+    tableNeonRim.position.y = 1.06;
+    tableGroup.add(tableNeonRim);
+
+    // Botella y copa en la mesa
+    const bottle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 0.22, 10),
+      new THREE.MeshBasicMaterial({ color: 0x10b981 })
+    );
+    bottle.position.set(0.12, 1.18, 0.05);
+    tableGroup.add(bottle);
+
+    stageGroup.add(tableGroup);
+    vipTables.push(tableGroup);
+  });
+
+  // ==========================================
+  // 8. BOLA DE DISCOTECA GIRATORIA DE ESPEJOS
   // ==========================================
   const discoBallGroup = new THREE.Group();
-  discoBallGroup.position.set(0, 6.8, 0);
+  discoBallGroup.position.set(0, 6.8, 0.5);
 
-  const ballGeo = new THREE.SphereGeometry(0.8, 20, 20);
+  const ballGeo = new THREE.SphereGeometry(0.85, 24, 24);
   const ballMat = new THREE.MeshStandardMaterial({
-    color: 0xcccccc,
+    color: 0xdddddd,
     metalness: 0.95,
     roughness: 0.1,
     flatShading: true
@@ -207,59 +545,16 @@ export function buildDiscoStage(scene) {
   const discoBall = new THREE.Mesh(ballGeo, ballMat);
   discoBallGroup.add(discoBall);
 
-  // Varilla de sujeción al techo
-  const rodGeo = new THREE.CylinderGeometry(0.03, 0.03, 2.5, 8);
-  const rodMat = new THREE.MeshBasicMaterial({ color: 0x334155 });
-  const rod = new THREE.Mesh(rodGeo, rodMat);
+  // Varilla cromada al techo
+  const rodGeo = new THREE.CylinderGeometry(0.025, 0.025, 2.5, 8);
+  const rod = new THREE.Mesh(rodGeo, new THREE.MeshBasicMaterial({ color: 0x475569 }));
   rod.position.y = 1.25;
   discoBallGroup.add(rod);
 
   stageGroup.add(discoBallGroup);
 
   // ==========================================
-  // 4. BOCINAS CON BAJOS FÍSICOS (PULSAN CON EL AUDIO)
-  // ==========================================
-  const speakers = [];
-
-  function createSpeaker(x, z, rotY) {
-    const spkGroup = new THREE.Group();
-    spkGroup.position.set(x, 1.4, z);
-    spkGroup.rotation.y = rotY;
-
-    // Caja de madera negra
-    const boxMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4, 2.8, 1.2),
-      new THREE.MeshLambertMaterial({ color: 0x0f172a })
-    );
-    boxMesh.castShadow = true;
-    spkGroup.add(boxMesh);
-
-    // Cono de subwoofer grande
-    const coneGeo = new THREE.CylinderGeometry(0.48, 0.2, 0.2, 24);
-    const coneMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, metalness: 0.3, roughness: 0.5 });
-    const subCone = new THREE.Mesh(coneGeo, coneMat);
-    subCone.rotation.x = Math.PI / 2;
-    subCone.position.set(0, -0.4, 0.55);
-    spkGroup.add(subCone);
-
-    // Cono de agudos mediano
-    const tweetCone = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.3, 0.12, 0.15, 20),
-      coneMat
-    );
-    tweetCone.rotation.x = Math.PI / 2;
-    tweetCone.position.set(0, 0.65, 0.55);
-    spkGroup.add(tweetCone);
-
-    stageGroup.add(spkGroup);
-    speakers.push({ group: spkGroup, subCone, tweetCone });
-  }
-
-  createSpeaker(-3.2, stageCenterZ, 0.25);
-  createSpeaker(3.2, stageCenterZ, -0.25);
-
-  // ==========================================
-  // 5. CUATRO FOCOS MÓVILES SIMULADOS (LIGHT CONES)
+  // 9. CUATRO FOCOS MÓVILES VOLUMÉTRICOS (LIGHT CONES)
   // ==========================================
   const spotLights = [];
   const spotColors = [0x00f0ff, 0xec4899, 0xa855f7, 0xfacc15];
@@ -267,13 +562,11 @@ export function buildDiscoStage(scene) {
   for (let i = 0; i < 4; i++) {
     const spotGroup = new THREE.Group();
     const xPos = -4.5 + i * 3.0;
-    spotGroup.position.set(xPos, 5.8, -4.5);
+    spotGroup.position.set(xPos, 6.2, -4.8);
 
-    // Base del foco móvil
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.3, 12), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
     spotGroup.add(base);
 
-    // Cabeza giratoria
     const headPivot = new THREE.Group();
     headPivot.position.y = -0.2;
     spotGroup.add(headPivot);
@@ -281,13 +574,12 @@ export function buildDiscoStage(scene) {
     const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), new THREE.MeshLambertMaterial({ color: 0x0f172a }));
     headPivot.add(headMesh);
 
-    // Haz de luz cónico volumétrico ligero con blending aditivo
-    const coneGeo = new THREE.ConeGeometry(1.6, 9, 16, 1, true);
-    coneGeo.translate(0, -4.5, 0); // Ajustar origen en la punta
+    const coneGeo = new THREE.ConeGeometry(1.8, 10, 16, 1, true);
+    coneGeo.translate(0, -5.0, 0);
     const coneMat = new THREE.MeshBasicMaterial({
       color: spotColors[i],
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.25,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
       depthWrite: false
@@ -300,42 +592,7 @@ export function buildDiscoStage(scene) {
   }
 
   // ==========================================
-  // 6. SUELO DE ARENA ANFITEATRO Y ANILLOS CONCÉNTRICOS EN EL PISO
-  // ==========================================
-  const floorMesh = new THREE.Mesh(
-    new THREE.CircleGeometry(16, 48),
-    new THREE.MeshStandardMaterial({
-      color: 0x060913,
-      roughness: 0.8,
-      metalness: 0.1
-    })
-  );
-  floorMesh.rotation.x = -Math.PI / 2;
-  floorMesh.position.set(0, 0, stageCenterZ);
-  floorMesh.receiveShadow = true;
-  stageGroup.add(floorMesh);
-
-  // Anillos concéntricos neón grabados en el piso para guiar las filas del público
-  const arenaRingColors = [0x00f0ff, 0x8b5cf6, 0xfacc15, 0xec4899, 0x10b981];
-  const arenaRingRadii = [3.5, 4.8, 6.2, 7.8, 9.6];
-  const floorTiles = []; // Mantenido para compatibilidad
-
-  arenaRingRadii.forEach((r, idx) => {
-    const ringGeo = new THREE.RingGeometry(r - 0.025, r + 0.025, 64);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: arenaRingColors[idx % arenaRingColors.length],
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.35
-    });
-    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-    ringMesh.rotation.x = -Math.PI / 2;
-    ringMesh.position.set(0, 0.005, stageCenterZ);
-    stageGroup.add(ringMesh);
-  });
-
-  // ==========================================
-  // 7. SISTEMA DE CONFETI CELEBRATORIO
+  // 10. SISTEMA DE CONFETI CELEBRATORIO
   // ==========================================
   const confettiCount = 80;
   const confettiGeo = new THREE.PlaneGeometry(0.12, 0.18);
@@ -384,13 +641,13 @@ export function buildDiscoStage(scene) {
   }
 
   // ==========================================
-  // 8. ILUMINACIÓN AMBIENTAL DE DISCOTECA
+  // 11. ILUMINACIÓN AMBIENTAL DE DISCOTECA
   // ==========================================
-  const stageAmbient = new THREE.AmbientLight(0x38bdf8, 0.65);
+  const stageAmbient = new THREE.AmbientLight(0x38bdf8, 0.7);
   scene.add(stageAmbient);
 
-  const stageDirectional = new THREE.DirectionalLight(0xffffff, 1.2);
-  stageDirectional.position.set(0, 10, 8);
+  const stageDirectional = new THREE.DirectionalLight(0xffffff, 1.3);
+  stageDirectional.position.set(2, 10, 8);
   stageDirectional.castShadow = true;
   scene.add(stageDirectional);
 
@@ -402,7 +659,7 @@ export function buildDiscoStage(scene) {
   function triggerExtremeDisco(duration = 6.0) {
     isExtremeMode = true;
     extremeTimer = duration;
-    burstConfetti(new THREE.Vector3(0, 5, -2));
+    burstConfetti(new THREE.Vector3(0, 5, stageCenterZ));
   }
 
   // ==========================================
@@ -410,9 +667,7 @@ export function buildDiscoStage(scene) {
   // ==========================================
   return {
     stageGroup,
-    setLedData(data) {
-      ledData = { ...ledData, ...data };
-    },
+    setLedData() {},
     burstConfetti,
     triggerExtremeDisco,
     update(time, delta, audioLevels = { bass: 0, mid: 0, overall: 0 }) {
@@ -423,7 +678,7 @@ export function buildDiscoStage(scene) {
         }
       }
 
-      // 0. Tornamesas de DJ girando en tiempo real y Vúmetros reactivos al beat
+      // 0. Tornamesas girando en tiempo real y Vúmetros reactivos al beat
       const platterSpeed = 3.5 + (audioLevels.bass || 0) * 4.5;
       platterL.rotation.y += platterSpeed * delta;
       platterR.rotation.y += platterSpeed * 0.9 * delta;
@@ -433,11 +688,11 @@ export function buildDiscoStage(scene) {
         v.mesh.visible = vuLevel >= (v.level * 0.7);
       }
 
-      // 1. Bola de discoteca rotando (más rápida en modo extremo)
+      // 1. Bola de discoteca rotando
       const ballSpeed = isExtremeMode ? 3.5 : 0.8;
       discoBall.rotation.y += ballSpeed * delta;
 
-      // 2. Focos móviles barriendo el escenario en patrones armónicos
+      // 2. Focos móviles barriendo el club
       for (let i = 0; i < spotLights.length; i++) {
         const spot = spotLights[i];
         const sweepSpeed = isExtremeMode ? 6.0 : 2.2;
@@ -446,34 +701,37 @@ export function buildDiscoStage(scene) {
         spot.headPivot.rotation.z = sweepX;
         spot.headPivot.rotation.x = 0.4 + sweepZ;
 
-        // Pulso de intensidad o estroboscopio en modo extremo
         if (isExtremeMode) {
           spot.coneMat.opacity = Math.sin(time * 24 + i) > 0 ? 0.45 : 0.05;
         } else {
-          spot.coneMat.opacity = 0.15 + audioLevels.mid * 0.35;
+          spot.coneMat.opacity = 0.18 + audioLevels.mid * 0.35;
         }
       }
 
-      // 3. Subwoofers bombeando físicamente con los graves
+      // 3. Subwoofers bombeando físicamente con el bajo
       const bassPunch = 1.0 + (audioLevels.bass || 0) * 0.45;
       for (let s of speakers) {
         s.subCone.scale.set(bassPunch, bassPunch, 1.0 + audioLevels.bass * 0.8);
+        if (s.midCone) s.midCone.scale.set(bassPunch * 0.9, bassPunch * 0.9, 1.0 + audioLevels.bass * 0.5);
       }
 
-      // 4. Tiles de la pista iluminándose con ondas rítmicas
-      const waveSpeed = time * 5;
-      for (let i = 0; i < floorTiles.length; i++) {
-        const tile = floorTiles[i];
-        const dist = Math.sqrt(tile.ix * tile.ix + tile.iz * tile.iz);
-        const wave = Math.sin(waveSpeed - dist * 0.6);
-        if (wave > 0.4) {
-          tile.mat.color.setHSL((time * 0.1 + dist * 0.05) % 1, 0.85, 0.45);
+      // 4. Baldosas LED de la pista iluminándose al ritmo de la música
+      const wave = time * 4.5;
+      const bassEnergy = audioLevels.bass || 0;
+      for (let i = 0; i < ledTiles.length; i++) {
+        const t = ledTiles[i];
+        const dist = Math.hypot(t.col - 3.5, t.row - 4.5);
+        const pulse = Math.sin(wave - dist * 0.75) * 0.5 + 0.5;
+
+        if (bassEnergy > 0.45) {
+          // Pulso explosivo de bajo
+          t.mat.opacity = 0.4 + bassEnergy * 0.55;
         } else {
-          tile.mat.color.setHex((Math.abs(tile.ix) + Math.abs(tile.iz)) % 2 === 0 ? 0x111827 : 0x070913);
+          t.mat.opacity = 0.2 + pulse * 0.55;
         }
       }
 
-      // 5. Actualizar partículas de confeti
+      // 5. Partículas de confeti
       for (let c = 0; c < confettiPool.length; c++) {
         const p = confettiPool[c];
         if (!p.mesh.visible) continue;
@@ -482,7 +740,7 @@ export function buildDiscoStage(scene) {
           p.mesh.visible = false;
           continue;
         }
-        p.velocity.y -= 4.5 * delta; // Gravedad suave
+        p.velocity.y -= 4.5 * delta;
         p.velocity.x *= 0.98;
         p.velocity.z *= 0.98;
         p.mesh.position.addScaledVector(p.velocity, delta);
@@ -490,9 +748,6 @@ export function buildDiscoStage(scene) {
         p.mesh.rotation.x += p.rotSpeed.x * delta;
         p.mesh.rotation.y += p.rotSpeed.y * delta;
       }
-
-      // 6. Actualizar pantalla LED
-      updateLedScreen(time, audioLevels);
     }
   };
 }

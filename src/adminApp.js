@@ -49,10 +49,33 @@ export function initAdminApp() {
   const btnToggleDjVoice = document.getElementById('btn-toggle-dj-voice');
   const djVoiceStatusIcon = document.getElementById('dj-voice-status-icon');
 
+  // Elementos del Buscador Virtual DJ y Carga de Carpetas
+  const djSearchInput = document.getElementById('dj-search-input');
+  const btnClearSearch = document.getElementById('btn-clear-search');
+  const djSearchCountBadge = document.getElementById('dj-search-count-badge');
+  const djFolderInput = document.getElementById('dj-folder-input');
+  const btnSelectFolder = document.getElementById('btn-select-folder');
+  const btnToggleBatchDrive = document.getElementById('btn-toggle-batch-drive');
+  const djBatchDriveBox = document.getElementById('dj-batch-drive-box');
+  const djBatchUrlsInput = document.getElementById('dj-batch-urls-input');
+  const btnCancelBatchDrive = document.getElementById('btn-cancel-batch-drive');
+  const btnSubmitBatchDrive = document.getElementById('btn-submit-batch-drive');
+
   let currentPlayingTrackId = null;
   let isCurrentTrackPaused = false;
   let customTracksList = [];
+  let currentSearchQuery = '';
   let isDjVoiceEnabled = localStorage.getItem('garabato_dj_voice_enabled') !== 'false';
+  let adminMonitorAudio = null;
+
+  function getOrCreateAdminAudio() {
+    if (!adminMonitorAudio) {
+      adminMonitorAudio = new Audio();
+      adminMonitorAudio.loop = true;
+      adminMonitorAudio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
+    }
+    return adminMonitorAudio;
+  }
 
   function showUploadStatus(msg, isError = false) {
     if (!djUploadStatus) return;
@@ -65,8 +88,29 @@ export function initAdminApp() {
     if (!isError) {
       setTimeout(() => {
         djUploadStatus.style.display = 'none';
-      }, 4000);
+      }, 5000);
     }
+  }
+
+  // Normalizar texto para búsqueda insensible a acentos/diacríticos y mayúsculas
+  function normalizeSearchText(str) {
+    return String(str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  function escapeHtml(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escapeRegex(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
   }
 
   // Cargar lista de pistas desde la API
@@ -112,6 +156,21 @@ export function initAdminApp() {
 
     updateTransportButtons();
 
+    const query = normalizeSearchText(currentSearchQuery);
+    const filteredTracks = query
+      ? customTracksList.filter(track => normalizeSearchText(track.name).includes(query))
+      : customTracksList;
+
+    if (djSearchCountBadge) {
+      if (query) {
+        djSearchCountBadge.textContent = `${filteredTracks.length} de ${customTracksList.length}`;
+        djSearchCountBadge.style.color = filteredTracks.length > 0 ? '#38bdf8' : '#f87171';
+      } else {
+        djSearchCountBadge.textContent = `${customTracksList.length} pistas`;
+        djSearchCountBadge.style.color = '#38bdf8';
+      }
+    }
+
     if (customTracksList.length === 0) {
       djPlaylistList.innerHTML = `
         <div style="padding: 18px; text-align: center; color: #64748b; font-size: 11px;">
@@ -121,13 +180,34 @@ export function initAdminApp() {
       return;
     }
 
+    if (filteredTracks.length === 0) {
+      djPlaylistList.innerHTML = `
+        <div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 12px;">
+          🔍 No se encontraron canciones con "<b>${escapeHtml(currentSearchQuery)}</b>"
+          <div style="margin-top: 6px; font-size: 11px; color: #64748b;">
+            Prueba con otro nombre o haz clic en ✕ para ver toda la biblioteca.
+          </div>
+        </div>
+      `;
+      return;
+    }
+
     djPlaylistList.innerHTML = '';
-    customTracksList.forEach(track => {
+    filteredTracks.forEach(track => {
       const isCurrent = currentPlayingTrackId === track.id;
       const row = document.createElement('div');
       row.className = `dj-track-row ${isCurrent ? 'is-active' : ''}`;
 
       const sizeMb = track.size ? (track.size / (1024 * 1024)).toFixed(1) + ' MB' : '';
+
+      // Resaltar coincidencia de búsqueda (Estilo Virtual DJ)
+      let displayName = escapeHtml(track.name);
+      if (query) {
+        try {
+          const regex = new RegExp(`(${escapeRegex(currentSearchQuery)})`, 'gi');
+          displayName = displayName.replace(regex, '<mark style="background: rgba(250, 204, 21, 0.4); color: #fef08a; padding: 1px 3px; border-radius: 3px; font-weight: 900;">$1</mark>');
+        } catch (e) {}
+      }
 
       let actionButtonsHtml = '';
       if (isCurrent && !isCurrentTrackPaused) {
@@ -148,7 +228,7 @@ export function initAdminApp() {
 
       row.innerHTML = `
         <div class="dj-track-meta">
-          <span class="dj-track-name" title="${track.name}">${isCurrent ? (isCurrentTrackPaused ? '⏸️ ' : '▶ ') : '🎵 '}${track.name}</span>
+          <span class="dj-track-name" title="${track.name}">${isCurrent ? (isCurrentTrackPaused ? '⏸️ ' : '▶ ') : '🎵 '}${displayName}</span>
           <span class="dj-track-sub">${sizeMb} • ${new Date(track.createdAt || Date.now()).toLocaleTimeString()}</span>
         </div>
         <div class="dj-track-actions">
@@ -189,6 +269,23 @@ export function initAdminApp() {
     if (djNowPlayingTitle) djNowPlayingTitle.textContent = track.name;
     if (djNowPlayingBanner) djNowPlayingBanner.style.display = 'flex';
 
+    // Reproducir de inmediato en el panel Admin (Monitor de Auriculares del DJ)
+    try {
+      const audio = getOrCreateAdminAudio();
+      const currentSrc = audio.src || '';
+      const isSame = currentSrc.endsWith(track.url) || track.url.endsWith(currentSrc);
+      if (!isSame) {
+        audio.src = track.url;
+        audio.currentTime = 0;
+      } else if (!resume) {
+        audio.currentTime = 0;
+      }
+      audio.volume = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
+      audio.play().catch(e => console.info('[Admin Monitor] Reproducción iniciada:', e.message));
+    } catch (e) {
+      console.warn('[Admin Monitor] Error al reproducir audio local:', e);
+    }
+
     syncBridge.send('DJ_PLAY_CUSTOM_AUDIO', {
       url: track.url,
       name: track.name,
@@ -205,6 +302,9 @@ export function initAdminApp() {
     if (djNowPlayingTitle && currentTrack) {
       djNowPlayingTitle.textContent = `${currentTrack.name} (⏸️ EN PAUSA)`;
     }
+    if (adminMonitorAudio) {
+      adminMonitorAudio.pause();
+    }
     syncBridge.send('DJ_PAUSE_TRACK', { id: currentPlayingTrackId });
     renderPlaylist();
   }
@@ -213,6 +313,10 @@ export function initAdminApp() {
     currentPlayingTrackId = null;
     isCurrentTrackPaused = false;
     if (djNowPlayingTitle) djNowPlayingTitle.textContent = '⏹️ Música Detenida (0:00)';
+    if (adminMonitorAudio) {
+      adminMonitorAudio.pause();
+      adminMonitorAudio.currentTime = 0;
+    }
     syncBridge.send('DJ_STOP_TRACK', {});
     renderPlaylist();
   }
@@ -260,50 +364,66 @@ export function initAdminApp() {
     }
   }
 
-  // Subir archivo de audio en Base64
-  function uploadAudioFile(file) {
-    if (!file) return;
-    const validExts = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/x-m4a', 'audio/aac'];
-    if (!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav|ogg|m4a|aac)$/i)) {
-      showUploadStatus('Por favor selecciona un archivo de audio válido (.mp3, .wav, .ogg)', true);
+  // Subir múltiples archivos de audio con barra de progreso
+  async function uploadMultipleAudioFiles(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList).filter(f => 
+      f.type.startsWith('audio/') || f.name.match(/\.(mp3|wav|ogg|m4a|aac)$/i)
+    );
+
+    if (files.length === 0) {
+      showUploadStatus('No se encontraron archivos de audio (.mp3, .wav, .ogg) en la selección.', true);
       return;
     }
 
-    showUploadStatus(`Subiendo "${file.name}" al club...`);
+    showUploadStatus(`Iniciando subida de ${files.length} canciones al club... 🚀`);
 
-    const reader = new FileReader();
-    reader.onload = async () => {
+    let uploadedCount = 0;
+    let failedCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const percent = Math.round(((i + 1) / files.length) * 100);
+      showUploadStatus(`Subiendo ${i + 1} de ${files.length}: "${file.name}" (${percent}%)...`);
+
       try {
-        const base64Data = reader.result;
-        const res = await fetch('/api/music/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: file.name,
-            data: base64Data
-          })
+        await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              const res = await fetch('/api/music/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  filename: file.name,
+                  data: reader.result
+                })
+              });
+              const data = await res.json();
+              if (data.success) {
+                uploadedCount++;
+              } else {
+                failedCount++;
+              }
+            } catch (err) {
+              failedCount++;
+            } finally {
+              resolve();
+            }
+          };
+          reader.onerror = () => { failedCount++; resolve(); };
+          reader.readAsDataURL(file);
         });
-
-        const data = await res.json();
-        if (data.success && data.track) {
-          showUploadStatus(`¡Pista "${data.track.name}" lista para sonar! 🔥`);
-          fetchMusicPlaylist();
-          // Reproducir de inmediato
-          playCustomTrack(data.track);
-        } else {
-          showUploadStatus('Error: ' + (data.error || 'No se pudo subir'), true);
-        }
-      } catch (err) {
-        showUploadStatus('Fallo de subida: ' + err.message, true);
+      } catch (e) {
+        failedCount++;
       }
-    };
-    reader.onerror = () => {
-      showUploadStatus('Error al leer el archivo de audio local.', true);
-    };
-    reader.readAsDataURL(file);
+    }
+
+    showUploadStatus(`¡Completado! Se subieron ${uploadedCount} canciones a tu biblioteca ${failedCount > 0 ? `(${failedCount} fallaron)` : '🔥'}`);
+    fetchMusicPlaylist();
   }
 
-  // Eventos de selección de archivo
+  // Eventos de selección de archivos y carpetas
   if (btnSelectFile && djFileInput) {
     btnSelectFile.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -311,9 +431,24 @@ export function initAdminApp() {
     });
   }
 
+  if (btnSelectFolder && djFolderInput) {
+    btnSelectFolder.addEventListener('click', (e) => {
+      e.stopPropagation();
+      djFolderInput.click();
+    });
+
+    djFolderInput.addEventListener('change', () => {
+      if (djFolderInput.files && djFolderInput.files.length > 0) {
+        uploadMultipleAudioFiles(djFolderInput.files);
+      }
+    });
+  }
+
   if (djUploadDropzone && djFileInput) {
-    djUploadDropzone.addEventListener('click', () => {
-      djFileInput.click();
+    djUploadDropzone.addEventListener('click', (e) => {
+      if (e.target !== btnSelectFile && e.target !== btnSelectFolder) {
+        djFileInput.click();
+      }
     });
 
     djUploadDropzone.addEventListener('dragover', (e) => {
@@ -329,14 +464,48 @@ export function initAdminApp() {
       e.preventDefault();
       djUploadDropzone.classList.remove('dragover');
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        uploadAudioFile(e.dataTransfer.files[0]);
+        uploadMultipleAudioFiles(e.dataTransfer.files);
       }
     });
 
     djFileInput.addEventListener('change', () => {
       if (djFileInput.files && djFileInput.files.length > 0) {
-        uploadAudioFile(djFileInput.files[0]);
+        uploadMultipleAudioFiles(djFileInput.files);
       }
+    });
+  }
+
+  // Buscador en Tiempo Real Estilo Virtual DJ
+  if (djSearchInput) {
+    djSearchInput.addEventListener('input', () => {
+      currentSearchQuery = djSearchInput.value;
+      if (btnClearSearch) {
+        btnClearSearch.style.display = currentSearchQuery ? 'inline-flex' : 'none';
+      }
+      renderPlaylist();
+    });
+
+    // Atajos de teclado Virtual DJ: '/' para buscar, 'Escape' para limpiar
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== djSearchInput && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        djSearchInput.focus();
+        djSearchInput.select();
+      } else if (e.key === 'Escape' && document.activeElement === djSearchInput) {
+        djSearchInput.value = '';
+        currentSearchQuery = '';
+        if (btnClearSearch) btnClearSearch.style.display = 'none';
+        renderPlaylist();
+      }
+    });
+  }
+
+  if (btnClearSearch) {
+    btnClearSearch.addEventListener('click', () => {
+      if (djSearchInput) djSearchInput.value = '';
+      currentSearchQuery = '';
+      btnClearSearch.style.display = 'none';
+      renderPlaylist();
     });
   }
 
@@ -368,7 +537,7 @@ export function initAdminApp() {
           await fetchMusicPlaylist();
           playCustomTrack(data.track);
         } else {
-          showUploadStatus(`Error: ${data.error || 'No se pudo importar'}`, true);
+          showUploadStatus(`Aviso: ${data.error || 'No se pudo importar'}`, true);
         }
       } catch (err) {
         showUploadStatus('Fallo de conexión al importar: ' + err.message, true);
@@ -379,11 +548,78 @@ export function initAdminApp() {
     });
   }
 
+  // Módulo de Importación de Múltiples Links de Google Drive
+  if (btnToggleBatchDrive && djBatchDriveBox) {
+    btnToggleBatchDrive.addEventListener('click', () => {
+      const isVisible = djBatchDriveBox.style.display !== 'none';
+      djBatchDriveBox.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible && djBatchUrlsInput) djBatchUrlsInput.focus();
+    });
+  }
+
+  if (btnCancelBatchDrive && djBatchDriveBox) {
+    btnCancelBatchDrive.addEventListener('click', () => {
+      djBatchDriveBox.style.display = 'none';
+    });
+  }
+
+  if (btnSubmitBatchDrive && djBatchUrlsInput) {
+    btnSubmitBatchDrive.addEventListener('click', async () => {
+      const text = djBatchUrlsInput.value.trim();
+      if (!text) {
+        alert('Pega al menos un enlace de Google Drive o URL de audio');
+        return;
+      }
+      const urls = text.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+      if (urls.length === 0) {
+        alert('No se encontraron enlaces válidos (deben comenzar con http:// o https://)');
+        return;
+      }
+
+      btnSubmitBatchDrive.disabled = true;
+      btnSubmitBatchDrive.textContent = '⏳ Importando...';
+      showUploadStatus(`Iniciando descarga de ${urls.length} enlaces desde Google Drive...`);
+
+      let imported = 0;
+      let failed = 0;
+
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        showUploadStatus(`Descargando ${i + 1} de ${urls.length} desde Google Drive...`);
+        try {
+          const res = await fetch('/api/music/import-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          });
+          const data = await res.json();
+          if (data.success && data.track) {
+            imported++;
+          } else {
+            failed++;
+          }
+        } catch (e) {
+          failed++;
+        }
+      }
+
+      btnSubmitBatchDrive.disabled = false;
+      btnSubmitBatchDrive.textContent = '⬇️ Importar Todos';
+      djBatchUrlsInput.value = '';
+      if (djBatchDriveBox) djBatchDriveBox.style.display = 'none';
+      showUploadStatus(`¡Importación finalizada! ${imported} canciones descargadas de Drive ${failed > 0 ? `(${failed} fallaron)` : '🔥'}`);
+      fetchMusicPlaylist();
+    });
+  }
+
   // Slider de Volumen Maestro
   if (djMasterVolume) {
     djMasterVolume.addEventListener('input', () => {
       const vol = parseInt(djMasterVolume.value, 10);
       if (djVolumeLabel) djVolumeLabel.textContent = `${vol}%`;
+      if (adminMonitorAudio) {
+        adminMonitorAudio.volume = vol / 100;
+      }
       syncBridge.send('DJ_SET_VOLUME', { volume: vol / 100 });
     });
   }

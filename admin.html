@@ -40,30 +40,54 @@
           <!-- Dropzone para arrastrar o hacer clic -->
           <div id="dj-upload-dropzone" class="dj-upload-dropzone">
             <span class="dj-upload-icon">📁</span>
-            <strong style="color: #38bdf8; font-size: 13px;">Arrastra tus canciones MP3 / WAV aquí</strong>
-            <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 8px 0;">o haz clic para seleccionar archivo desde tu dispositivo</p>
-            <input type="file" id="dj-file-input" accept="audio/*" style="display: none;" />
-            <button type="button" id="btn-select-file" class="btn-action-small" style="background: #6366f1; color: #fff; font-weight: 700; padding: 6px 14px; border-radius: 8px;">
-              Seleccionar Audio
-            </button>
+            <strong style="color: #38bdf8; font-size: 13px;">Arrastra tus canciones MP3 / WAV o carpeta aquí</strong>
+            <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 8px 0;">Selecciona una o varias canciones, o una carpeta completa de música</p>
+            <input type="file" id="dj-file-input" accept="audio/*" multiple style="display: none;" />
+            <input type="file" id="dj-folder-input" webkitdirectory directory multiple accept="audio/*" style="display: none;" />
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+              <button type="button" id="btn-select-file" class="btn-action-small" style="background: #6366f1; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 8px;">
+                🎵 Seleccionar Canciones
+              </button>
+              <button type="button" id="btn-select-folder" class="btn-action-small" style="background: #0284c7; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 8px;">
+                📂 Cargar Carpeta Completa
+              </button>
+            </div>
           </div>
 
-          <!-- Estado de Subida -->
-          <div id="dj-upload-status" style="display: none; font-size: 11px; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; text-align: center;"></div>
+          <!-- Estado de Subida y Barra de Progreso -->
+          <div id="dj-upload-status" style="display: none; font-size: 11px; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; text-align: center;"></div>
 
           <!-- O pegar enlace de Google Drive o URL directa -->
           <div class="form-group" style="margin-bottom: 10px;">
-            <label for="dj-stream-url" style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;">
-              📁 Importar desde Google Drive o Link Directo (MP3 / WAV)
-            </label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label for="dj-stream-url" style="font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 5px;">
+                ☁️ Importar desde Google Drive o Link Directo
+              </label>
+              <button type="button" id="btn-toggle-batch-drive" class="btn-text-action" style="font-size: 10px; color: #38bdf8; font-weight: 800;">
+                📋 Importar Varios Links
+              </button>
+            </div>
             <div style="display: flex; gap: 6px;">
               <input type="url" id="dj-stream-url" placeholder="Pega el enlace de Google Drive (ej: https://drive.google.com/file/d/...)" style="flex: 1; padding: 7px; font-size: 11px;" />
               <button type="button" id="btn-play-stream-url" class="btn-action-small" style="background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 800; white-space: nowrap;">
                 ⬇️ Importar & Tocar
               </button>
             </div>
+
+            <!-- Bloque Oculto para Importar Múltiples Links de Google Drive -->
+            <div id="dj-batch-drive-box" style="display: none; margin-top: 8px; padding: 10px; background: rgba(15, 23, 42, 0.85); border: 1.5px dashed #0284c7; border-radius: 8px;">
+              <div style="font-size: 11px; font-weight: 800; color: #e2e8f0; margin-bottom: 4px;">
+                📋 Pega varios enlaces de Google Drive (uno por línea):
+              </div>
+              <textarea id="dj-batch-urls-input" rows="3" placeholder="https://drive.google.com/file/d/1...&#10;https://drive.google.com/file/d/2...&#10;https://drive.google.com/file/d/3..." style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 11px; padding: 6px; font-family: monospace; resize: vertical;"></textarea>
+              <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
+                <button type="button" id="btn-cancel-batch-drive" class="btn-action-small" style="background: #334155; color: #94a3b8;">Cancelar</button>
+                <button type="button" id="btn-submit-batch-drive" class="btn-action-small" style="background: #10b981; color: #fff; font-weight: 800;">⬇️ Importar Todos</button>
+              </div>
+            </div>
+
             <span class="input-hint" style="font-size: 10px; color: #94a3b8; display: block; margin-top: 3px;">
-              💡 <em>En Google Drive: clic derecho en tu canción > Compartir > "Cualquier persona con el enlace".</em>
+              💡 <em>En Google Drive: Compartir > "Cualquier persona con el enlace".</em>
             </span>
           </div>
 
@@ -98,6 +122,16 @@
             <button type="button" id="btn-refresh-playlist" class="btn-text-action" style="font-size: 10px;">
               🔄 Actualizar
             </button>
+          </div>
+
+          <!-- Buscador en Tiempo Real Estilo Virtual DJ -->
+          <div class="dj-search-container" style="margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; background: #0b1120; border: 1.5px solid #0284c7; border-radius: 8px; padding: 6px 10px; gap: 8px; box-shadow: 0 0 10px rgba(2, 132, 199, 0.25);">
+              <span style="font-size: 14px; color: #38bdf8;">🔍</span>
+              <input type="text" id="dj-search-input" placeholder="Buscar canción, artista o ritmo (Estilo Virtual DJ)... [Atajo: /]" style="flex: 1; background: transparent; border: none; color: #f8fafc; font-size: 11.5px; font-weight: 700; outline: none;" />
+              <button type="button" id="btn-clear-search" style="display: none; background: #334155; border: none; color: #cbd5e1; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; align-items: center; justify-content: center; cursor: pointer;" title="Limpiar búsqueda">✕</button>
+              <span id="dj-search-count-badge" style="font-size: 10px; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 6px; white-space: nowrap;">0 pistas</span>
+            </div>
           </div>
 
           <div id="dj-playlist-list" class="dj-playlist-container">
@@ -189,18 +223,23 @@
             </div>
           </div>
 
-          <!-- Opciones del Micrófono -->
-          <div class="form-row mt-2" style="font-size: 11px;">
-            <div class="form-group flex-1">
-              <label for="mic-mode-select" style="font-size: 11px;">Modo de Activación</label>
-              <select id="mic-mode-select" style="padding: 6px; font-size: 11px;">
+          <!-- Opciones del Micrófono (Diseño Limpio Sin Desfases) -->
+          <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="mic-mode-select" style="font-size: 11px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 3px;">
+                Modo de Activación
+              </label>
+              <select id="mic-mode-select" style="width: 100%; box-sizing: border-box; padding: 7px 9px; font-size: 11px; border-radius: 6px; background: #0f172a; border: 1px solid #334155; color: #f8fafc;">
                 <option value="toggle" selected>🔘 Modo Interruptor (Clic para Hablar / Silenciar)</option>
                 <option value="ptt">👆 Push-to-Talk (Mantener presionado)</option>
               </select>
             </div>
-            <div class="form-group flex-1">
-              <label for="mic-gain-slider" style="font-size: 11px;">Sensibilidad del Mic</label>
-              <input type="range" id="mic-gain-slider" min="50" max="250" value="120" />
+            <div class="form-group" style="margin-bottom: 0;">
+              <div class="label-with-counter" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="mic-gain-slider" style="font-size: 11px; font-weight: 700; color: #cbd5e1;">Sensibilidad del Mic</label>
+                <span id="mic-gain-label" class="counter" style="font-size: 11px; font-weight: 800; color: #38bdf8;">120%</span>
+              </div>
+              <input type="range" id="mic-gain-slider" min="50" max="250" value="120" style="width: 100%; box-sizing: border-box;" />
             </div>
           </div>
 

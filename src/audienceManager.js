@@ -31,47 +31,115 @@ export class AudienceManager {
   }
 
   /**
-   * Calcula la posición y rotación de cada espectador en círculos concéntricos
-   * mirando hacia la tarima central (0, 0, -2.2) donde se encuentra el comediante.
-   * Todos apoyados con los pies firmes sobre el piso en Y = 0.00 (sin hundirse).
+   * Calcula la posición y rotación de cada espectador en una discoteca real multi-zona
+   * con capacidad perfecta para hasta 200+ espectadores sin colisiones ni desfases.
+   * 
+   * ZONA 1 (0 a 119): Pista de baile central LED en filas escalonadas frente al DJ.
+   * ZONA 2 (120 a 159): Zona VIP Lounge de mesas de cóctel iluminadas (ala derecha).
+   * ZONA 3 (160 a 199): Barra de bar del club y taburetes altos (ala izquierda).
+   * ZONA 4 (200+): Alas laterales y balcones del club.
    */
   calculateSlotPosition(index) {
-    const stageCenterZ = -2.2;
-    const rings = [
-      { count: 12, radius: 3.5, yOffset: 0.0 },
-      { count: 18, radius: 4.8, yOffset: 0.0 },
-      { count: 24, radius: 6.2, yOffset: 0.0 },
-      { count: 32, radius: 7.8, yOffset: 0.0 },
-      { count: 40, radius: 9.6, yOffset: 0.0 }
-    ];
+    const djStageZ = -3.5;
+    let posX = 0;
+    let posY = 0.0;
+    let posZ = 0;
+    let rotY = 0;
 
-    let currentIdx = index;
-    let ringIdx = 0;
-    while (ringIdx < rings.length - 1 && currentIdx >= rings[ringIdx].count) {
-      currentIdx -= rings[ringIdx].count;
-      ringIdx++;
+    // ==========================================
+    // ZONA 1: PISTA DE BAILE CENTRAL LED (Hasta 120 personas)
+    // 8 Filas escalonadas para que ninguna cabeza tape a la otra
+    // ==========================================
+    if (index < 120) {
+      const rows = [
+        { count: 8,  z: -2.3, width: 5.4 },
+        { count: 10, z: -1.5, width: 6.2 },
+        { count: 12, z: -0.7, width: 6.8 },
+        { count: 14, z:  0.1, width: 7.2 },
+        { count: 16, z:  0.9, width: 7.6 },
+        { count: 18, z:  1.7, width: 8.0 },
+        { count: 20, z:  2.5, width: 8.4 },
+        { count: 22, z:  3.3, width: 8.8 }
+      ];
+
+      let rem = index;
+      let rIdx = 0;
+      while (rIdx < rows.length - 1 && rem >= rows[rIdx].count) {
+        rem -= rows[rIdx].count;
+        rIdx++;
+      }
+
+      const row = rows[rIdx];
+      const countInRow = row.count;
+      const step = row.width / (countInRow - 1);
+      // Escalonado para que cada espectador quede exactamente en el hueco de la fila delantera
+      const staggerOffset = (rIdx % 2 === 1) ? (step * 0.5) : 0;
+      
+      posX = -row.width / 2 + rem * step + (staggerOffset * (rem % 2 === 0 ? 1 : -1) * 0.3);
+      posZ = row.z;
+
+      // Pasillo central frontal sutil para la cámara
+      if (Math.abs(posX) < 0.45 && posZ > 0.5) {
+        posX += (posX >= 0 ? 0.35 : -0.35);
+      }
+
+      // Mirando hacia la cabina del DJ en tarima
+      rotY = Math.atan2(-posX, djStageZ - posZ);
     }
+    // ==========================================
+    // ZONA 2: VIP LOUNGE & MESAS DE CÓCTEL (40 personas: idx 120 a 159)
+    // ==========================================
+    else if (index < 160) {
+      const vipIdx = index - 120;
+      const tableIdx = Math.floor(vipIdx / 8); // 5 mesas (8 personas por mesa)
+      const slotAroundTable = vipIdx % 8;
+      const tableCoords = [
+        { x: 5.2, z: -2.8 },
+        { x: 5.5, z: -1.2 },
+        { x: 5.3, z:  0.6 },
+        { x: 5.5, z:  2.4 },
+        { x: 5.3, z:  4.0 }
+      ];
+      const table = tableCoords[tableIdx % tableCoords.length];
+      const tableRadius = 0.95;
+      const angle = (slotAroundTable / 8) * Math.PI * 2;
 
-    const ring = rings[ringIdx];
-    const totalInRing = ring.count;
-    // Escalonado angular para máxima visibilidad entre filas
-    const stagger = (ringIdx % 2 === 1) ? (Math.PI / totalInRing) : 0;
-    let angle = (currentIdx / totalInRing) * Math.PI * 2 + stagger;
-
-    let posX = Math.sin(angle) * ring.radius;
-    let posZ = stageCenterZ + Math.cos(angle) * ring.radius;
-
-    // Pasillo despejado para la cámara frontal principal
-    if (posZ > 0 && Math.abs(posX) < 0.6) {
-      angle += (posX >= 0 ? 0.16 : -0.16);
-      posX = Math.sin(angle) * ring.radius;
-      posZ = stageCenterZ + Math.cos(angle) * ring.radius;
+      posX = table.x + Math.sin(angle) * tableRadius;
+      posZ = table.z + Math.cos(angle) * tableRadius;
+      // Mirando hacia el centro del club o la mesa
+      rotY = Math.atan2(-posX, 0 - posZ);
     }
-
-    // Altura del suelo nivelada para que ningún personaje salga cortado por la mitad
-    const posY = 0.0;
-    // Mirando exactamente hacia el comediante en el centro de la tarima
-    const rotY = Math.atan2(-posX, stageCenterZ - posZ);
+    // ==========================================
+    // ZONA 3: BARRA DE BAR DEL CLUB (40 personas: idx 160 a 199)
+    // ==========================================
+    else if (index < 200) {
+      const barIdx = index - 160;
+      const isSeated = barIdx < 16;
+      if (isSeated) {
+        // En taburetes o de pie junto a la barra
+        const stepZ = 6.0 / 16;
+        posX = -4.8;
+        posZ = -3.8 + barIdx * stepZ;
+        rotY = Math.PI * 0.45; // Mirando hacia la pista / DJ
+      } else {
+        // Segunda línea en la barra de cócteles
+        const stepZ = 6.0 / 24;
+        posX = -4.0;
+        posZ = -3.8 + (barIdx - 16) * stepZ;
+        rotY = Math.PI * 0.35;
+      }
+    }
+    // ==========================================
+    // ZONA 4: BALCONES Y ALAS LATERALES (200+)
+    // ==========================================
+    else {
+      const extraIdx = index - 200;
+      const side = extraIdx % 2 === 0 ? 1 : -1;
+      const rowNum = Math.floor(extraIdx / 2);
+      posX = side * (4.5 + (rowNum % 4) * 0.7);
+      posZ = 4.2 + Math.floor(rowNum / 4) * 0.8;
+      rotY = Math.atan2(-posX, djStageZ - posZ);
+    }
 
     return { posX, posY, posZ, rotY };
   }
