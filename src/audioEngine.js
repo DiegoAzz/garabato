@@ -1934,6 +1934,7 @@ export class AudioEngine {
   pauseDjTrack() {
     this.stopDiscoBeat();
     this.isYTPlaying = false;
+    this.pendingCustomTrack = null;
     this.audioLevels = { bass: 0, mid: 0, treble: 0, overall: 0 };
     if (this.audioElement) {
       this.audioElement.pause();
@@ -1949,6 +1950,7 @@ export class AudioEngine {
   stopDjTrack() {
     this.stopDiscoBeat();
     this.isYTPlaying = false;
+    this.pendingCustomTrack = null;
     this.audioLevels = { bass: 0, mid: 0, treble: 0, overall: 0 };
     if (this.audioElement) {
       this.audioElement.pause();
@@ -2040,12 +2042,9 @@ export class AudioEngine {
   }
 
   resumeCustomAudioIfPending() {
-    if (this.audioElement && this.isPlayingImported && this.audioElement.paused) {
-      this.audioElement.play().catch(() => {});
-      return;
-    }
     if (this.pendingCustomTrack) {
       const { srcUrl, title, resume } = this.pendingCustomTrack;
+      this.pendingCustomTrack = null;
       this.playCustomAudioTrack(srcUrl, title, resume);
     }
   }

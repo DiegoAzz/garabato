@@ -444,6 +444,8 @@ export function initShowApp() {
     audience.increaseEnergy(2);
   });
 
+  let pendingDeckBPlay = false;
+
   // Desbloqueo universal de audio
   function unlockAudio() {
     audioEngine.initContext();
@@ -456,7 +458,13 @@ export function initShowApp() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
-    audioEngine.resumeCustomAudioIfPending();
+    if (audioEngine.pendingCustomTrack) {
+      audioEngine.resumeCustomAudioIfPending();
+    }
+    if (pendingDeckBPlay && deckBAudio && showDeckBIsPlaying) {
+      pendingDeckBPlay = false;
+      deckBAudio.play().catch(() => {});
+    }
     if (audioUnlockBtn) {
       audioUnlockBtn.classList.add('hidden');
     }
@@ -863,6 +871,7 @@ export function initShowApp() {
   function stopAllShowAudio() {
     showDeckAIsPlaying = false;
     showDeckBIsPlaying = false;
+    pendingDeckBPlay = false;
     audioEngine.stopDjTrack();
     if (deckBAudio) {
       deckBAudio.pause();
@@ -997,6 +1006,11 @@ export function initShowApp() {
         if (playPromise !== undefined) {
           playPromise.catch(e => {
             console.warn('[Show Deck B Play]:', e.message);
+            pendingDeckBPlay = true;
+            if (audioUnlockBtn) {
+              audioUnlockBtn.classList.remove('hidden');
+              audioUnlockBtn.innerHTML = '🔊 TOCA LA PANTALLA PARA ESCUCHAR LA MÚSICA 🎵';
+            }
             const onCanPlay = () => {
               deckBAudio.removeEventListener('canplay', onCanPlay);
               deckBAudio.play().catch(() => {});

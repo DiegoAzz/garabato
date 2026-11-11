@@ -182,25 +182,21 @@ export function initAdminApp() {
     });
   }
 
-  syncBridge.on('SHOW_READY', () => {
-    if (statusBadge) {
-      statusBadge.textContent = '● Show Conectado en Vivo';
-      statusBadge.classList.add('connected');
-    }
-  });
-
-  // Control de Silencio de Monitor Local en Admin (Activo por defecto para monitorear)
+  // Control de Silencio de Monitor Local en Admin
   let isAdminAudioMuted = false;
+  let userExplicitlyToggledAdminMute = false;
   const btnToggleAdminAudioMute = document.getElementById('btn-toggle-admin-audio-mute');
 
   function updateAdminAudioMuteUI() {
     if (!btnToggleAdminAudioMute) return;
     if (isAdminAudioMuted) {
-      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔇 MUTE';
+      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔇 MUTE (Evita Eco)';
       btnToggleAdminAudioMute.style.color = '#f87171';
+      btnToggleAdminAudioMute.title = 'El audio está silenciado en Admin para evitar eco si /show está abierto en esta misma PC. Haz clic para activar.';
     } else {
-      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔊 ON';
+      btnToggleAdminAudioMute.textContent = '🎧 Monitor Admin: 🔊 ACTIVO (Sonando)';
       btnToggleAdminAudioMute.style.color = '#38bdf8';
+      btnToggleAdminAudioMute.title = 'El audio está sonando en Admin. Si escuchas eco con /show, haz clic para silenciarlo.';
     }
     applyMixerVolumes();
   }
@@ -209,9 +205,60 @@ export function initAdminApp() {
     updateAdminAudioMuteUI();
     btnToggleAdminAudioMute.addEventListener('click', () => {
       isAdminAudioMuted = !isAdminAudioMuted;
+      userExplicitlyToggledAdminMute = true;
       updateAdminAudioMuteUI();
     });
   }
+
+  syncBridge.on('SHOW_READY', () => {
+    if (statusBadge) {
+      statusBadge.textContent = '● Show Conectado en Vivo';
+      statusBadge.classList.add('connected');
+    }
+    // Si /show se conecta y el usuario no forzó sonido local en Admin, silenciar para evitar eco entre pestañas
+    if (!userExplicitlyToggledAdminMute) {
+      isAdminAudioMuted = true;
+      updateAdminAudioMuteUI();
+    }
+    // Sincronizar inmediatamente volumen y mezclas con /show
+    applyMixerVolumes();
+    if (deckA.url || deckA.videoId) {
+      syncBridge.send('DJ_DECK_LOAD', {
+        deck: 'A',
+        type: deckA.type,
+        url: deckA.url,
+        videoId: deckA.videoId,
+        title: deckA.title
+      });
+      if (deckA.isPlaying) {
+        syncBridge.send('DJ_DECK_PLAY', {
+          deck: 'A',
+          type: deckA.type,
+          url: deckA.url,
+          videoId: deckA.videoId,
+          title: deckA.title
+        });
+      }
+    }
+    if (deckB.url || deckB.videoId) {
+      syncBridge.send('DJ_DECK_LOAD', {
+        deck: 'B',
+        type: deckB.type,
+        url: deckB.url,
+        videoId: deckB.videoId,
+        title: deckB.title
+      });
+      if (deckB.isPlaying) {
+        syncBridge.send('DJ_DECK_PLAY', {
+          deck: 'B',
+          type: deckB.type,
+          url: deckB.url,
+          videoId: deckB.videoId,
+          title: deckB.title
+        });
+      }
+    }
+  });
 
   // ==========================================
   // CONFIGURACIÓN DE AUDIO LOCAL PARA CADA DECK
@@ -521,7 +568,7 @@ export function initAdminApp() {
   // ==========================================
   // OPERACIONES DE CARGA, PLAY, PAUSE Y STOP
   // ==========================================
-  function loadTrackToDeck(deck, track, autoPlay = true) {
+  function loadTrackToDeck(deck, track, autoPlay = false) {
     if (!deck || !track) return;
     const isA = deck.key === 'A';
 
@@ -577,6 +624,9 @@ export function initAdminApp() {
 
     if (autoPlay) {
       playDeck(deck);
+    } else if (deck.playBtn) {
+      deck.playBtn.style.boxShadow = isA ? '0 0 15px #00f0ff' : '0 0 15px #f43f5e';
+      setTimeout(() => { if (deck.playBtn) deck.playBtn.style.boxShadow = ''; }, 2500);
     }
   }
 
@@ -744,9 +794,16 @@ export function initAdminApp() {
     btnStopAllMusic.addEventListener('click', () => {
       stopDeck(deckA);
       stopDeck(deckB);
+      if (deckA.audioEl) {
+        try { deckA.audioEl.pause(); deckA.audioEl.currentTime = 0; } catch (_) {}
+      }
+      if (deckB.audioEl) {
+        try { deckB.audioEl.pause(); deckB.audioEl.currentTime = 0; } catch (_) {}
+      }
       syncBridge.send('DJ_STOP_ALL', {});
       syncBridge.send('DJ_STOP_TRACK', {});
       syncBridge.send('DJ_STOP_YOUTUBE', {});
+      showUploadStatus('⏹️ Música completamente detenida en Admin y en el Show 3D.', false);
     });
   }
 
@@ -892,9 +949,11 @@ export function initAdminApp() {
         </td>
         <td style="color: #94a3b8; font-family: monospace; font-size: 10px;">${sizeMb}</td>
         <td style="text-align: center;">
-          <div style="display: flex; gap: 6px; justify-content: center;">
-            <button type="button" class="vdj-btn-load-a" data-action="load-a">◀ Deck A</button>
-            <button type="button" class="vdj-btn-load-b" data-action="load-b">Deck B ▶</button>
+          <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="vdj-btn-load-a" data-action="load-a" title="Cargar en Deck A a 0:00 (Cue sin sonar)">◀ Cue A</button>
+            <button type="button" class="vdj-btn-load-a" data-action="play-a" style="background: #0284c7; color: #fff; font-weight: 800;" title="Cargar y Reproducir en Deck A de inmediato">▶ PLAY A</button>
+            <button type="button" class="vdj-btn-load-b" data-action="play-b" style="background: #e11d48; color: #fff; font-weight: 800;" title="Cargar y Reproducir en Deck B de inmediato">▶ PLAY B</button>
+            <button type="button" class="vdj-btn-load-b" data-action="load-b" title="Cargar en Deck B a 0:00 (Cue sin sonar)">Cue B ▶</button>
           </div>
         </td>
         <td style="text-align: center;">
@@ -903,11 +962,19 @@ export function initAdminApp() {
       `;
 
       row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
+        loadTrackToDeck(deckA, track, false);
+      });
+
+      row.querySelector('[data-action="play-a"]')?.addEventListener('click', () => {
         loadTrackToDeck(deckA, track, true);
       });
 
-      row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
+      row.querySelector('[data-action="play-b"]')?.addEventListener('click', () => {
         loadTrackToDeck(deckB, track, true);
+      });
+
+      row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
+        loadTrackToDeck(deckB, track, false);
       });
 
       row.querySelector('[data-action="delete"]')?.addEventListener('click', () => {
@@ -994,18 +1061,13 @@ export function initAdminApp() {
           const data = await res.json();
           if (data.success && data.track) {
             successCount++;
-            if (!deckA.url && !deckA.videoId) {
-              loadTrackToDeck(deckA, data.track, true);
-            } else if (!deckB.url && !deckB.videoId) {
-              loadTrackToDeck(deckB, data.track, true);
-            }
           }
         } catch (fileErr) {
           console.warn('[Upload File Error]:', file.name, fileErr);
         }
       }
       await fetchMusicPlaylist();
-      showUploadStatus(`¡${successCount} de ${files.length} canciones subidas con éxito!`, successCount === 0);
+      showUploadStatus(`¡${successCount} de ${files.length} canciones listas en la biblioteca DJ! Usa ▶ PLAY A o ▶ PLAY B para reproducir.`, successCount === 0);
     } catch (e) {
       showUploadStatus(`Error: ${e.message}`, true);
     }
@@ -1061,18 +1123,28 @@ export function initAdminApp() {
             <div style="font-weight: 700; color: #f8fafc; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(item.title)}</div>
             <div style="font-size: 9.5px; color: #94a3b8;">${escapeHtml(item.channel || 'YouTube')}</div>
           </div>
-          <div style="display: flex; gap: 5px;">
-            <button type="button" class="vdj-btn-load-a" data-action="load-a">◀ Deck A</button>
-            <button type="button" class="vdj-btn-load-b" data-action="load-b">Deck B ▶</button>
+          <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+            <button type="button" class="vdj-btn-load-a" data-action="load-a" title="Cargar en Deck A a 0:00 (Cue)">◀ Cue A</button>
+            <button type="button" class="vdj-btn-load-a" data-action="play-a" style="background: #0284c7; color: #fff; font-weight: 800;" title="Reproducir en Deck A">▶ PLAY A</button>
+            <button type="button" class="vdj-btn-load-b" data-action="play-b" style="background: #e11d48; color: #fff; font-weight: 800;" title="Reproducir en Deck B">▶ PLAY B</button>
+            <button type="button" class="vdj-btn-load-b" data-action="load-b" title="Cargar en Deck B a 0:00 (Cue)">Cue B ▶</button>
           </div>
         `;
 
         row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
+          loadTrackToDeck(deckA, { name: item.title, videoId: item.id }, false);
+        });
+
+        row.querySelector('[data-action="play-a"]')?.addEventListener('click', () => {
           loadTrackToDeck(deckA, { name: item.title, videoId: item.id }, true);
         });
 
-        row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
+        row.querySelector('[data-action="play-b"]')?.addEventListener('click', () => {
           loadTrackToDeck(deckB, { name: item.title, videoId: item.id }, true);
+        });
+
+        row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
+          loadTrackToDeck(deckB, { name: item.title, videoId: item.id }, false);
         });
 
         ytSearchResults.appendChild(row);
@@ -1123,17 +1195,11 @@ export function initAdminApp() {
       });
       const data = await res.json();
       if (data.success && data.track) {
-        showUploadStatus(`¡Pista importada: "${data.track.name}"!`, false);
+        showUploadStatus(`¡Pista importada: "${data.track.name}"! Usa ▶ PLAY A o ▶ PLAY B para reproducir.`, false);
         await fetchMusicPlaylist();
-        if (!deckA.url && !deckA.videoId) {
-          loadTrackToDeck(deckA, data.track, true);
-        } else if (!deckB.url && !deckB.videoId) {
-          loadTrackToDeck(deckB, data.track, true);
-        } else if (!deckA.isPlaying) {
-          loadTrackToDeck(deckA, data.track, true);
-        } else {
-          loadTrackToDeck(deckB, data.track, true);
-        }
+      } else if (data.success && data.isFolder && Array.isArray(data.files)) {
+        showUploadStatus(`¡Carpeta de Google Drive importada con ${data.files.length} canciones! Listas en la biblioteca.`, false);
+        await fetchMusicPlaylist();
       } else {
         showUploadStatus(data.error || 'Error al importar pista.', true);
       }
