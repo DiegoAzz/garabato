@@ -959,6 +959,22 @@ export function createStickman(isSinger = false, initialColor = null, customConf
         armR.shoulder.rotation.z = 0.6 + Math.cos(t * 12) * 0.5;
 
         hips.position.y = this.baseY + Math.abs(Math.cos(t * 6)) * 0.12;
+      } else if (this.danceMove === 'balada' || this.danceMove === 'slow') {
+        // Baile lento romántico para baladas: balanceo suave y armonioso de cuerpo y brazos
+        const beat = t * 2.0;
+        const sway = Math.sin(beat);
+        torsoMesh.rotation.z = sway * 0.16;
+        headGroup.rotation.z = -sway * 0.12;
+        headGroup.rotation.x = 0.05 + Math.sin(beat * 2) * 0.04;
+
+        armL.shoulder.rotation.z = -0.4 + sway * 0.25;
+        armL.elbow.rotation.x = -0.6 + Math.cos(beat) * 0.2;
+        armR.shoulder.rotation.z = 0.4 + sway * 0.25;
+        if (!isSinger) {
+          armR.elbow.rotation.x = -0.6 - Math.cos(beat) * 0.2;
+        }
+
+        hips.position.y = this.baseY + Math.abs(sway) * 0.03;
       } else if (this.danceMove === 'wave') {
         const wave = Math.sin(t * 4);
         torsoMesh.rotation.z = wave * 0.2;

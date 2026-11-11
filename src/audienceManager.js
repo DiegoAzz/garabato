@@ -28,6 +28,7 @@ export class AudienceManager {
     this.highlightGroup = new THREE.Group();
     this.scene.add(this.highlightGroup);
 
+    this.rhythmMode = 'fiesta';
     this.setProfile('NORMAL');
   }
 
@@ -172,8 +173,19 @@ export class AudienceManager {
     stickman.position.set(slot.posX, slot.posY, slot.posZ);
     stickman.rotation.y = slot.rotY;
 
-    // Baile aleatorio inicial
-    stickman.animController.danceMove = this.danceMoves[Math.floor(Math.random() * this.danceMoves.length)];
+    // Baile inicial según el ritmo activo del club
+    if (this.rhythmMode === 'balada') {
+      stickman.animController.danceMove = 'balada';
+      stickman.animController.speedMultiplier = 0.55;
+    } else if (this.rhythmMode === 'latino') {
+      stickman.animController.danceMove = (this.crowd.length % 2 === 0) ? 'salsa' : 'cumbia';
+      stickman.animController.speedMultiplier = 1.0;
+    } else if (this.rhythmMode === 'rave') {
+      stickman.animController.danceMove = 'jump';
+      stickman.animController.speedMultiplier = 2.0;
+    } else {
+      stickman.animController.danceMove = this.danceMoves[Math.floor(Math.random() * this.danceMoves.length)];
+    }
 
     // Etiqueta flotante de nombre de TikTok
     const defaultNames = ['David', 'Andrea', 'Sofi', 'Chema', 'Gerson', 'Cleo', 'Nia', 'Zane', 'Finn', 'Mía', 'Alex', 'Sam'];
@@ -862,16 +874,45 @@ export class AudienceManager {
     }
   }
 
+  setRhythmMode(mode) {
+    this.rhythmMode = (mode || 'fiesta').toLowerCase();
+    for (let i = 0; i < this.crowd.length; i++) {
+      const s = this.crowd[i];
+      if (this.rhythmMode === 'balada') {
+        s.mesh.animController.danceMove = 'balada';
+        s.mesh.animController.speedMultiplier = 0.55;
+      } else if (this.rhythmMode === 'latino') {
+        s.mesh.animController.danceMove = (i % 2 === 0) ? 'salsa' : 'cumbia';
+        s.mesh.animController.speedMultiplier = 1.0;
+      } else if (this.rhythmMode === 'rave') {
+        s.mesh.animController.danceMove = 'jump';
+        s.mesh.animController.speedMultiplier = 2.2;
+      } else {
+        s.mesh.animController.danceMove = this.danceMoves[i % this.danceMoves.length];
+        s.mesh.animController.speedMultiplier = 1.2;
+      }
+    }
+  }
+
   update(time, delta, audioLevels = { bass: 0, mid: 0, overall: 0 }) {
     this.collectiveEnergy = Math.max(10, this.collectiveEnergy - delta * 1.5);
 
-    // Ajustar la velocidad y energía colectiva de baile al ritmo de la música y del bajo del DJ
+    // Ajustar la velocidad y energía colectiva de baile al ritmo configurado y los niveles
     const beatEnergy = (audioLevels.bass || 0) * 1.8 + (audioLevels.overall || 0) * 1.2;
-    const dynamicDanceSpeed = 1.0 + Math.min(2.0, beatEnergy * 1.6);
+    let dynamicDanceSpeed = 1.0;
+    if (this.rhythmMode === 'balada') {
+      dynamicDanceSpeed = 0.55 + Math.min(0.25, beatEnergy * 0.3);
+    } else if (this.rhythmMode === 'latino') {
+      dynamicDanceSpeed = 0.95 + Math.min(0.6, beatEnergy * 0.6);
+    } else if (this.rhythmMode === 'rave') {
+      dynamicDanceSpeed = 1.8 + Math.min(1.4, beatEnergy * 1.4);
+    } else {
+      dynamicDanceSpeed = 1.0 + Math.min(1.8, beatEnergy * 1.5);
+    }
 
     for (let i = 0; i < this.crowd.length; i++) {
       const s = this.crowd[i];
-      // Si el personaje no está en una animación bloqueada, bailar al compás del DJ
+      // Si el personaje no está en una animación bloqueada, bailar al compás del ritmo activo
       if (s.mesh.animController.gesture === 'none') {
         s.mesh.animController.speedMultiplier = dynamicDanceSpeed;
       }

@@ -1590,6 +1590,43 @@ export function initShowApp() {
     }
   });
 
+  // Control de Ritmo de Baile & Baladas (Cambio dinámico de tempo y pasos del público)
+  let currentRhythmMode = 'fiesta'; // 'balada' | 'latino' | 'fiesta' | 'rave'
+
+  syncBridge.on('SET_RHYTHM_MODE', (payload) => {
+    if (!payload || !payload.mode) return;
+    currentRhythmMode = payload.mode.toLowerCase();
+
+    if (audience && typeof audience.setRhythmMode === 'function') {
+      audience.setRhythmMode(currentRhythmMode);
+    }
+
+    let toastText = '🔥 Ritmo: FIESTA CLUB (128 BPM)';
+    let toastIcon = '🔥';
+    if (currentRhythmMode === 'balada') {
+      toastText = '🌙 Ritmo: BALADA (Lento y Suave)';
+      toastIcon = '🌙';
+      singer.animController.danceMove = 'balada';
+      singer.animController.speedMultiplier = 0.55;
+    } else if (currentRhythmMode === 'latino') {
+      toastText = '💃 Ritmo: LATINO (Salsa & Cumbia)';
+      toastIcon = '💃';
+      singer.animController.danceMove = 'salsa';
+      singer.animController.speedMultiplier = 1.0;
+    } else if (currentRhythmMode === 'rave') {
+      toastText = '⚡ Ritmo: RAVE (Rápido y Enérgico)';
+      toastIcon = '⚡';
+      singer.animController.danceMove = 'jump';
+      singer.animController.speedMultiplier = 2.0;
+    } else {
+      singer.animController.danceMove = 'standup';
+      singer.animController.speedMultiplier = 1.2;
+    }
+
+    showSubtitlePhrase(toastText, toastIcon, false);
+    stage.setLedData({ songTitle: toastText });
+  });
+
   const handleCameraShot = (payload) => {
     if (cameraDirector && payload && payload.shot) {
       if (payload.shot === 'AUTO') {
@@ -1706,9 +1743,31 @@ export function initShowApp() {
       const time = clock.getElapsedTime();
 
       const audioLevels = audioEngine.update() || { bass: 0, mid: 0, treble: 0, overall: 0 };
-      // Ritmo de fiesta continuo para que el DJ, las luces y el público siempre estén bailando con energía en vivo
-      const partyBeat = 0.45 + Math.abs(Math.sin(time * 3.6)) * 0.45;
-      const partyBass = 0.4 + Math.abs(Math.cos(time * 1.8)) * 0.55;
+      // Ritmo procedural adaptativo según el estilo musical activo (Balada, Latino, Fiesta, Rave)
+      let beatSpeed = 3.6;
+      let bassSpeed = 1.8;
+      let beatAmp = 0.45;
+      let bassAmp = 0.55;
+
+      if (currentRhythmMode === 'balada') {
+        beatSpeed = 1.3;
+        bassSpeed = 0.65;
+        beatAmp = 0.22;
+        bassAmp = 0.25;
+      } else if (currentRhythmMode === 'latino') {
+        beatSpeed = 2.4;
+        bassSpeed = 1.2;
+        beatAmp = 0.38;
+        bassAmp = 0.45;
+      } else if (currentRhythmMode === 'rave') {
+        beatSpeed = 5.4;
+        bassSpeed = 2.7;
+        beatAmp = 0.55;
+        bassAmp = 0.65;
+      }
+
+      const partyBeat = 0.3 + Math.abs(Math.sin(time * beatSpeed)) * beatAmp;
+      const partyBass = 0.25 + Math.abs(Math.cos(time * bassSpeed)) * bassAmp;
       const liveLevels = {
         bass: Math.max(audioLevels.bass || 0, partyBass),
         mid: Math.max(audioLevels.mid || 0, partyBeat * 0.8),

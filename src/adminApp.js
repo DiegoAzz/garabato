@@ -298,7 +298,36 @@ export function initAdminApp() {
   }
 
   // ==========================================
-  // 7. POSTURAS Y BAILE DE DjAz
+  // 7. SELECTOR DE RITMO DE CANCIÓN (BALADAS, LATINO, FIESTA, RAVE)
+  // ==========================================
+  const rhythmButtons = document.querySelectorAll('.tt-action-btn[data-rhythm]');
+  const rhythmBadge = document.getElementById('tt-active-rhythm-badge');
+
+  rhythmButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      rhythmButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const mode = btn.getAttribute('data-rhythm') || 'fiesta';
+      syncBridge.send('SET_RHYTHM_MODE', { mode });
+
+      const labels = {
+        balada: '🌙 BALADA (Lento y Suave)',
+        latino: '💃 LATINO (Salsa & Cumbia)',
+        fiesta: '🔥 FIESTA (128 BPM Club)',
+        rave: '⚡ RAVE (Rápido y Enérgico)'
+      };
+
+      if (rhythmBadge) {
+        rhythmBadge.textContent = labels[mode] || mode.toUpperCase();
+      }
+
+      addFeedItem('join', 'Ritmo', `Ritmo del club cambiado a: ${mode.toUpperCase()}`);
+    });
+  });
+
+  // ==========================================
+  // 8. POSTURAS Y BAILE DE DjAz
   // ==========================================
   const poseButtons = document.querySelectorAll('.tt-action-btn[data-pose]');
   poseButtons.forEach(btn => {
