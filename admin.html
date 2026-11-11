@@ -589,17 +589,29 @@
          ======================================================== -->
     <section class="tt-connection-bar">
       <div class="tt-conn-inputs">
-        <div class="tt-input-group">
+        <div class="tt-input-group" style="flex: 2; min-width: 200px;">
           <span>@</span>
           <input type="text" id="tt-username-input" placeholder="tu_usuario_de_tiktok" value="CreandoConIA" />
+        </div>
+        <div class="tt-input-group" style="flex: 2; min-width: 200px;">
+          <span>🔑</span>
+          <input type="password" id="tt-sessionid-input" placeholder="Session ID (Opcional)" title="Pega tu sessionid de cookies si TikTok te solicita verificación" />
         </div>
         <button type="button" id="btn-tiktok-toggle" class="tt-btn-connect">
           <span>🔗 Conectar a TikTok LIVE</span>
         </button>
       </div>
-      <div class="tt-conn-msg">
-        <span id="tt-conn-msg-icon">ℹ️</span>
-        <span id="tt-conn-msg-text">Abre TikTok en tu teléfono, inicia tu transmisión LIVE y pulsa "Conectar a TikTok LIVE".</span>
+
+      <div class="tt-conn-msg" style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; padding: 10px 14px; border-radius: 10px; display: flex; align-items: flex-start; gap: 10px;">
+        <span id="tt-conn-msg-icon" style="font-size: 18px; margin-top: 1px;">💡</span>
+        <div style="flex: 1; font-size: 12px; line-height: 1.5;">
+          <span id="tt-conn-msg-text">
+            <strong>Cómo conectar:</strong><br/>
+            1. Abre TikTok en tu celular o TikTok LIVE Studio e <strong>inicia tu transmisión en vivo (LIVE)</strong>.<br/>
+            2. Ingresa tu usuario (ej: <strong>CreandoConIA</strong>) y pulsa <strong>Conectar a TikTok LIVE</strong>.<br/>
+            <em>Nota: TikTok no permite conectar a usuarios que no estén transmitiendo en vivo en ese instante.</em>
+          </span>
+        </div>
       </div>
     </section>
 

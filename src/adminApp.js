@@ -24,6 +24,7 @@ export function initAdminApp() {
   const statusPill = document.getElementById('tt-live-status-pill');
   const statusLabel = document.getElementById('tt-live-status-label');
   const usernameInput = document.getElementById('tt-username-input');
+  const sessionIdInput = document.getElementById('tt-sessionid-input');
   const btnTikTokToggle = document.getElementById('btn-tiktok-toggle');
   const connMsgIcon = document.getElementById('tt-conn-msg-icon');
   const connMsgText = document.getElementById('tt-conn-msg-text');
@@ -138,13 +139,14 @@ export function initAdminApp() {
     btnTikTokToggle.addEventListener('click', () => {
       const rawUser = usernameInput ? usernameInput.value : '';
       const cleanUser = rawUser.replace(/^@+/, '').trim() || 'CreandoConIA';
+      const sessionId = sessionIdInput ? sessionIdInput.value.trim() : '';
 
       if (isTikTokConnected) {
         syncBridge.disconnectTikTok();
         addFeedItem('join', 'Sistema', 'Desconectando de TikTok LIVE...');
       } else {
         updateTikTokUI('connecting', cleanUser, `Conectando al LIVE de @${cleanUser}...`);
-        syncBridge.connectTikTok(cleanUser);
+        syncBridge.connectTikTok(cleanUser, sessionId);
         addFeedItem('join', 'Sistema', `Iniciando conexión con @${cleanUser}...`);
       }
     });

@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { TikTokLiveConnection } from 'tiktok-live-connector';
+import { WebcastPushConnection as TikTokLiveConnection } from 'tiktok-live-connector/legacy';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -484,28 +484,60 @@ async function connectToTikTok(rawUsername, sessionId = null) {
   statusMessage = `Conectando al LIVE de @${username}...`;
   broadcastTikTokStatus();
 
+  function formatTikTokError(err, user) {
+    const raw = String(err?.message || err || '');
+    console.warn(`[TikTok] Detalle de error para @${user}:`, raw);
+
+    if (
+      raw.includes("Failed to retrieve Room ID") ||
+      raw.includes("isn't online") ||
+      raw.includes("LIVE has ended") ||
+      raw.includes("UserOfflineError") ||
+      raw.includes("Cannot read properties of undefined") ||
+      raw.includes("offline") ||
+      raw.includes("Room not found")
+    ) {
+      return `⚠️ El usuario @${user} no está transmitiendo en vivo en TikTok en este momento. Abre TikTok en tu celular o TikTok LIVE Studio, inicia tu transmisión LIVE y vuelve a pulsar Conectar.`;
+    }
+
+    if (raw.includes("Euler") || raw.includes("403") || raw.includes("permission") || raw.includes("Sign server")) {
+      return `⚠️ TikTok solicitó verificación para conectar al LIVE de @${user}. Si tu LIVE ya está prendido, ingresa tu Session ID de TikTok en el panel o inicia tu directo con TikTok LIVE Studio.`;
+    }
+
+    return `⚠️ No se pudo conectar a @${user} (${raw.slice(0, 90)}). Verifica que la transmisión esté activa en TikTok.`;
+  }
+
   try {
     const connOptions = {
+      processInitialData: true,
+      fetchRoomInfoOnConnect: true,
       enableExtendedGiftInfo: true,
       requestOptions: {
         timeout: 10000
+      },
+      clientPresets: {
+        os: 'windows',
+        platform: 'web',
+        browser: 'chrome'
       }
     };
+
     if (sessionId && String(sessionId).trim()) {
-      connOptions.sessionId = String(sessionId).trim();
-      console.log(`[TikTok] Usando SessionID personalizado para autenticación directa sin 403`);
+      const cleanSid = String(sessionId).trim();
+      connOptions.session = {
+        cookie: {
+          sessionId: cleanSid,
+          ttTargetIdc: 'useast2a'
+        }
+      };
+      console.log(`[TikTok] Usando SessionID personalizado para autenticación`);
     }
 
     tiktokConnection = new TikTokLiveConnection(username, connOptions);
 
     tiktokConnection.on('error', (err) => {
-      console.warn(`[TikTok] Error de conexión: ${err?.message || err}`);
       connectionStatus = 'error';
-      let msg = err?.message || 'Error de conexión con TikTok';
-      if (msg.includes("isn't online") || msg.includes('LIVE has ended')) {
-        msg = `⚠️ El usuario @${username} no está transmitiendo en vivo en TikTok en este momento. Abre TikTok en tu celular, inicia tu transmisión LIVE y vuelve a pulsar Conectar.`;
-      }
-      statusMessage = msg;
+      statusMessage = formatTikTokError(err, username);
       broadcastTikTokStatus();
     });
 
@@ -640,13 +672,8 @@ async function connectToTikTok(rawUsername, sessionId = null) {
 
     return { success: true, message: statusMessage };
   } catch (err) {
-    console.error(`[TikTok] Error al conectar a @${username}:`, err);
     connectionStatus = 'error';
-    let msg = err?.message || 'No se pudo conectar al Live.';
-    if (msg.includes("isn't online") || msg.includes('LIVE has ended')) {
-      msg = `⚠️ El usuario @${username} no está transmitiendo en vivo en TikTok en este momento. Abre TikTok en tu celular, inicia tu transmisión LIVE y vuelve a pulsar Conectar.`;
-    }
-    statusMessage = msg;
+    statusMessage = formatTikTokError(err, username);
     broadcastTikTokStatus();
     return { success: false, message: statusMessage };
   }
