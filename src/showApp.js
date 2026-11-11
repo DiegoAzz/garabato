@@ -1302,15 +1302,19 @@ export function initShowApp() {
       }
       audience.increaseEnergy(count);
     } else if (action === 'CHAT') {
-      const comment = (evt.comment || '').trim();
+      const comment = (evt.comment || evt.text || '').trim();
 
-      // Mostrar globo cómic 3D (Speech Bubble) sobre el personaje del espectador
-      if (audience && user) {
-        audience.speak(user, comment);
+      // Mostrar globo cómic 3D (Speech Bubble) sobre la cabeza del espectador
+      if (audience && user && comment) {
+        audience.sayChatMessage(user, comment, Boolean(evt.isVip));
         const spec = audience.findSpectator(user);
         if (spec && spec.mesh && cameraDirector) {
           cameraDirector.focusOnEvent(spec.mesh.position, 3800);
         }
+      }
+      // Mostrar en subtítulos en pantalla para los que ven el live desde móvil
+      if (comment) {
+        showSubtitlePhrase(`💬 @${user}: "${comment}"`, '💬', false);
       }
     } else if (action === 'JOIN' || action === 'MEMBER') {
       handleViewerJoin(user);
@@ -1335,12 +1339,12 @@ export function initShowApp() {
   });
 
   syncBridge.on('STREAMER_MIC_PCM', (data) => {
-    if (!data || !data.pcm || !data.pcm.length) return;
+    if (!data || (!data.pcm && !data.b64)) return;
     try {
       if (!streamerAudioCtx) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         try {
-          streamerAudioCtx = new AudioCtx({ sampleRate: data.sampleRate || 24000 });
+          streamerAudioCtx = new AudioCtx({ sampleRate: data.sampleRate || 48000 });
         } catch (_) {
           streamerAudioCtx = new AudioCtx();
         }
@@ -1349,13 +1353,34 @@ export function initShowApp() {
         streamerAudioCtx.resume();
       }
 
-      const pcm16 = new Int16Array(data.pcm);
+      // Decodificar Base64 o array normal
+      let pcm16;
+      if (data.b64) {
+        const binaryString = atob(data.b64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        pcm16 = new Int16Array(bytes.buffer);
+      } else {
+        pcm16 = new Int16Array(data.pcm);
+      }
+
       const float32 = new Float32Array(pcm16.length);
       for (let i = 0; i < pcm16.length; i++) {
         float32[i] = pcm16[i] / (pcm16[i] < 0 ? 0x8000 : 0x7FFF);
       }
 
-      const bufferRate = data.sampleRate || streamerAudioCtx.sampleRate || 24000;
+      // Micro fade-in / fade-out en los extremos para eliminar cualquier 'pop' o 'click' y sonar finito
+      const fadeSamples = Math.min(32, Math.floor(float32.length / 8));
+      for (let i = 0; i < fadeSamples; i++) {
+        const factor = i / fadeSamples;
+        float32[i] *= factor;
+        float32[float32.length - 1 - i] *= factor;
+      }
+
+      const bufferRate = data.sampleRate || streamerAudioCtx.sampleRate || 48000;
       const buffer = streamerAudioCtx.createBuffer(1, float32.length, bufferRate);
       buffer.getChannelData(0).set(float32);
 
@@ -1364,8 +1389,12 @@ export function initShowApp() {
       src.connect(streamerAudioCtx.destination);
 
       const curTime = streamerAudioCtx.currentTime;
+      // Colchón elástico anti-cortes de 70ms:
       if (nextAudioTime < curTime) {
-        nextAudioTime = curTime + 0.025;
+        nextAudioTime = curTime + 0.070;
+      } else if (nextAudioTime > curTime + 0.30) {
+        // Si hay retardo de red excesivo, sincronizar de inmediato
+        nextAudioTime = curTime + 0.070;
       }
       src.start(nextAudioTime);
       nextAudioTime += buffer.duration;

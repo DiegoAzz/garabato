@@ -1231,8 +1231,14 @@ export function initAdminApp() {
             const s = Math.max(-1, Math.min(1, input[i]));
             pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
           }
+          // Transmitir en base64 compacto para cero latencia y evitar sobrecarga de red
+          const bytes = new Uint8Array(pcm16.buffer);
+          let binary = '';
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
           syncBridge.send('STREAMER_MIC_PCM', {
-            pcm: Array.from(pcm16),
+            b64: btoa(binary),
             sampleRate: micAudioContext.sampleRate
           });
         };

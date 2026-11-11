@@ -15,7 +15,10 @@ const io = new Server(httpServer, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
-  }
+  },
+  perMessageDeflate: false, // Desactivar compresión deflate para cero latencia en vivo
+  pingInterval: 10000,
+  pingTimeout: 5000
 });
 
 const PORT = parseInt(process.env.PORT || '3000', 10);

@@ -357,7 +357,9 @@ export class AudienceManager {
     });
     const sprite = new THREE.Sprite(spriteMat);
     sprite.renderOrder = 99999;
-    sprite.scale.set(2.6, 1.3, 1);
+    sprite.center.set(0.5, 0.0);
+    sprite.scale.set(1.6, 0.8, 1);
+    sprite.frustumCulled = false;
     return sprite;
   }
 
@@ -393,7 +395,8 @@ export class AudienceManager {
 
     // 3. Crear nueva viñeta de diálogo 3D gigante y contrastada sobre su cabeza
     const bubbleSprite = this.createChatBubbleSprite(cleanUser, cleanText, isVip);
-    bubbleSprite.position.set(0, 1.55, 0);
+    bubbleSprite.position.set(0, 0.72, 0);
+    bubbleSprite.frustumCulled = false;
     spec.mesh.add(bubbleSprite);
     spec.chatBubble = bubbleSprite;
     spec.speechBubble = bubbleSprite;
