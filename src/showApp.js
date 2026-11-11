@@ -450,6 +450,9 @@ export function initShowApp() {
     if (audioEngine.ctx && audioEngine.ctx.state === 'suspended') {
       audioEngine.ctx.resume();
     }
+    if (streamerAudioCtx && streamerAudioCtx.state === 'suspended') {
+      streamerAudioCtx.resume();
+    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
@@ -662,6 +665,16 @@ export function initShowApp() {
     });
   }
 
+  function resetShowYTIframeSlot(deckKey) {
+    const isA = deckKey === 'A';
+    const containerId = isA ? 'yt-show-container-a' : 'yt-show-container-b';
+    const slotId = isA ? 'yt-show-iframe-slot-a' : 'yt-show-iframe-slot-b';
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = `<div id="${slotId}"></div>`;
+    }
+  }
+
   function initOrLoadShowYTPlayer(deckKey, videoId, onReadyCallback) {
     const isA = deckKey === 'A';
     const slotId = isA ? 'yt-show-iframe-slot-a' : 'yt-show-iframe-slot-b';
@@ -669,24 +682,38 @@ export function initShowApp() {
     if (isA) {
       currentShowVideoIdA = videoId;
       if (showYTPlayerA && typeof showYTPlayerA.cueVideoById === 'function') {
-        if (showDeckAIsPlaying) {
-          if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(videoId);
-        } else {
-          showYTPlayerA.cueVideoById(videoId);
+        try {
+          if (showDeckAIsPlaying) {
+            if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(videoId);
+          } else {
+            showYTPlayerA.cueVideoById(videoId);
+          }
+          if (onReadyCallback) onReadyCallback(showYTPlayerA);
+          return;
+        } catch (err) {
+          console.warn('[Show YT A] Falló cueVideoById, reiniciando slot:', err);
+          try { if (showYTPlayerA.destroy) showYTPlayerA.destroy(); } catch (_) {}
+          showYTPlayerA = null;
+          resetShowYTIframeSlot('A');
         }
-        if (onReadyCallback) onReadyCallback(showYTPlayerA);
-        return;
       }
     } else {
       currentShowVideoIdB = videoId;
       if (showYTPlayerB && typeof showYTPlayerB.cueVideoById === 'function') {
-        if (showDeckBIsPlaying) {
-          if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(videoId);
-        } else {
-          showYTPlayerB.cueVideoById(videoId);
+        try {
+          if (showDeckBIsPlaying) {
+            if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(videoId);
+          } else {
+            showYTPlayerB.cueVideoById(videoId);
+          }
+          if (onReadyCallback) onReadyCallback(showYTPlayerB);
+          return;
+        } catch (err) {
+          console.warn('[Show YT B] Falló cueVideoById, reiniciando slot:', err);
+          try { if (showYTPlayerB.destroy) showYTPlayerB.destroy(); } catch (_) {}
+          showYTPlayerB = null;
+          resetShowYTIframeSlot('B');
         }
-        if (onReadyCallback) onReadyCallback(showYTPlayerB);
-        return;
       }
     }
 
@@ -694,88 +721,104 @@ export function initShowApp() {
       if (window.YT && window.YT.Player) {
         if (isA) {
           if (showYTPlayerA && typeof showYTPlayerA.cueVideoById === 'function') {
-            currentShowVideoIdA = videoId;
-            if (showDeckAIsPlaying) {
-              if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(videoId);
-            } else {
-              showYTPlayerA.cueVideoById(videoId);
-            }
-            if (onReadyCallback) onReadyCallback(showYTPlayerA);
-            return;
+            try {
+              currentShowVideoIdA = videoId;
+              if (showDeckAIsPlaying) {
+                if (showYTPlayerA.loadVideoById) showYTPlayerA.loadVideoById(videoId);
+              } else {
+                showYTPlayerA.cueVideoById(videoId);
+              }
+              if (onReadyCallback) onReadyCallback(showYTPlayerA);
+              return;
+            } catch (_) {}
           }
           currentShowVideoIdA = videoId;
-          showYTPlayerA = new window.YT.Player(slotId, {
-            width: '200',
-            height: '120',
-            videoId: videoId,
-            playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
-            events: {
-              onReady: (event) => {
-                const vol = Math.max(0, Math.min(100, Math.round(deckAVolume * 100)));
-                event.target.setVolume(vol);
-                if (isMasterMuted || vol <= 0) event.target.mute();
-                else event.target.unMute();
-                if (showDeckAIsPlaying) {
-                  event.target.playVideo();
-                } else {
-                  event.target.pauseVideo();
-                }
-                if (onReadyCallback) onReadyCallback(event.target);
-              },
-              onStateChange: (event) => {
-                if (event.data === 1) {
-                  audioEngine.isYTPlaying = true;
-                  singer.animController.triggerDjHandsUp(5000);
-                } else if (event.data === 2 || event.data === 0) {
-                  if (!showYTPlayerB || showYTPlayerB.getPlayerState?.() !== 1) {
-                    audioEngine.isYTPlaying = false;
+          try {
+            showYTPlayerA = new window.YT.Player(slotId, {
+              width: '200',
+              height: '120',
+              videoId: videoId,
+              playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+              events: {
+                onReady: (event) => {
+                  try {
+                    const vol = Math.max(0, Math.min(100, Math.round(deckAVolume * 100)));
+                    event.target.setVolume(vol);
+                    if (isMasterMuted || vol <= 0) event.target.mute();
+                    else event.target.unMute();
+                    if (showDeckAIsPlaying) {
+                      event.target.playVideo();
+                    } else {
+                      event.target.pauseVideo();
+                    }
+                  } catch (_) {}
+                  if (onReadyCallback) onReadyCallback(event.target);
+                },
+                onStateChange: (event) => {
+                  if (event.data === 1) {
+                    audioEngine.isYTPlaying = true;
+                    singer.animController.triggerDjHandsUp(5000);
+                  } else if (event.data === 2 || event.data === 0) {
+                    if (!showYTPlayerB || showYTPlayerB.getPlayerState?.() !== 1) {
+                      audioEngine.isYTPlaying = false;
+                    }
                   }
                 }
               }
-            }
-          });
+            });
+          } catch (initErr) {
+            console.error('[Show YT A] Error creando YT.Player:', initErr);
+          }
         } else {
           if (showYTPlayerB && typeof showYTPlayerB.cueVideoById === 'function') {
-            currentShowVideoIdB = videoId;
-            if (showDeckBIsPlaying) {
-              if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(videoId);
-            } else {
-              showYTPlayerB.cueVideoById(videoId);
-            }
-            if (onReadyCallback) onReadyCallback(showYTPlayerB);
-            return;
+            try {
+              currentShowVideoIdB = videoId;
+              if (showDeckBIsPlaying) {
+                if (showYTPlayerB.loadVideoById) showYTPlayerB.loadVideoById(videoId);
+              } else {
+                showYTPlayerB.cueVideoById(videoId);
+              }
+              if (onReadyCallback) onReadyCallback(showYTPlayerB);
+              return;
+            } catch (_) {}
           }
           currentShowVideoIdB = videoId;
-          showYTPlayerB = new window.YT.Player(slotId, {
-            width: '200',
-            height: '120',
-            videoId: videoId,
-            playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
-            events: {
-              onReady: (event) => {
-                const vol = Math.max(0, Math.min(100, Math.round(deckBVolume * 100)));
-                event.target.setVolume(vol);
-                if (isMasterMuted || vol <= 0) event.target.mute();
-                else event.target.unMute();
-                if (showDeckBIsPlaying) {
-                  event.target.playVideo();
-                } else {
-                  event.target.pauseVideo();
-                }
-                if (onReadyCallback) onReadyCallback(event.target);
-              },
-              onStateChange: (event) => {
-                if (event.data === 1) {
-                  audioEngine.isYTPlaying = true;
-                  singer.animController.triggerDjHandsUp(5000);
-                } else if (event.data === 2 || event.data === 0) {
-                  if (!showYTPlayerA || showYTPlayerA.getPlayerState?.() !== 1) {
-                    audioEngine.isYTPlaying = false;
+          try {
+            showYTPlayerB = new window.YT.Player(slotId, {
+              width: '200',
+              height: '120',
+              videoId: videoId,
+              playerVars: { autoplay: 0, controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+              events: {
+                onReady: (event) => {
+                  try {
+                    const vol = Math.max(0, Math.min(100, Math.round(deckBVolume * 100)));
+                    event.target.setVolume(vol);
+                    if (isMasterMuted || vol <= 0) event.target.mute();
+                    else event.target.unMute();
+                    if (showDeckBIsPlaying) {
+                      event.target.playVideo();
+                    } else {
+                      event.target.pauseVideo();
+                    }
+                  } catch (_) {}
+                  if (onReadyCallback) onReadyCallback(event.target);
+                },
+                onStateChange: (event) => {
+                  if (event.data === 1) {
+                    audioEngine.isYTPlaying = true;
+                    singer.animController.triggerDjHandsUp(5000);
+                  } else if (event.data === 2 || event.data === 0) {
+                    if (!showYTPlayerA || showYTPlayerA.getPlayerState?.() !== 1) {
+                      audioEngine.isYTPlaying = false;
+                    }
                   }
                 }
               }
-            }
-          });
+            });
+          } catch (initErr) {
+            console.error('[Show YT B] Error creando YT.Player:', initErr);
+          }
         }
       } else {
         setTimeout(loadAPI, 150);
@@ -846,23 +889,37 @@ export function initShowApp() {
     if (!payload || !payload.deck) return;
     if (payload.deck === 'A') {
       showDeckAIsPlaying = false;
+      try {
+        if (showYTPlayerA && typeof showYTPlayerA.pauseVideo === 'function') showYTPlayerA.pauseVideo();
+        if (showYTPlayerA && typeof showYTPlayerA.stopVideo === 'function') showYTPlayerA.stopVideo();
+      } catch (_) {}
+      audioEngine.stopDjTrack();
+
       if (payload.type === 'youtube' && payload.videoId) {
         currentShowVideoIdA = payload.videoId;
         initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
-          if (p && p.pauseVideo) p.pauseVideo();
+          if (p && p.pauseVideo) try { p.pauseVideo(); } catch (_) {}
         });
       } else if (payload.url) {
-        if (showYTPlayerA && showYTPlayerA.stopVideo) showYTPlayerA.stopVideo();
+        if (showYTPlayerA && showYTPlayerA.stopVideo) try { showYTPlayerA.stopVideo(); } catch (_) {}
       }
     } else if (payload.deck === 'B') {
       showDeckBIsPlaying = false;
+      try {
+        if (showYTPlayerB && typeof showYTPlayerB.pauseVideo === 'function') showYTPlayerB.pauseVideo();
+        if (showYTPlayerB && typeof showYTPlayerB.stopVideo === 'function') showYTPlayerB.stopVideo();
+      } catch (_) {}
+      if (deckBAudio) {
+        try { deckBAudio.pause(); deckBAudio.currentTime = 0; } catch (_) {}
+      }
+
       if (payload.type === 'youtube' && payload.videoId) {
         currentShowVideoIdB = payload.videoId;
         initOrLoadShowYTPlayer('B', payload.videoId, (p) => {
-          if (p && p.pauseVideo) p.pauseVideo();
+          if (p && p.pauseVideo) try { p.pauseVideo(); } catch (_) {}
         });
       } else if (payload.url) {
-        if (showYTPlayerB && showYTPlayerB.stopVideo) showYTPlayerB.stopVideo();
+        if (showYTPlayerB && showYTPlayerB.stopVideo) try { showYTPlayerB.stopVideo(); } catch (_) {}
         if (!deckBAudio.src.endsWith(payload.url)) {
           deckBAudio.src = payload.url;
           deckBAudio.load();
@@ -1017,29 +1074,37 @@ export function initShowApp() {
     const vA = payload.vA !== undefined ? payload.vA : Math.max(0, Math.min(100, Math.round(deckAVolume * 100)));
     const vB = payload.vB !== undefined ? payload.vB : Math.max(0, Math.min(100, Math.round(deckBVolume * 100)));
 
-    // Actualizar Deck A
-    audioEngine.setDjVolume(deckAVolume);
-    if (showYTPlayerA && typeof showYTPlayerA.setVolume === 'function') {
-      showYTPlayerA.setVolume(vA);
-      if (isMasterMuted || vA <= 0) {
-        if (typeof showYTPlayerA.mute === 'function') showYTPlayerA.mute();
-      } else {
-        if (typeof showYTPlayerA.unMute === 'function') showYTPlayerA.unMute();
+    // Actualizar Deck A aislado con try-catch
+    try {
+      audioEngine.setDjVolume(deckAVolume);
+      if (showYTPlayerA && typeof showYTPlayerA.setVolume === 'function') {
+        showYTPlayerA.setVolume(vA);
+        if (isMasterMuted || vA <= 0) {
+          if (typeof showYTPlayerA.mute === 'function') showYTPlayerA.mute();
+        } else {
+          if (typeof showYTPlayerA.unMute === 'function') showYTPlayerA.unMute();
+        }
       }
+    } catch (errA) {
+      console.warn('[Show Mixer] Deck A volume error:', errA);
     }
 
-    // Actualizar Deck B
-    if (deckBAudio) {
-      deckBAudio.volume = Math.max(0, Math.min(1, deckBVolume));
-      deckBAudio.muted = isMasterMuted || vB <= 0;
-    }
-    if (showYTPlayerB && typeof showYTPlayerB.setVolume === 'function') {
-      showYTPlayerB.setVolume(vB);
-      if (isMasterMuted || vB <= 0) {
-        if (typeof showYTPlayerB.mute === 'function') showYTPlayerB.mute();
-      } else {
-        if (typeof showYTPlayerB.unMute === 'function') showYTPlayerB.unMute();
+    // Actualizar Deck B aislado con try-catch
+    try {
+      if (deckBAudio) {
+        deckBAudio.volume = Math.max(0, Math.min(1, deckBVolume));
+        deckBAudio.muted = isMasterMuted || vB <= 0;
       }
+      if (showYTPlayerB && typeof showYTPlayerB.setVolume === 'function') {
+        showYTPlayerB.setVolume(vB);
+        if (isMasterMuted || vB <= 0) {
+          if (typeof showYTPlayerB.mute === 'function') showYTPlayerB.mute();
+        } else {
+          if (typeof showYTPlayerB.unMute === 'function') showYTPlayerB.unMute();
+        }
+      }
+    } catch (errB) {
+      console.warn('[Show Mixer] Deck B volume error:', errB);
     }
   });
 
@@ -1274,7 +1339,11 @@ export function initShowApp() {
     try {
       if (!streamerAudioCtx) {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        streamerAudioCtx = new AudioCtx({ sampleRate: data.sampleRate || 24000 });
+        try {
+          streamerAudioCtx = new AudioCtx({ sampleRate: data.sampleRate || 24000 });
+        } catch (_) {
+          streamerAudioCtx = new AudioCtx();
+        }
       }
       if (streamerAudioCtx.state === 'suspended') {
         streamerAudioCtx.resume();
@@ -1286,7 +1355,8 @@ export function initShowApp() {
         float32[i] = pcm16[i] / (pcm16[i] < 0 ? 0x8000 : 0x7FFF);
       }
 
-      const buffer = streamerAudioCtx.createBuffer(1, float32.length, data.sampleRate || 24000);
+      const bufferRate = data.sampleRate || streamerAudioCtx.sampleRate || 24000;
+      const buffer = streamerAudioCtx.createBuffer(1, float32.length, bufferRate);
       buffer.getChannelData(0).set(float32);
 
       const src = streamerAudioCtx.createBufferSource();

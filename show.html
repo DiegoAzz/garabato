@@ -116,9 +116,12 @@
 
     <!-- Reproductor de Audio YouTube en Segundo Plano (100% Invisible para Cero Copyright en Pantalla) -->
     <div id="yt-show-wrapper" style="position: fixed; bottom: 0; right: 0; width: 200px; height: 120px; z-index: -10; opacity: 0.01; pointer-events: none; overflow: hidden;">
-      <div id="yt-show-iframe-slot"></div>
-      <div id="yt-show-iframe-slot-a"></div>
-      <div id="yt-show-iframe-slot-b"></div>
+      <div id="yt-show-container-a" style="width: 100%; height: 100%;">
+        <div id="yt-show-iframe-slot-a"></div>
+      </div>
+      <div id="yt-show-container-b" style="width: 100%; height: 100%;">
+        <div id="yt-show-iframe-slot-b"></div>
+      </div>
     </div>
 
     <!-- Botón para Desbloquear Audio del Navegador -->

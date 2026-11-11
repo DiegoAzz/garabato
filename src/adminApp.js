@@ -168,31 +168,55 @@ export function initAdminApp() {
   // ==========================================
   // REPRODUCTOR YOUTUBE API PARA DECKS EN ADMIN
   // ==========================================
+  function resetAdminYTIframeSlot(deckKey) {
+    const isA = deckKey === 'A';
+    const containerId = isA ? 'admin-yt-container-a' : 'admin-yt-container-b';
+    const slotId = isA ? 'admin-yt-iframe-slot-a' : 'admin-yt-iframe-slot-b';
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = `<div id="${slotId}"></div>`;
+    }
+  }
+
   function loadYouTubeToAdminDeck(deck, videoId) {
     const isA = deck.key === 'A';
     const slotId = isA ? 'admin-yt-iframe-slot-a' : 'admin-yt-iframe-slot-b';
 
     if (isA) {
+      currentLoadedVideoIdA = videoId;
       if (adminYTPlayerA && typeof adminYTPlayerA.cueVideoById === 'function') {
-        currentLoadedVideoIdA = videoId;
-        if (deck.isPlaying) {
-          adminYTPlayerA.loadVideoById(videoId);
-        } else {
-          adminYTPlayerA.cueVideoById(videoId);
+        try {
+          if (deck.isPlaying) {
+            adminYTPlayerA.loadVideoById(videoId);
+          } else {
+            adminYTPlayerA.cueVideoById(videoId);
+          }
+          applyMixerVolumes();
+          return;
+        } catch (err) {
+          console.warn('[Admin YT A] Falló cueVideoById, recreando slot:', err);
+          try { if (adminYTPlayerA.destroy) adminYTPlayerA.destroy(); } catch (_) {}
+          adminYTPlayerA = null;
+          resetAdminYTIframeSlot('A');
         }
-        applyMixerVolumes();
-        return;
       }
     } else {
+      currentLoadedVideoIdB = videoId;
       if (adminYTPlayerB && typeof adminYTPlayerB.cueVideoById === 'function') {
-        currentLoadedVideoIdB = videoId;
-        if (deck.isPlaying) {
-          adminYTPlayerB.loadVideoById(videoId);
-        } else {
-          adminYTPlayerB.cueVideoById(videoId);
+        try {
+          if (deck.isPlaying) {
+            adminYTPlayerB.loadVideoById(videoId);
+          } else {
+            adminYTPlayerB.cueVideoById(videoId);
+          }
+          applyMixerVolumes();
+          return;
+        } catch (err) {
+          console.warn('[Admin YT B] Falló cueVideoById, recreando slot:', err);
+          try { if (adminYTPlayerB.destroy) adminYTPlayerB.destroy(); } catch (_) {}
+          adminYTPlayerB = null;
+          resetAdminYTIframeSlot('B');
         }
-        applyMixerVolumes();
-        return;
       }
     }
 
@@ -200,56 +224,72 @@ export function initAdminApp() {
       if (window.YT && window.YT.Player) {
         if (isA) {
           if (adminYTPlayerA && typeof adminYTPlayerA.cueVideoById === 'function') {
-            currentLoadedVideoIdA = videoId;
-            if (deck.isPlaying) adminYTPlayerA.loadVideoById(videoId);
-            else adminYTPlayerA.cueVideoById(videoId);
-            applyMixerVolumes();
-            return;
+            try {
+              currentLoadedVideoIdA = videoId;
+              if (deck.isPlaying) adminYTPlayerA.loadVideoById(videoId);
+              else adminYTPlayerA.cueVideoById(videoId);
+              applyMixerVolumes();
+              return;
+            } catch (_) {}
           }
           currentLoadedVideoIdA = videoId;
-          adminYTPlayerA = new window.YT.Player(slotId, {
-            width: '200',
-            height: '120',
-            videoId: videoId,
-            playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
-            events: {
-              onReady: (e) => {
-                applyMixerVolumes();
-                if (deck.isPlaying) {
-                  e.target.playVideo();
-                } else {
-                  e.target.pauseVideo();
+          try {
+            adminYTPlayerA = new window.YT.Player(slotId, {
+              width: '200',
+              height: '120',
+              videoId: videoId,
+              playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
+              events: {
+                onReady: (e) => {
+                  deck.ytPlayer = e.target;
+                  applyMixerVolumes();
+                  try {
+                    if (deck.isPlaying) e.target.playVideo();
+                    else e.target.pauseVideo();
+                  } catch (_) {}
+                },
+                onError: (e) => {
+                  console.warn('[Admin YT Deck A] Error code:', e.data);
                 }
-                deck.ytPlayer = e.target;
               }
-            }
-          });
+            });
+          } catch (initErr) {
+            console.error('[Admin YT Deck A] Error inicializando:', initErr);
+          }
         } else {
           if (adminYTPlayerB && typeof adminYTPlayerB.cueVideoById === 'function') {
-            currentLoadedVideoIdB = videoId;
-            if (deck.isPlaying) adminYTPlayerB.loadVideoById(videoId);
-            else adminYTPlayerB.cueVideoById(videoId);
-            applyMixerVolumes();
-            return;
+            try {
+              currentLoadedVideoIdB = videoId;
+              if (deck.isPlaying) adminYTPlayerB.loadVideoById(videoId);
+              else adminYTPlayerB.cueVideoById(videoId);
+              applyMixerVolumes();
+              return;
+            } catch (_) {}
           }
           currentLoadedVideoIdB = videoId;
-          adminYTPlayerB = new window.YT.Player(slotId, {
-            width: '200',
-            height: '120',
-            videoId: videoId,
-            playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
-            events: {
-              onReady: (e) => {
-                applyMixerVolumes();
-                if (deck.isPlaying) {
-                  e.target.playVideo();
-                } else {
-                  e.target.pauseVideo();
+          try {
+            adminYTPlayerB = new window.YT.Player(slotId, {
+              width: '200',
+              height: '120',
+              videoId: videoId,
+              playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
+              events: {
+                onReady: (e) => {
+                  deck.ytPlayer = e.target;
+                  applyMixerVolumes();
+                  try {
+                    if (deck.isPlaying) e.target.playVideo();
+                    else e.target.pauseVideo();
+                  } catch (_) {}
+                },
+                onError: (e) => {
+                  console.warn('[Admin YT Deck B] Error code:', e.data);
                 }
-                deck.ytPlayer = e.target;
               }
-            }
-          });
+            });
+          } catch (initErr) {
+            console.error('[Admin YT Deck B] Error inicializando:', initErr);
+          }
         }
       } else {
         setTimeout(loadAPI, 150);
@@ -298,49 +338,63 @@ export function initAdminApp() {
     const vA = Math.max(0, Math.min(100, Math.round(effA * 100)));
     const vB = Math.max(0, Math.min(100, Math.round(effB * 100)));
 
-    // Deck A
-    if (deckA.type === 'youtube') {
-      if (adminYTPlayerA && typeof adminYTPlayerA.setVolume === 'function') {
-        adminYTPlayerA.setVolume(vA);
-        if (isAdminAudioMuted || vA <= 0) {
-          if (typeof adminYTPlayerA.mute === 'function') adminYTPlayerA.mute();
-        } else {
-          if (typeof adminYTPlayerA.unMute === 'function') adminYTPlayerA.unMute();
+    // Deck A aislado con try-catch
+    try {
+      if (deckA.type === 'youtube') {
+        if (adminYTPlayerA && typeof adminYTPlayerA.setVolume === 'function') {
+          adminYTPlayerA.setVolume(vA);
+          if (isAdminAudioMuted || vA <= 0) {
+            if (typeof adminYTPlayerA.mute === 'function') adminYTPlayerA.mute();
+          } else {
+            if (typeof adminYTPlayerA.unMute === 'function') adminYTPlayerA.unMute();
+          }
         }
+      } else if (deckA.audioEl) {
+        deckA.audioEl.volume = effA;
+        deckA.audioEl.muted = isAdminAudioMuted || vA <= 0;
       }
-    } else if (deckA.audioEl) {
-      deckA.audioEl.volume = effA;
-      deckA.audioEl.muted = isAdminAudioMuted || vA <= 0;
+    } catch (errA) {
+      console.warn('[Admin Mixer] Error en volumen Deck A:', errA);
     }
 
-    // Deck B
-    if (deckB.type === 'youtube') {
-      if (adminYTPlayerB && typeof adminYTPlayerB.setVolume === 'function') {
-        adminYTPlayerB.setVolume(vB);
-        if (isAdminAudioMuted || vB <= 0) {
-          if (typeof adminYTPlayerB.mute === 'function') adminYTPlayerB.mute();
-        } else {
-          if (typeof adminYTPlayerB.unMute === 'function') adminYTPlayerB.unMute();
+    // Deck B aislado con try-catch
+    try {
+      if (deckB.type === 'youtube') {
+        if (adminYTPlayerB && typeof adminYTPlayerB.setVolume === 'function') {
+          adminYTPlayerB.setVolume(vB);
+          if (isAdminAudioMuted || vB <= 0) {
+            if (typeof adminYTPlayerB.mute === 'function') adminYTPlayerB.mute();
+          } else {
+            if (typeof adminYTPlayerB.unMute === 'function') adminYTPlayerB.unMute();
+          }
         }
+      } else if (deckB.audioEl) {
+        deckB.audioEl.volume = effB;
+        deckB.audioEl.muted = isAdminAudioMuted || vB <= 0;
       }
-    } else if (deckB.audioEl) {
-      deckB.audioEl.volume = effB;
-      deckB.audioEl.muted = isAdminAudioMuted || vB <= 0;
+    } catch (errB) {
+      console.warn('[Admin Mixer] Error en volumen Deck B:', errB);
     }
 
-    if (djVolumeLabel && djMasterVolume) djVolumeLabel.textContent = `${djMasterVolume.value}%`;
-    if (deckAFaderVal && deckAFader) deckAFaderVal.textContent = `${deckAFader.value}%`;
-    if (deckBFaderVal && deckBFader) deckBFaderVal.textContent = `${deckBFader.value}%`;
+    try {
+      if (djVolumeLabel && djMasterVolume) djVolumeLabel.textContent = `${djMasterVolume.value}%`;
+      if (deckAFaderVal && deckAFader) deckAFaderVal.textContent = `${deckAFader.value}%`;
+      if (deckBFaderVal && deckBFader) deckBFaderVal.textContent = `${deckBFader.value}%`;
+    } catch (_) {}
 
-    // Sincronizar mezcla con /show
-    syncBridge.send('DJ_MIXER_UPDATE', {
-      volA: effA,
-      volB: effB,
-      vA: vA,
-      vB: vB,
-      crossfader: cf,
-      masterVolume: master
-    });
+    // Sincronizar mezcla con /show aislado con try-catch
+    try {
+      syncBridge.send('DJ_MIXER_UPDATE', {
+        volA: effA,
+        volB: effB,
+        vA: vA,
+        vB: vB,
+        crossfader: cf,
+        masterVolume: master
+      });
+    } catch (errSync) {
+      console.warn('[Admin Mixer] Error enviando DJ_MIXER_UPDATE:', errSync);
+    }
   }
 
   [djMasterVolume, deckAFader, deckBFader, vdjCrossfader].forEach(slider => {
@@ -466,21 +520,36 @@ export function initAdminApp() {
   // OPERACIONES DE CARGA, PLAY, PAUSE Y STOP
   // ==========================================
   function loadTrackToDeck(deck, track, autoPlay = false) {
+    const isA = deck.key === 'A';
+
+    deck.isPlaying = false;
+    deck.isPaused = false;
+
+    // 1. Limpiar completamente y pausar cualquier rastro anterior en este deck
+    if (deck.audioEl) {
+      try {
+        deck.audioEl.pause();
+        deck.audioEl.currentTime = 0;
+        if (!track.url) deck.audioEl.removeAttribute('src');
+      } catch (_) {}
+    }
+
+    const oldYTPlayer = isA ? adminYTPlayerA : adminYTPlayerB;
+    if (oldYTPlayer) {
+      try {
+        if (typeof oldYTPlayer.stopVideo === 'function') oldYTPlayer.stopVideo();
+        else if (typeof oldYTPlayer.pauseVideo === 'function') oldYTPlayer.pauseVideo();
+      } catch (_) {}
+    }
+
     deck.title = track.name || track.title || 'Canción DJ';
     deck.type = track.videoId ? 'youtube' : 'audio';
     deck.url = track.url || null;
     deck.videoId = track.videoId || null;
 
-    deck.isPlaying = false;
-    deck.isPaused = false;
-
     if (deck.type === 'youtube') {
-      if (deck.audioEl) deck.audioEl.pause();
       loadYouTubeToAdminDeck(deck, deck.videoId);
     } else {
-      const player = deck.key === 'A' ? adminYTPlayerA : adminYTPlayerB;
-      if (player && typeof player.pauseVideo === 'function') try { player.pauseVideo(); } catch (e) {}
-      if (player && typeof player.stopVideo === 'function') try { player.stopVideo(); } catch (e) {}
       if (deck.audioEl && deck.url) {
         deck.audioEl.src = deck.url;
         deck.audioEl.load();
@@ -491,13 +560,15 @@ export function initAdminApp() {
     updateDeckUI(deck);
     updateDeckTimeDisplay(deck);
 
-    syncBridge.send('DJ_DECK_LOAD', {
-      deck: deck.key,
-      type: deck.type,
-      url: deck.url,
-      videoId: deck.videoId,
-      title: deck.title
-    });
+    try {
+      syncBridge.send('DJ_DECK_LOAD', {
+        deck: deck.key,
+        type: deck.type,
+        url: deck.url,
+        videoId: deck.videoId,
+        title: deck.title
+      });
+    } catch (_) {}
 
     if (autoPlay) {
       playDeck(deck);
@@ -523,11 +594,21 @@ export function initAdminApp() {
         if (currentLoaded !== deck.videoId) {
           if (isA) currentLoadedVideoIdA = deck.videoId;
           else currentLoadedVideoIdB = deck.videoId;
-          if (typeof player.loadVideoById === 'function') {
-            player.loadVideoById(deck.videoId);
+          try {
+            if (typeof player.loadVideoById === 'function') {
+              player.loadVideoById(deck.videoId);
+            } else {
+              player.playVideo();
+            }
+          } catch (_) {
+            loadYouTubeToAdminDeck(deck, deck.videoId);
           }
         } else {
-          player.playVideo();
+          try {
+            player.playVideo();
+          } catch (_) {
+            loadYouTubeToAdminDeck(deck, deck.videoId);
+          }
         }
       } else {
         loadYouTubeToAdminDeck(deck, deck.videoId);
@@ -538,13 +619,15 @@ export function initAdminApp() {
 
     updateDeckUI(deck);
 
-    syncBridge.send('DJ_DECK_PLAY', {
-      deck: deck.key,
-      type: deck.type,
-      url: deck.url,
-      videoId: deck.videoId,
-      title: deck.title
-    });
+    try {
+      syncBridge.send('DJ_DECK_PLAY', {
+        deck: deck.key,
+        type: deck.type,
+        url: deck.url,
+        videoId: deck.videoId,
+        title: deck.title
+      });
+    } catch (_) {}
   }
 
   function pauseDeck(deck) {
@@ -1060,8 +1143,9 @@ export function initAdminApp() {
   let micStream = null;
   let micAudioContext = null;
   let micAnalyser = null;
-  let micAnimFrame = null;
   let micGainNode = null;
+  let micProcessor = null;
+  let micAnimFrame = null;
 
   const btnQuickMicHead = document.getElementById('btn-quick-mic-head');
   const quickMicDot = document.getElementById('quick-mic-dot');
@@ -1099,7 +1183,10 @@ export function initAdminApp() {
       micAirStatus.style.color = '#fff';
     }
 
-    syncBridge.send('HUMAN_MIC_LEVEL', { active, level: 0 });
+    try {
+      syncBridge.send('STREAMER_MIC_STATUS', { active });
+      syncBridge.send('HUMAN_MIC_LEVEL', { active, level: 0 });
+    } catch (_) {}
   }
 
   async function startHumanMic() {
@@ -1122,6 +1209,30 @@ export function initAdminApp() {
         micAnalyser.fftSize = 256;
         source.connect(micGainNode);
         micGainNode.connect(micAnalyser);
+
+        // Captura y streaming de audio PCM hacia /show
+        micProcessor = micAudioContext.createScriptProcessor(2048, 1, 1);
+        micGainNode.connect(micProcessor);
+
+        // Conectar a ganancia 0 para no retroalimentar eco en los parlantes del admin
+        const micSilenceGain = micAudioContext.createGain();
+        micSilenceGain.gain.setValueAtTime(0, micAudioContext.currentTime);
+        micProcessor.connect(micSilenceGain);
+        micSilenceGain.connect(micAudioContext.destination);
+
+        micProcessor.onaudioprocess = (e) => {
+          if (!isHumanMicActive) return;
+          const input = e.inputBuffer.getChannelData(0);
+          const pcm16 = new Int16Array(input.length);
+          for (let i = 0; i < input.length; i++) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+          syncBridge.send('STREAMER_MIC_PCM', {
+            pcm: Array.from(pcm16),
+            sampleRate: micAudioContext.sampleRate
+          });
+        };
       } else if (micAudioContext.state === 'suspended') {
         await micAudioContext.resume();
       }
@@ -1139,6 +1250,10 @@ export function initAdminApp() {
     if (micAnimFrame) cancelAnimationFrame(micAnimFrame);
     if (micVuFill) micVuFill.style.width = '0%';
     if (micDbLabel) micDbLabel.textContent = '0%';
+    try {
+      syncBridge.send('STREAMER_MIC_STATUS', { active: false });
+      syncBridge.send('HUMAN_MIC_LEVEL', { active: false, level: 0 });
+    } catch (_) {}
   }
 
   function monitorMicLevels() {
@@ -1154,8 +1269,19 @@ export function initAdminApp() {
     if (micVuFill) micVuFill.style.width = `${Math.round(normalized * 100)}%`;
     if (micDbLabel) micDbLabel.textContent = `${Math.round(normalized * 100)}%`;
 
-    syncBridge.send('HUMAN_MIC_LEVEL', { active: true, level: normalized });
+    try {
+      syncBridge.send('HUMAN_MIC_LEVEL', { active: true, level: normalized });
+    } catch (_) {}
     micAnimFrame = requestAnimationFrame(monitorMicLevels);
+  }
+
+  if (micGainSlider) {
+    micGainSlider.addEventListener('input', () => {
+      if (micGainNode && micAudioContext) {
+        const val = parseInt(micGainSlider.value, 10) / 100;
+        micGainNode.gain.setValueAtTime(val, micAudioContext.currentTime);
+      }
+    });
   }
 
   if (btnQuickMicHead) {
