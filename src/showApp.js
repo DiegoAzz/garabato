@@ -1705,28 +1705,34 @@ export function initShowApp() {
       const delta = Math.min(clock.getDelta(), 0.08);
       const time = clock.getElapsedTime();
 
-      const audioLevels = audioEngine.update();
+      const audioLevels = audioEngine.update() || { bass: 0, mid: 0, treble: 0, overall: 0 };
+      // Ritmo de fiesta continuo para que el DJ, las luces y el público siempre estén bailando con energía en vivo
+      const partyBeat = 0.45 + Math.abs(Math.sin(time * 3.6)) * 0.45;
+      const partyBass = 0.4 + Math.abs(Math.cos(time * 1.8)) * 0.55;
+      const liveLevels = {
+        bass: Math.max(audioLevels.bass || 0, partyBass),
+        mid: Math.max(audioLevels.mid || 0, partyBeat * 0.8),
+        treble: Math.max(audioLevels.treble || 0, partyBeat * 0.7),
+        overall: Math.max(audioLevels.overall || 0, partyBeat)
+      };
+
       // Sincronización de boca del DJ con la voz (TTS o Micrófono Humano en Vivo)
       if (!isHumanMicActive) {
         const mouthAmount = audioEngine.isSpeaking ? audioEngine.vocalAmplitude : 0;
         singer.animController.setMouthOpen(mouthAmount);
       }
 
-      singer.animController.update(time, delta, audioLevels);
-      stage.update(time, delta, audioLevels);
-      audience.update(time, delta, audioLevels);
+      singer.animController.update(time, delta, liveLevels);
+      stage.update(time, delta, liveLevels);
+      audience.update(time, delta, liveLevels);
 
       // Actualizar Ecualizador Espectro en Vivo HUD 2D (Siempre Visible)
       if (hudEqBars.length > 0) {
-        const hasAudio = (audioLevels.overall || 0) > 0.03;
         for (let b = 0; b < hudEqBars.length; b++) {
-          let h = 4;
-          if (hasAudio) {
-            const norm = b / 15;
-            let val = norm < 0.35 ? audioLevels.bass : (norm < 0.7 ? audioLevels.mid : audioLevels.treble);
-            val += Math.sin(time * (14 + b) + b * 0.8) * 0.12;
-            h = Math.max(4, Math.min(28, Math.round(val * 28)));
-          }
+          const norm = b / 15;
+          let val = norm < 0.35 ? liveLevels.bass : (norm < 0.7 ? liveLevels.mid : liveLevels.treble);
+          val += Math.sin(time * (12 + b) + b * 0.7) * 0.12;
+          const h = Math.max(4, Math.min(28, Math.round(val * 28)));
           hudEqBars[b].style.height = `${h}px`;
         }
       }

@@ -3,598 +3,823 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VIRTUAL DJ PRO 2024 — DjAz LIVE CLUB 3D</title>
+  <title>TikTok LIVE Studio — DjAz CLUB 3D</title>
   <link rel="stylesheet" href="./style.css" />
+  <style>
+    :root {
+      --tt-bg: #07090e;
+      --tt-card-bg: rgba(15, 23, 42, 0.85);
+      --tt-card-border: #1e293b;
+      --tt-cyan: #00f0ff;
+      --tt-magenta: #ff0050;
+      --tt-gold: #facc15;
+      --tt-green: #22c55e;
+      --tt-purple: #a855f7;
+      --tt-blue: #38bdf8;
+    }
+
+    body.tt-admin-page {
+      background: var(--tt-bg);
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .tt-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
+    .tt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--tt-card-bg);
+      border: 1px solid var(--tt-card-border);
+      border-radius: 16px;
+      padding: 14px 22px;
+      backdrop-filter: blur(12px);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .tt-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .tt-logo-badge {
+      background: linear-gradient(135deg, #ff0050, #00f0ff);
+      color: #fff;
+      font-weight: 900;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 16px rgba(255, 0, 80, 0.4);
+    }
+
+    .tt-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #fff;
+      margin: 0;
+    }
+
+    .tt-title span {
+      background: linear-gradient(90deg, #00f0ff, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tt-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .tt-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tt-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(100, 116, 139, 0.15);
+      border: 1px solid #334155;
+      color: #94a3b8;
+      transition: all 0.3s;
+    }
+
+    .tt-status-pill.connected {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: #22c55e;
+      color: #4ade80;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+    }
+
+    .tt-status-pill.connecting {
+      background: rgba(250, 204, 21, 0.15);
+      border-color: #facc15;
+      color: #fef08a;
+    }
+
+    .tt-status-pill.error {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .tt-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .tt-btn-link {
+      background: #1e293b;
+      color: #38bdf8;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tt-btn-link:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    .tt-btn-link.primary {
+      background: linear-gradient(135deg, #0284c7, #06b6d4);
+      border: none;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+    }
+
+    .tt-btn-link.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 18px rgba(6, 182, 212, 0.5);
+    }
+
+    /* TikTok Connection Bar */
+    .tt-connection-bar {
+      background: var(--tt-card-bg);
+      border: 1px solid var(--tt-card-border);
+      border-radius: 16px;
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tt-conn-inputs {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tt-input-group {
+      display: flex;
+      align-items: center;
+      background: #0b0f19;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 2px 12px;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .tt-input-group span {
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 14px;
+      margin-right: 4px;
+    }
+
+    .tt-input-group input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 4px;
+      outline: none;
+      width: 100%;
+    }
+
+    .tt-btn-connect {
+      background: linear-gradient(135deg, #ff0050, #e11d48);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 10px 22px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 0 14px rgba(255, 0, 80, 0.4);
+    }
+
+    .tt-btn-connect:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 20px rgba(255, 0, 80, 0.6);
+    }
+
+    .tt-btn-connect.connected {
+      background: linear-gradient(135deg, #475569, #334155);
+      box-shadow: none;
+    }
+
+    .tt-conn-msg {
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Metrics Bar */
+    .tt-metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .tt-metric-card {
+      background: var(--tt-card-bg);
+      border: 1px solid var(--tt-card-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .tt-metric-icon {
+      font-size: 26px;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+    }
+
+    .tt-metric-data {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tt-metric-val {
+      font-size: 20px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .tt-metric-lbl {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Main Grid */
+    .tt-main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 960px) {
+      .tt-main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tt-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Section Cards */
+    .tt-card {
+      background: var(--tt-card-bg);
+      border: 1px solid var(--tt-card-border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      backdrop-filter: blur(12px);
+    }
+
+    .tt-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 10px;
+    }
+
+    .tt-card-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+
+    .tt-card-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    /* Gift Grid */
+    .tt-gift-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .tt-gift-btn {
+      background: #0b0f19;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      color: #fff;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .tt-gift-btn:hover {
+      background: #1e293b;
+      border-color: #00f0ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 240, 255, 0.25);
+    }
+
+    .tt-gift-btn:active {
+      transform: scale(0.96);
+    }
+
+    .tt-gift-ico {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .tt-gift-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    .tt-gift-pts {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #facc15;
+    }
+
+    /* Action Buttons Grid */
+    .tt-action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .tt-action-btn {
+      background: #0b0f19;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 9px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tt-action-btn:hover {
+      background: #1e293b;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    .tt-action-btn:active {
+      transform: scale(0.96);
+    }
+
+    .tt-action-btn.active {
+      background: linear-gradient(135deg, #0284c7, #06b6d4);
+      border-color: #00f0ff;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+    }
+
+    /* Chat Form */
+    .tt-chat-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tt-chat-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tt-chat-input {
+      background: #0b0f19;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .tt-chat-input:focus {
+      border-color: #00f0ff;
+    }
+
+    .tt-btn-send-chat {
+      background: linear-gradient(135deg, #06b6d4, #2563eb);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tt-btn-send-chat:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    /* Live Feed */
+    .tt-feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .tt-feed-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11.5px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .tt-feed-item.gift {
+      border-left: 3px solid #facc15;
+    }
+
+    .tt-feed-item.chat {
+      border-left: 3px solid #00f0ff;
+    }
+
+    .tt-feed-item.like {
+      border-left: 3px solid #ff0050;
+    }
+
+    .tt-feed-item.join {
+      border-left: 3px solid #a855f7;
+    }
+
+    .tt-feed-time {
+      color: #64748b;
+      font-size: 10px;
+      font-family: monospace;
+    }
+
+    .tt-feed-user {
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    .tt-feed-text {
+      color: #cbd5e1;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
-<body class="admin-page" style="background: #07090e;">
-  <div class="vdj-studio">
+<body class="tt-admin-page">
+  <div class="tt-container">
 
     <!-- ========================================================
-         1. HEADER SUPERIOR VIRTUAL DJ PRO
+         1. HEADER PRINCIPAL
          ======================================================== -->
-    <header class="vdj-header">
-      <div class="vdj-brand">
-        <span class="vdj-logo-badge">VIRTUAL DJ</span>
+    <header class="tt-header">
+      <div class="tt-brand">
+        <span class="tt-logo-badge">TIKTOK LIVE</span>
         <div>
-          <h1 class="vdj-header-title">DjAz <span style="color: #38bdf8;">PRO STUDIO</span> 3D</h1>
-          <span class="vdj-header-sub">SISTEMA DUAL-DECK (2 CANALES) • MEZCLADOR PROFESIONAL EN VIVO</span>
+          <h1 class="tt-title">DjAz <span>CLUB 3D</span></h1>
+          <span class="tt-sub">CENTRO DE CONTROL INTERACTIVO EN VIVO</span>
         </div>
       </div>
 
-      <div class="vdj-header-actions">
-        <!-- Botón Rápido de Micrófono Humano en Vivo -->
-        <button type="button" id="btn-quick-mic-head" class="vdj-mic-pill-btn" title="Activa tu voz humana real en vivo (Atajo: [Espacio] o [M])">
-          <span id="quick-mic-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #38bdf8;"></span>
-          <span id="quick-mic-label">🎙️ HABLAR EN VIVO [Espacio]</span>
+      <div class="tt-header-actions">
+        <span id="tt-live-status-pill" class="tt-status-pill">
+          <span class="tt-status-dot"></span>
+          <span id="tt-live-status-label">Desconectado</span>
+        </span>
+        <button type="button" id="btn-toggle-clean-mode" class="tt-btn-link" title="Oculta o muestra HUD en /show">
+          👁️ Modo Limpio
         </button>
-
-        <button type="button" id="btn-toggle-admin-audio-mute" class="btn-action-small" style="background: #1e293b; color: #38bdf8; font-weight: 800; border: 1px solid #334155;" title="Silencia el monitor local de esta pestaña para evitar eco si tienes /show en la misma PC">
-          🎧 Monitor Admin: 🔊 ON
-        </button>
-
-        <span id="status-show-connection" class="status-badge" style="font-size: 10px;">● Esperando /show</span>
-        <button type="button" id="btn-admin-toggle-clean" class="btn-action-small" title="Oculta o muestra botones flotantes en /show">👁️ Modo Limpio</button>
-        <a href="./show.html" target="_blank" class="btn-open-show">🖥️ Abrir /show</a>
-        <a href="./mobile.html" target="_blank" class="btn-open-show" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff;">📱 Móvil</a>
+        <a href="./show.html" target="_blank" class="tt-btn-link primary">
+          🖥️ Abrir /show (Para OBS / LIVE Studio)
+        </a>
+        <a href="./mobile.html" target="_blank" class="tt-btn-link">
+          📱 Móvil
+        </a>
       </div>
     </header>
 
     <!-- ========================================================
-         2. ONDAS DE AUDIO DUALES EN TIEMPO REAL (RUNNING WAVEFORMS)
+         2. BARRA DE CONEXIÓN A TIKTOK LIVE
          ======================================================== -->
-    <!-- ========================================================
-         2. ONDA DE AUDIO EN TIEMPO REAL (RUNNING WAVEFORM)
-         ======================================================== -->
-    <section class="vdj-top-waveforms">
-      <div class="vdj-wave-labels" style="justify-content: space-between; padding: 0 10px;">
-        <span style="color: #00f0ff; font-weight: 800; text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); font-size: 11px;">🎧 PLATO MASTER PRINCIPAL (ONDA DE AUDIO EN VIVO)</span>
-        <span style="color: #64748b; font-size: 9.5px; letter-spacing: 1px;">ANÁLISIS DE ENERGÍA Y FRECUENCIA EN TIEMPO REAL</span>
-        <span id="master-deck-bpm-top" style="color: #facc15; font-weight: 800; font-size: 11px;">126.00 BPM</span>
+    <section class="tt-connection-bar">
+      <div class="tt-conn-inputs">
+        <div class="tt-input-group">
+          <span>@</span>
+          <input type="text" id="tt-username-input" placeholder="tu_usuario_de_tiktok" value="CreandoConIA" />
+        </div>
+        <button type="button" id="btn-tiktok-toggle" class="tt-btn-connect">
+          <span>🔗 Conectar a TikTok LIVE</span>
+        </button>
       </div>
-      <div class="vdj-wave-center-needle"></div>
-      <canvas id="vdj-waveforms-canvas" class="vdj-wave-canvas" height="64"></canvas>
+      <div class="tt-conn-msg">
+        <span id="tt-conn-msg-icon">ℹ️</span>
+        <span id="tt-conn-msg-text">Abre TikTok en tu teléfono, inicia tu transmisión LIVE y pulsa "Conectar a TikTok LIVE".</span>
+      </div>
     </section>
 
     <!-- ========================================================
-         3. CONSOLA PRINCIPAL: UN SOLO PLATO MASTER DJ (REPRODUCTOR DE MEZCLAS)
+         3. CONTADORES EN VIVO (MÉTRICAS DEL SHOW)
          ======================================================== -->
-    <main class="vdj-master-console">
-      <!-- Header del Plato Master -->
-      <div class="vdj-master-header">
-        <div class="vdj-master-title-box">
-          <span class="vdj-master-tag">PLATO PRINCIPAL</span>
-          <strong id="master-deck-title" class="vdj-master-title">Ninguna mezcla o pista cargada</strong>
-          <div class="vdj-master-sub">
-            <span id="master-deck-type">📁 MP3 / WAV / YouTube</span>
-            <span>•</span>
-            <span id="master-deck-bpm" style="color: #38bdf8; font-weight: 800;">126.00 BPM</span>
-            <span>•</span>
-            <span id="master-deck-status" style="color: #22c55e; font-weight: 800;">LISTO</span>
-          </div>
-        </div>
-
-        <div class="vdj-master-time-box">
-          <div id="master-deck-time" class="vdj-master-time-main">00:00.0</div>
-          <div id="master-deck-remain" class="vdj-master-time-rem">-00:00.0</div>
+    <section class="tt-metrics-bar">
+      <div class="tt-metric-card">
+        <div class="tt-metric-icon">👥</div>
+        <div class="tt-metric-data">
+          <span id="metric-viewers" class="tt-metric-val">0</span>
+          <span class="tt-metric-lbl">Espectadores 3D</span>
         </div>
       </div>
-
-      <!-- Scrubber / Barra de Progreso y Búsqueda -->
-      <div id="master-deck-scrub" class="vdj-deck-scrub-bar" style="height: 14px; cursor: pointer;" title="Haz clic o arrastra para saltar a cualquier punto de la mezcla">
-        <div id="master-deck-scrub-fill" class="vdj-deck-scrub-fill" style="background: linear-gradient(90deg, #0284c7, #00f0ff); box-shadow: 0 0 10px #00f0ff;"></div>
-      </div>
-
-      <!-- Cuerpo del Plato Master: Pitch/Pads + Tornamesa Central + Volumen/FX -->
-      <div class="vdj-master-body">
-        <!-- Columna 1: Pitch y Pads de Cue Rápido -->
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <div class="vdj-pitch-box" style="width: 100%; box-sizing: border-box;">
-            <span class="vdj-pitch-label">PITCH / VELOCIDAD</span>
-            <input type="range" id="master-deck-pitch" class="vdj-pitch-slider" min="-8" max="8" step="0.1" value="0" title="Ajuste de velocidad y BPM (-8% a +8%)" />
-            <span id="master-deck-pitch-val" class="vdj-pitch-val">0.0%</span>
-          </div>
-
-          <div class="vdj-pads-container" style="width: 100%;">
-            <div class="vdj-pads-row">
-              <button type="button" class="vdj-pad-btn" data-action="seek-zero">CUE 0:00</button>
-              <button type="button" class="vdj-pad-btn" data-action="seek-intro">DROP 1m</button>
-            </div>
-            <div class="vdj-pads-row">
-              <button type="button" class="vdj-pad-btn" data-action="loop-in">LOOP 4</button>
-              <button type="button" class="vdj-pad-btn" data-action="loop-out">LOOP 8</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Columna 2: Tornamesa Jog Wheel Gigante Central -->
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-          <div id="master-deck-jog" class="vdj-jog-wheel" style="width: 200px; height: 200px;" title="Tornamesa Jog Wheel (Gira en vivo al compás del ritmo)">
-            <div class="vdj-jog-grooves"></div>
-            <div class="vdj-jog-center vdj-jog-center-master">
-              <div style="font-size: 16px;">🎧</div>
-              <div>DjAz</div>
-              <div style="font-size: 8px; color: #94a3b8;">PRO MASTER</div>
-            </div>
-            <div class="vdj-jog-marker" style="background: #00f0ff; box-shadow: 0 0 8px #00f0ff;"></div>
-          </div>
-        </div>
-
-        <!-- Columna 3: Volumen Fader Maestro y FX Rápidos -->
-        <div style="display: flex; flex-direction: column; gap: 10px; background: #05070c; padding: 12px; border-radius: 10px; border: 1px solid #1a2334;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 10px; font-weight: 800; color: #cbd5e1;">VOLUMEN MAESTRO</span>
-            <span id="dj-volume-label" style="font-size: 12px; font-weight: 900; color: #00f0ff;">85%</span>
-          </div>
-          <input type="range" id="dj-master-volume" min="0" max="100" value="85" style="width: 100%; accent-color: #00f0ff; cursor: pointer; height: 8px;" />
-
-          <div style="font-size: 9px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-top: 4px;">EFECTOS DE VOZ Y CLUB</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-            <button type="button" class="btn-action-small" data-sfx="airhorn" style="background: #1e293b; color: #facc15; font-size: 10px; font-weight: 800;">📢 Airhorn</button>
-            <button type="button" class="btn-action-small" data-sfx="drop" style="background: #1e293b; color: #38bdf8; font-size: 10px; font-weight: 800;">⚡ Drop Beat</button>
-            <button type="button" class="btn-action-small" data-sfx="laser" style="background: #1e293b; color: #ec4899; font-size: 10px; font-weight: 800;">🔫 Láser</button>
-            <button type="button" class="btn-action-small" data-sfx="applause" style="background: #1e293b; color: #4ade80; font-size: 10px; font-weight: 800;">👏 Aplausos</button>
-          </div>
+      <div class="tt-metric-card">
+        <div class="tt-metric-icon" style="color: #ff0050;">❤️</div>
+        <div class="tt-metric-data">
+          <span id="metric-likes" class="tt-metric-val">0</span>
+          <span class="tt-metric-lbl">Likes / Taps</span>
         </div>
       </div>
-
-      <!-- Barra de Transporte Principal: CUE | PLAY GIGANTE | STOP | MONITOR -->
-      <div class="vdj-master-transport">
-        <button type="button" id="btn-master-cue" class="btn-master-cue" title="Regresar al inicio exacto (0:00)">
-          ⏮ CUE (0:00)
-        </button>
-
-        <button type="button" id="btn-master-play" class="btn-master-play-circle" title="Reproducir / Pausar la mezcla">
-          <span id="master-play-icon">▶</span>
-          <span id="master-play-text" style="font-size: 9px; font-weight: 900; margin-top: 2px;">PLAY</span>
-        </button>
-
-        <button type="button" id="btn-master-stop" class="btn-master-stop" title="Detener por completo y reiniciar a 0:00">
-          ⏹ STOP TOTAL
-        </button>
-
-        <button type="button" id="btn-toggle-admin-audio-mute" class="btn-action-small" style="background: #0f172a; color: #38bdf8; font-weight: 800; border: 1px solid #334155; padding: 8px 12px; font-size: 11px;" title="Silencia el monitor local de esta pestaña para evitar eco si tienes /show en la misma PC">
-          🎧 Monitor Admin: 🔊 ON
-        </button>
+      <div class="tt-metric-card">
+        <div class="tt-metric-icon" style="color: #facc15;">🎁</div>
+        <div class="tt-metric-data">
+          <span id="metric-gifts" class="tt-metric-val">0</span>
+          <span class="tt-metric-lbl">Regalos Recibidos</span>
+        </div>
       </div>
-
-      <!-- Elementos de Compatibilidad Ocultos -->
-      <div style="display: none;">
-        <strong id="deck-a-title"></strong>
-        <strong id="deck-b-title"></strong>
-        <div id="deck-a-time"></div>
-        <div id="deck-b-time"></div>
-        <div id="deck-a-remain"></div>
-        <div id="deck-b-remain"></div>
-        <div id="deck-a-scrub"><div id="deck-a-scrub-fill"></div></div>
-        <div id="deck-b-scrub"><div id="deck-b-scrub-fill"></div></div>
-        <div id="deck-a-jog"></div>
-        <div id="deck-b-jog"></div>
-        <button type="button" id="btn-deck-a-play"></button>
-        <button type="button" id="btn-deck-b-play"></button>
-        <button type="button" id="btn-deck-a-cue"></button>
-        <button type="button" id="btn-deck-b-cue"></button>
-        <button type="button" id="btn-deck-a-stop"></button>
-        <button type="button" id="btn-deck-b-stop"></button>
-        <input type="range" id="deck-a-fader" value="85" />
-        <input type="range" id="deck-b-fader" value="85" />
-        <input type="range" id="vdj-crossfader" value="0" />
+      <div class="tt-metric-card">
+        <div class="tt-metric-icon" style="color: #00f0ff;">💬</div>
+        <div class="tt-metric-data">
+          <span id="metric-comments" class="tt-metric-val">0</span>
+          <span class="tt-metric-lbl">Mensajes de Chat</span>
+        </div>
       </div>
-    </main>
+    </section>
 
     <!-- ========================================================
-         4. PARTE INFERIOR: BIBLIOTECA DJ + RACK COMPACTO DE ESTUDIO
+         4. GRID PRINCIPAL (SIMULADOR & CONTROL DEL SHOW)
          ======================================================== -->
-    <div class="vdj-lower-layout">
+    <div class="tt-main-grid">
 
-      <!-- ==============================================
-           IZQUIERDA: EXPLORADOR DE MÚSICA & CRATES (68%)
-           ============================================== -->
-      <section class="vdj-crate-panel">
-        <!-- Navegación de Fuentes de Música -->
-        <div class="vdj-crate-nav">
-          <button type="button" class="vdj-crate-tab is-active" data-crate="local">
-            <span>📁 Mis Pistas MP3 / WAV</span>
-            <span id="music-count-badge" class="counter" style="font-size: 9px; padding: 1px 6px;">0</span>
-          </button>
-          <button type="button" class="vdj-crate-tab" data-crate="youtube">
-            <span>▶ Buscador YouTube DJ</span>
-          </button>
-          <button type="button" class="vdj-crate-tab" data-crate="drive">
-            <span>☁️ Google Drive / Links</span>
-          </button>
-          <button type="button" class="vdj-crate-tab" data-crate="synth">
-            <span>⚡ Ritmos Club (Sintetizados)</span>
-          </button>
+      <!-- COLUMNA IZQUIERDA: SIMULADORES PARA PRUEBAS Y EN VIVO -->
+      <div class="tt-col">
 
-          <button type="button" id="btn-stop-all-music" class="btn-action-small" style="margin-left: auto; background: #991b1b; color: #fee2e2; border: 1.5px solid #ef4444; font-weight: 800; padding: 4px 10px; font-size: 11px;">
-            ⏹ STOP GENERAL (Ambos Decks)
-          </button>
-        </div>
-
-        <!-- PANEL CRATE 1: SUBIDAS LOCALES MP3/WAV -->
-        <div id="crate-page-local" class="crate-page">
-          <!-- Dropzone compacto -->
-          <div id="dj-upload-dropzone" class="dj-upload-dropzone" style="padding: 12px; margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
-              <span style="font-size: 18px;">📁</span>
-              <span style="font-size: 11px; color: #cbd5e1;">Arrastra tus canciones MP3/WAV o carpeta aquí</span>
-              <input type="file" id="dj-file-input" accept="audio/*" multiple style="display: none;" />
-              <input type="file" id="dj-folder-input" webkitdirectory directory multiple accept="audio/*" style="display: none;" />
-              <button type="button" id="btn-select-file" class="btn-action-small" style="background: #0284c7; color: #fff; font-size: 10.5px; padding: 4px 10px;">
-                + Canciones
-              </button>
-              <button type="button" id="btn-select-folder" class="btn-action-small" style="background: #6366f1; color: #fff; font-size: 10.5px; padding: 4px 10px;">
-                + Carpeta
-              </button>
-              <button type="button" id="btn-refresh-playlist" class="btn-text-action" style="font-size: 10px; color: #38bdf8;">
-                🔄 Actualizar
-              </button>
-            </div>
+        <!-- Card: Regalos TikTok (Gifts) -->
+        <div class="tt-card">
+          <div class="tt-card-header">
+            <h2 class="tt-card-title">🎁 Simulador de Regalos TikTok</h2>
+            <span class="tt-card-badge">Prueba Instantánea</span>
           </div>
-          <div id="dj-upload-status" style="display: none; font-size: 11px; padding: 6px; border-radius: 6px; margin-bottom: 8px; text-align: center;"></div>
-
-          <!-- Barra de Búsqueda Rápida en la Biblioteca -->
-          <div class="vdj-crate-search-bar">
-            <span style="color: #38bdf8;">🔍</span>
-            <input type="text" id="dj-search-input" placeholder="Buscar canción, artista o ritmo en la biblioteca... [Atajo: /]" />
-            <button type="button" id="btn-clear-search" style="display: none; background: #334155; border: none; color: #cbd5e1; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer;">✕</button>
-            <span id="dj-search-count-badge" style="font-size: 10px; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px;">0 pistas</span>
-          </div>
-
-          <!-- Tabla de Pistas MP3 (Estilo Crate de Virtual DJ) -->
-          <div class="vdj-table-wrapper" style="margin-top: 8px;">
-            <table class="vdj-track-table">
-              <thead>
-                <tr>
-                  <th style="width: 32px;">#</th>
-                  <th>Título de la Canción o Mezcla</th>
-                  <th style="width: 70px;">Tamaño</th>
-                  <th style="width: 220px; text-align: center;">Reproducir en el Plato Master</th>
-                  <th style="width: 40px; text-align: center;">🗑️</th>
-                </tr>
-              </thead>
-              <tbody id="dj-playlist-list">
-                <tr>
-                  <td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">
-                    Cargando biblioteca de canciones...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- PANEL CRATE 2: BUSCADOR YOUTUBE DJ -->
-        <div id="crate-page-youtube" class="crate-page" style="display: none;">
-          <div style="background: rgba(220, 38, 38, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-            <div style="display: flex; gap: 8px;">
-              <input type="text" id="yt-search-input" placeholder="Escribe canción, artista o pega link de YouTube... (ej: Rodolfo Aicardi, Titanium, Guaracha)" style="flex: 1; padding: 8px 10px; font-size: 12px; background: #05050d; border: 1px solid #7f1d1d; border-radius: 6px; color: #fff;" />
-              <button type="button" id="btn-yt-search" class="btn-action-small" style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; font-weight: 800; padding: 6px 16px;">
-                🔍 Buscar en YouTube
-              </button>
-            </div>
-            <div style="margin-top: 6px; font-size: 10px; color: #4ade80; display: flex; align-items: center; gap: 5px;">
-              <span>🛡️</span>
-              <span><strong>Modo Seguro Anti-Copyright:</strong> El video y nombres comerciales se mantienen 100% ocultos en /show para que tu cuenta de TikTok no sufra silenciamiento o avisos de derechos de autor.</span>
-            </div>
-          </div>
-
-          <div id="yt-search-results" style="max-height: 320px; overflow-y: auto; background: #080a10; border: 1px solid #283042; border-radius: 8px; padding: 6px;">
-            <div style="padding: 24px; text-align: center; color: #64748b; font-size: 11px;">
-              Escribe un título arriba y haz clic en 🔍 Buscar para encontrar canciones en YouTube.
-            </div>
-          </div>
-        </div>
-
-        <!-- PANEL CRATE 3: GOOGLE DRIVE / ENLACES -->
-        <div id="crate-page-drive" class="crate-page" style="display: none;">
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <strong style="font-size: 12px; color: #38bdf8;">Importar canciones desde Google Drive</strong>
-              <button type="button" id="btn-toggle-batch-drive" class="btn-text-action" style="font-size: 10px; color: #38bdf8;">
-                📋 Importar varios enlaces
-              </button>
-            </div>
-            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-              <input type="url" id="dj-stream-url" placeholder="Pega el enlace de Google Drive (ej: https://drive.google.com/file/d/...)" style="flex: 1; padding: 7px; font-size: 11px; background: #05050d; border: 1px solid #334155; border-radius: 6px; color: #fff;" />
-              <button type="button" id="btn-play-stream-url" class="btn-action-small" style="background: #0284c7; color: #fff; font-weight: 800; white-space: nowrap;">
-                ⬇️ Importar & Cargar
-              </button>
-            </div>
-
-            <!-- Importación múltiple de Google Drive -->
-            <div id="dj-batch-drive-box" style="display: none; margin-top: 8px; padding: 10px; background: rgba(15, 23, 42, 0.85); border: 1.5px dashed #0284c7; border-radius: 8px;">
-              <div style="font-size: 11px; font-weight: 800; color: #e2e8f0; margin-bottom: 4px;">Pega varios enlaces de Google Drive (uno por línea):</div>
-              <textarea id="dj-batch-urls-input" rows="3" style="width: 100%; box-sizing: border-box; background: #020617; border: 1px solid #334155; border-radius: 6px; color: #f8fafc; font-size: 11px; padding: 6px; font-family: monospace;"></textarea>
-              <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
-                <button type="button" id="btn-cancel-batch-drive" class="btn-action-small" style="background: #334155; color: #94a3b8;">Cancelar</button>
-                <button type="button" id="btn-submit-batch-drive" class="btn-action-small" style="background: #10b981; color: #fff; font-weight: 800;">⬇️ Importar Todos</button>
-              </div>
-            </div>
-            <span style="font-size: 10px; color: #94a3b8; display: block;">💡 Asegúrate de que el enlace en Google Drive tenga permiso "Cualquier persona con el enlace".</span>
-          </div>
-        </div>
-
-        <!-- PANEL CRATE 4: RITMOS PROCEDURALES -->
-        <div id="crate-page-synth" class="crate-page" style="display: none;">
-          <p style="font-size: 11px; color: #94a3b8; margin: 0 0 8px 0;">
-            Activa ritmos bailables sintetizados al vuelo si deseas que la pista baile sin poner una canción grabada.
+          <p style="font-size: 11px; color: #94a3b8; margin: 0;">
+            Haz clic en cualquier regalo para probar la reacción 3D en vivo del club (confeti, corona, fuegos, baile):
           </p>
-          <div class="dj-genre-grid">
-            <button type="button" class="btn-dj-genre is-active" data-genre="EDM">
-              <span>🔥 EDM Festival</span>
-              <span class="genre-bpm">128 BPM</span>
+          <div class="tt-gift-grid">
+            <button type="button" class="tt-gift-btn" data-gift="🌹 Rosa" data-action="CONFETTI">
+              <span class="tt-gift-ico">🌹</span>
+              <span class="tt-gift-name">Rosa</span>
+              <span class="tt-gift-pts">1 moneda</span>
             </button>
-            <button type="button" class="btn-dj-genre" data-genre="GUARACHA">
-              <span>🌴 Guaracha Tribal</span>
-              <span class="genre-bpm">130 BPM</span>
+            <button type="button" class="tt-gift-btn" data-gift="💖 Corazón" data-action="BAILAR">
+              <span class="tt-gift-ico">💖</span>
+              <span class="tt-gift-name">Corazón</span>
+              <span class="tt-gift-pts">5 monedas</span>
             </button>
-            <button type="button" class="btn-dj-genre" data-genre="REGGAETON">
-              <span>💃 Reggaetón Dembow</span>
-              <span class="genre-bpm">96 BPM</span>
+            <button type="button" class="tt-gift-btn" data-gift="🍩 Dona" data-action="CONFETTI">
+              <span class="tt-gift-ico">🍩</span>
+              <span class="tt-gift-name">Dona</span>
+              <span class="tt-gift-pts">30 monedas</span>
             </button>
-            <button type="button" class="btn-dj-genre" data-genre="DISCO">
-              <span>🕺 Nu-Disco Funk</span>
-              <span class="genre-bpm">122 BPM</span>
+            <button type="button" class="tt-gift-btn" data-gift="🎮 Control Retro" data-action="SCRATCH">
+              <span class="tt-gift-ico">🎮</span>
+              <span class="tt-gift-name">Control Retro</span>
+              <span class="tt-gift-pts">100 monedas</span>
             </button>
-            <button type="button" class="btn-dj-genre" data-genre="TECH_HOUSE" style="grid-column: span 2;">
-              <span>⚡ Tech House Club</span>
-              <span class="genre-bpm">126 BPM</span>
+            <button type="button" class="tt-gift-btn" data-gift="👑 Corona VIP" data-action="CORONA">
+              <span class="tt-gift-ico">👑</span>
+              <span class="tt-gift-name">Corona VIP</span>
+              <span class="tt-gift-pts">199 monedas</span>
             </button>
-          </div>
-          <div class="dj-transport-row" style="margin-top: 8px;">
-            <button type="button" id="btn-dj-play-synth" class="btn-dj-play"><span>▶ REPRODUCIR RITMO</span></button>
-            <button type="button" id="btn-dj-stop-synth" class="btn-dj-stop"><span>⏹ DETENER</span></button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==============================================
-           DERECHA: RACK COMPACTO DE ESTUDIO (32%)
-           ============================================== -->
-      <aside class="vdj-side-rack">
-        <!-- Tabs del Rack Compacto -->
-        <div class="vdj-rack-tabs">
-          <button type="button" class="vdj-rack-tab-btn is-active" data-rack="mic">🎙️ Voz & Mic</button>
-          <button type="button" class="vdj-rack-tab-btn" data-rack="fx">🎛️ FX DJ</button>
-          <button type="button" class="vdj-rack-tab-btn" data-rack="sim">🎁 Regalos</button>
-          <button type="button" class="vdj-rack-tab-btn" data-rack="cam">🎥 Cámaras</button>
-        </div>
-
-        <!-- RACK TAB 1: MICRÓFONO EN VIVO & VOZ -->
-        <div id="rack-page-mic" class="vdj-rack-page is-active">
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <strong style="font-size: 12px; color: #38bdf8;">🎙️ Micrófono en Vivo (Voz Humana)</strong>
-              <span id="mic-air-status" class="status-badge" style="font-size: 9px; background: #1e293b; color: #94a3b8;">⚪ Silenciado</span>
-            </div>
-            <p style="font-size: 10.5px; color: #94a3b8; margin: 0 0 8px 0;">
-              Habla por tu micrófono: TikTok detectará voz humana real, el muñeco DJ moverá la boca y la música bajará automáticamente (auto-ducking).
-            </p>
-
-            <button type="button" id="btn-toggle-mic" class="btn-mic-main" style="padding: 10px; font-size: 11px;">
-              <span id="mic-icon" style="font-size: 18px;">🎙️</span>
-              <span id="mic-text">ACTIVAR MICRÓFONO EN VIVO</span>
+            <button type="button" class="tt-gift-btn" data-gift="🦁 León del Club" data-action="CORONA">
+              <span class="tt-gift-ico">🦁</span>
+              <span class="tt-gift-name">León</span>
+              <span class="tt-gift-pts">1,000 monedas</span>
             </button>
-
-            <!-- Vúmetro de Voz Humana -->
-            <div class="mic-vu-meter-box" style="margin-top: 8px;">
-              <div class="mic-status-label" style="font-size: 10px;">
-                <span>Nivel de Voz Humana</span>
-                <span id="mic-db-label">0%</span>
-              </div>
-              <div class="mic-vu-meter-track" style="height: 10px;">
-                <div id="mic-vu-fill" class="mic-vu-meter-fill"></div>
-              </div>
-            </div>
-
-            <!-- Opciones del Micrófono -->
-            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-              <div>
-                <label style="font-size: 10px; color: #cbd5e1; font-weight: 700;">Modo</label>
-                <select id="mic-mode-select" style="width: 100%; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;">
-                  <option value="toggle" selected>🔘 Modo Interruptor (Clic para Hablar / Silenciar)</option>
-                  <option value="ptt">👆 Push-to-Talk (Mantener presionado)</option>
-                </select>
-              </div>
-
-              <div>
-                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #cbd5e1; font-weight: 700;">
-                  <span>Sensibilidad</span>
-                  <span id="mic-gain-label" style="color: #38bdf8;">120%</span>
-                </div>
-                <input type="range" id="mic-gain-slider" min="50" max="250" value="120" style="width: 100%; accent-color: #38bdf8;" />
-              </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <label style="display: flex; align-items: center; gap: 5px; font-size: 10px; cursor: pointer;">
-                  <input type="checkbox" id="mic-webrtc-stream" checked />
-                  <span>🔊 Transmitir a ventana /show</span>
-                </label>
-                <span style="font-size: 9.5px; color: #f59e0b;">Atajo: [Espacio]</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Silenciar / Activar Voz Automática del DJ -->
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div style="font-size: 11px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 5px;">
-                <span id="dj-voice-status-icon">🔇</span> Voz Automática del DJ
-              </div>
-              <span style="font-size: 9.5px; color: #94a3b8;">Saludos y frases automáticas del muñeco</span>
-            </div>
-            <button type="button" id="btn-toggle-dj-voice" style="padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 900; cursor: pointer; border: 1.5px solid #ef4444; background: #450a0a; color: #fca5a5;">
-              🔇 SILENCIADA (MUTE)
+            <button type="button" class="tt-gift-btn" data-gift="💥 Super GG" data-action="DROP">
+              <span class="tt-gift-ico">💥</span>
+              <span class="tt-gift-name">Bass Drop</span>
+              <span class="tt-gift-pts">Efecto Especial</span>
+            </button>
+            <button type="button" class="tt-gift-btn" data-gift="🍅 Tomatazo" data-action="TOMATE">
+              <span class="tt-gift-ico">🍅</span>
+              <span class="tt-gift-name">Tomatazo</span>
+              <span class="tt-gift-pts">Divertido</span>
             </button>
           </div>
         </div>
 
-        <!-- RACK TAB 2: LAUNCHPAD DE EFECTOS DJ -->
-        <div id="rack-page-fx" class="vdj-rack-page">
-          <div style="font-size: 11px; font-weight: 800; color: #facc15; margin-bottom: 4px;">
-            🎛️ Launchpad de Efectos Visuales & Sonido
+        <!-- Card: Chat 3D & Espectadores -->
+        <div class="tt-card">
+          <div class="tt-card-header">
+            <h2 class="tt-card-title">💬 Chat 3D con Bocadillos Flotantes</h2>
+            <span class="tt-card-badge">Pista Interactiva</span>
           </div>
-          <div class="dj-soundboard-pads" style="grid-template-columns: repeat(2, 1fr); gap: 6px;">
-            <button type="button" class="btn-dj-pad" data-fx="horn" style="padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">📢</span>
-              <span style="font-size: 11px;">Air Horn</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="siren" style="padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">🚨</span>
-              <span style="font-size: 11px;">Sirena Rave</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="scratch" style="padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">💿</span>
-              <span style="font-size: 11px;">Scratch</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="drop" style="padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">💣</span>
-              <span style="font-size: 11px;">Bass Drop</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="confetti" style="padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">🎉</span>
-              <span style="font-size: 11px;">Confeti</span>
-            </button>
-            <button type="button" class="btn-dj-pad" data-fx="applause" style="padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">👏</span>
-              <span style="font-size: 11px;">Ovación</span>
-            </button>
-            <button type="button" class="btn-dj-pad" id="btn-dj-hype-hands" style="background: linear-gradient(135deg, #a855f7, #6366f1); padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">🙌</span>
-              <span style="font-size: 11px;">¡Manos Arriba!</span>
-            </button>
-            <button type="button" class="btn-dj-pad" id="btn-dj-dance-move" style="background: linear-gradient(135deg, #ec4899, #f43f5e); padding: 10px 4px;">
-              <span class="pad-icon" style="font-size: 18px;">💃</span>
-              <span style="font-size: 11px;">¡Paso de Baile!</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- RACK TAB 3: REGALOS, SIMULACIÓN & TIKTOK LIVE -->
-        <div id="rack-page-sim" class="vdj-rack-page">
-          <!-- Conexión TikTok LIVE -->
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <strong style="color: #f43f5e; font-size: 11px;">🔴 Conectar TikTok LIVE</strong>
-              <span id="tiktok-live-badge" class="counter" style="font-size: 9px; padding: 1px 6px;">Desconectado</span>
+          <div class="tt-chat-form">
+            <div class="tt-chat-row">
+              <input type="text" id="sim-chat-user" class="tt-chat-input" value="Carlos" placeholder="Usuario" style="width: 35%;" />
+              <input type="text" id="sim-chat-msg" class="tt-chat-input" value="¡Suelte el bajo DJ! 🔥" placeholder="Mensaje para el bocadillo 3D" style="flex: 1;" />
             </div>
-            <div style="display: flex; gap: 6px;">
-              <input type="text" id="tiktok-user-input" value="CreandoConIA" placeholder="@Usuario" style="flex: 1; padding: 6px 8px; font-size: 11px; background: #07090f; border: 1px solid #334155; border-radius: 6px; color: #fff;" />
-              <button type="button" id="btn-tiktok-connect" style="padding: 6px 10px; font-size: 10.5px; font-weight: 800; background: #e11d48; color: #fff; border: none; border-radius: 6px; cursor: pointer;">Conectar</button>
-            </div>
-            <div style="margin-top: 4px;">
-              <input type="password" id="tiktok-session-input" placeholder="🔑 SessionID (Opcional - Evita 403)" style="width: 100%; box-sizing: border-box; padding: 4px 6px; font-size: 9.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
-            </div>
-            <div id="tiktok-status-pill" class="tiktok-status-pill hidden" style="margin-top: 6px; font-size: 10px; color: #22c55e;">
-              <span class="pulse-dot-green"></span>
-              <span id="tiktok-status-text">Conectado al LIVE</span>
-            </div>
-            <div id="tiktok-live-msg" style="margin-top: 6px; font-size: 10px; color: #94a3b8; display: none;"></div>
-          </div>
-
-          <!-- Simulador de Eventos de Fiesta -->
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
-            <strong style="color: #38bdf8; font-size: 11px; display: block; margin-bottom: 6px;">🧪 Simulador de Eventos</strong>
-            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
-              <input type="text" id="sim-user" value="DancerFan" placeholder="Usuario" style="width: 45%; padding: 5px; font-size: 11px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
-              <select id="sim-gift-select" style="flex: 1; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;">
-                <option value="🌹 Rosa">🌹 Rosa (1)</option>
-                <option value="💖 Corazón">💖 Corazón (5)</option>
-                <option value="🍩 Dona">🍩 Dona (30)</option>
-                <option value="🎮 Control Retro">🎮 Control (100)</option>
-                <option value="👑 Corona VIP">👑 Corona (199)</option>
-                <option value="🦁 León del Club">🦁 León (1000)</option>
-              </select>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-              <button id="btn-sim-gift" class="btn-sim-gift" style="padding: 7px; font-size: 10.5px;">🎁 Regalo VIP</button>
-              <button id="btn-sim-taps" class="btn-sim-taps" style="padding: 7px; font-size: 10.5px;">🔥 +20 Likes</button>
-              <button id="btn-sim-join" class="btn-sim-gift" style="grid-column: span 2; background: linear-gradient(135deg, #7c3aed, #4f46e5); padding: 7px; font-size: 10.5px;">
-                👋 Simular Espectador en Pista
-              </button>
-            </div>
-          </div>
-
-          <!-- Chat 3D con Bocadillos -->
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
-            <strong style="color: #06b6d4; font-size: 11px; display: block; margin-bottom: 4px;">💬 Chat 3D de Espectadores</strong>
-            <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-              <input type="text" id="chat-user-input" value="Carlos" style="width: 35%; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
-              <input type="text" id="chat-text-input" value="¡Suelte el bajo DJ! 🔥" style="flex: 1; padding: 5px; font-size: 10.5px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
-            </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <button type="button" id="btn-send-chat-msg" style="flex: 1; padding: 6px; font-size: 10px; font-weight: 800; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="font-size: 11px; color: #facc15; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="sim-chat-vip" />
+                <span>👑 Mensaje VIP Dorado</span>
+              </label>
+              <button type="button" id="btn-send-sim-chat" class="tt-btn-send-chat">
                 💬 Enviar Viñeta 3D
               </button>
-              <label style="font-size: 10px; color: #facc15; display: flex; align-items: center; gap: 3px; cursor: pointer;">
-                <input type="checkbox" id="chat-is-vip" />
-                <span>👑 VIP</span>
-              </label>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+            <button type="button" id="btn-sim-join-viewer" class="tt-action-btn" style="background: rgba(168, 85, 247, 0.2); border-color: #a855f7; color: #d8b4fe;">
+              👋 +1 Espectador a la Pista
+            </button>
+            <button type="button" id="btn-sim-like-burst" class="tt-action-btn" style="background: rgba(255, 0, 80, 0.2); border-color: #ff0050; color: #fda4af;">
+              ❤️ +25 Likes Burst
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: CONTROL DE DJ, EFECTOS Y CÁMARAS -->
+      <div class="tt-col">
+
+        <!-- Card: Posturas & Baile de DjAz -->
+        <div class="tt-card">
+          <div class="tt-card-header">
+            <h2 class="tt-card-title">🎭 DjAz: Posturas y Baile</h2>
+            <span class="tt-card-badge">Personaje 3D</span>
+          </div>
+          <div class="tt-action-grid">
+            <button type="button" class="tt-action-btn active" data-pose="standup">🎧 Mezclando</button>
+            <button type="button" class="tt-action-btn" data-pose="handsup">🙌 Manos Arriba</button>
+            <button type="button" class="tt-action-btn" data-pose="scratch">💿 Scratch</button>
+            <button type="button" class="tt-action-btn" data-pose="wave">👋 Saludar</button>
+            <button type="button" class="tt-action-btn" data-pose="robot">🤖 Robot</button>
+            <button type="button" class="tt-action-btn" data-pose="salsa">💃 Baile Latino</button>
+            <button type="button" class="tt-action-btn" data-pose="jump">🦘 Salto Rave</button>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
+            <div style="flex: 1;">
+              <label for="dj-name-input" style="font-size: 10px; color: #94a3b8; font-weight: 700; display: block; margin-bottom: 3px;">NOMBRE DEL DJ</label>
+              <input type="text" id="dj-name-input" value="DjAz" class="tt-chat-input" style="width: 100%; box-sizing: border-box;" />
+            </div>
+            <div style="width: 80px;">
+              <label for="dj-neon-color" style="font-size: 10px; color: #94a3b8; font-weight: 700; display: block; margin-bottom: 3px;">COLOR NEÓN</label>
+              <input type="color" id="dj-neon-color" value="#00f0ff" style="width: 100%; height: 32px; border: 1px solid #334155; border-radius: 6px; background: transparent; cursor: pointer;" />
             </div>
           </div>
         </div>
 
-        <!-- RACK TAB 4: CÁMARAS & CONFIGURACIÓN DEL CLUB -->
-        <div id="rack-page-cam" class="vdj-rack-page">
-          <div style="font-size: 11px; font-weight: 800; color: #e2e8f0; margin-bottom: 6px;">🎥 Cámaras TikTok LIVE</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
-            <button class="btn-camera active" data-shot="AUTO" style="font-size: 10px; padding: 8px 4px;">🎬 Auto Director</button>
-            <button class="btn-camera" data-shot="FRONT_DANCE" style="font-size: 10px; padding: 8px 4px;">💃 Baile Frontal</button>
-            <button class="btn-camera" data-shot="DRONE_TOP" style="font-size: 10px; padding: 8px 4px;">🚁 Dron Cenital</button>
-            <button class="btn-camera" data-shot="SIDE_TRACK" style="font-size: 10px; padding: 8px 4px;">👀 Lateral Rasante</button>
-            <button class="btn-camera" data-shot="ORBIT" style="font-size: 10px; padding: 8px 4px;">🔄 Giro 360 Órbita</button>
-            <button class="btn-camera" data-shot="WIDE" style="font-size: 10px; padding: 8px 4px;">🏟️ General Club</button>
+        <!-- Card: Efectos de Escenario & Sonidos -->
+        <div class="tt-card">
+          <div class="tt-card-header">
+            <h2 class="tt-card-title">🎆 Efectos de Escenario & Sonidos</h2>
+            <span class="tt-card-badge">Luces & FX</span>
           </div>
-
-          <div style="margin-top: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid #1e293b; border-radius: 8px; padding: 10px;">
-            <div style="margin-bottom: 6px;">
-              <label for="singer-name" style="font-size: 10px; font-weight: 700; color: #cbd5e1;">Nombre del DJ en Pantalla</label>
-              <input type="text" id="singer-name" value="DjAz" style="width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 11px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;" />
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <div style="flex: 1;">
-                <label for="singer-color" style="font-size: 10px; font-weight: 700; color: #cbd5e1;">Color Neón</label>
-                <input type="color" id="singer-color" value="#00f0ff" style="width: 100%; height: 28px; border: none; border-radius: 4px; cursor: pointer; background: transparent;" />
-              </div>
-              <div style="flex: 2;">
-                <label for="singer-dance" style="font-size: 10px; font-weight: 700; color: #cbd5e1;">Postura DJ</label>
-                <select id="singer-dance" style="width: 100%; padding: 5px; font-size: 10px; background: #07090f; border: 1px solid #334155; border-radius: 5px; color: #fff;">
-                  <option value="standup" selected>🎧 Mezclando</option>
-                  <option value="wave">👋 Saludar</option>
-                  <option value="robot">🤖 Robot</option>
-                  <option value="jump">🦘 Brinco</option>
-                  <option value="salsa">💃 Baile Latino</option>
-                </select>
-              </div>
-            </div>
+          <div class="tt-action-grid">
+            <button type="button" class="tt-action-btn" data-fx="CONFETTI">🎉 Confeti</button>
+            <button type="button" class="tt-action-btn" data-fx="EXTREME_DISCO">🚨 Luces Disco</button>
+            <button type="button" class="tt-action-btn" data-fx="DROP">💥 Bass Drop</button>
+            <button type="button" class="tt-action-btn" data-fx="horn">🎺 Air Horn</button>
+            <button type="button" class="tt-action-btn" data-fx="siren">🚨 Sirena Rave</button>
+            <button type="button" class="tt-action-btn" data-fx="APPLAUSE">👏 Aplausos</button>
+            <button type="button" class="tt-action-btn" data-fx="LAUGHS">😂 Risas</button>
+            <button type="button" class="tt-action-btn" data-fx="RIMSHOT">🥁 Rimshot</button>
           </div>
         </div>
-      </aside>
+
+        <!-- Card: Cámaras 3D del Club -->
+        <div class="tt-card">
+          <div class="tt-card-header">
+            <h2 class="tt-card-title">🎥 Cámaras 3D del Club</h2>
+            <span class="tt-card-badge">Director Virtual</span>
+          </div>
+          <div class="tt-action-grid">
+            <button type="button" class="tt-action-btn active" data-cam="AUTO">🎬 Auto Director</button>
+            <button type="button" class="tt-action-btn" data-cam="FRONT_DANCE">💃 DJ Frontal</button>
+            <button type="button" class="tt-action-btn" data-cam="DRONE_TOP">🚁 Dron Cenital</button>
+            <button type="button" class="tt-action-btn" data-cam="SIDE_TRACK">👀 Lateral Rasante</button>
+            <button type="button" class="tt-action-btn" data-cam="ORBIT">🔄 Giro 360 Órbita</button>
+            <button type="button" class="tt-action-btn" data-cam="WIDE">🏟️ Pista General</button>
+          </div>
+        </div>
+
+      </div>
+
     </div>
 
-    <!-- Elementos Ocultos de Compatibilidad de Audio Nativo & YouTube -->
-    <audio id="admin-master-audio" preload="auto" style="display: none;"></audio>
-    <audio id="admin-audio-deck-a" preload="auto" style="display: none;"></audio>
-    <audio id="admin-audio-deck-b" preload="auto" style="display: none;"></audio>
-    <audio id="admin-native-audio" preload="auto" style="display: none;"></audio>
-    <div id="admin-yt-container-a" style="position: fixed; bottom: 0; right: 0; width: 200px; height: 120px; z-index: -10; opacity: 0.01; pointer-events: none; overflow: hidden;">
-      <div id="admin-yt-iframe-slot-a"></div>
-    </div>
-    <div id="admin-yt-container-b" style="position: fixed; bottom: 0; right: 0; width: 200px; height: 120px; z-index: -10; opacity: 0.01; pointer-events: none; overflow: hidden;">
-      <div id="admin-yt-iframe-slot-b"></div>
-    </div>
-    <div id="admin-yt-monitor-container" style="display: none;"></div>
-    <span id="admin-yt-current-title" style="display: none;"></span>
-    <button type="button" id="btn-yt-pause" style="display: none;"></button>
-    <button type="button" id="btn-yt-resume" style="display: none;"></button>
-    <button type="button" id="btn-yt-stop" style="display: none;"></button>
-    <button type="button" id="btn-toggle-yt-player-view" style="display: none;"></button>
-    <div id="dj-now-playing-banner" style="display: none;"></div>
-    <span id="dj-now-playing-title" style="display: none;"></span>
-    <button type="button" id="btn-pause-music" style="display: none;"></button>
-    <button type="button" id="btn-quick-simulation" style="display: none;"></button>
+    <!-- ========================================================
+         5. FEED DE ACTIVIDAD EN TIEMPO REAL
+         ======================================================== -->
+    <section class="tt-card">
+      <div class="tt-card-header">
+        <h2 class="tt-card-title">⚡ Feed de Eventos en Tiempo Real</h2>
+        <button type="button" id="btn-clear-feed" class="tt-btn-link" style="padding: 3px 8px; font-size: 10px;">
+          🧹 Limpiar Feed
+        </button>
+      </div>
+      <div id="tt-live-feed" class="tt-feed-list">
+        <div class="tt-feed-item join">
+          <span class="tt-feed-time">--:--</span>
+          <span class="tt-feed-user">Sistema</span>
+          <span class="tt-feed-text">Esperando eventos en vivo de TikTok o simulaciones...</span>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <script type="module" src="./src/adminApp.js"></script>
