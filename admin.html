@@ -42,259 +42,143 @@
     <!-- ========================================================
          2. ONDAS DE AUDIO DUALES EN TIEMPO REAL (RUNNING WAVEFORMS)
          ======================================================== -->
+    <!-- ========================================================
+         2. ONDA DE AUDIO EN TIEMPO REAL (RUNNING WAVEFORM)
+         ======================================================== -->
     <section class="vdj-top-waveforms">
-      <div class="vdj-wave-labels">
-        <span class="vdj-wave-label-a">◀ DECK A (CANAL 1 - AZUL)</span>
-        <span style="color: #64748b; font-size: 9px; letter-spacing: 1px;">OSCILOSCOPIO DUAL EN VIVO • ALINEACIÓN DE BEATS</span>
-        <span class="vdj-wave-label-b">DECK B (CANAL 2 - ROJO) ▶</span>
+      <div class="vdj-wave-labels" style="justify-content: space-between; padding: 0 10px;">
+        <span style="color: #00f0ff; font-weight: 800; text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); font-size: 11px;">🎧 PLATO MASTER PRINCIPAL (ONDA DE AUDIO EN VIVO)</span>
+        <span style="color: #64748b; font-size: 9.5px; letter-spacing: 1px;">ANÁLISIS DE ENERGÍA Y FRECUENCIA EN TIEMPO REAL</span>
+        <span id="master-deck-bpm-top" style="color: #facc15; font-weight: 800; font-size: 11px;">126.00 BPM</span>
       </div>
       <div class="vdj-wave-center-needle"></div>
       <canvas id="vdj-waveforms-canvas" class="vdj-wave-canvas" height="64"></canvas>
     </section>
 
     <!-- ========================================================
-         3. CONSOLA PRINCIPAL: DECK A | MEZCLADOR CENTRAL | DECK B
+         3. CONSOLA PRINCIPAL: UN SOLO PLATO MASTER DJ (REPRODUCTOR DE MEZCLAS)
          ======================================================== -->
-    <main class="vdj-console">
-
-      <!-- ==============================================
-           CANAL 1: DECK A (CYAN / NEON BLUE)
-           ============================================== -->
-      <section class="vdj-deck vdj-deck-a">
-        <!-- Header Deck A -->
-        <div class="vdj-deck-header">
-          <span class="vdj-deck-tag">DECK A</span>
-          <div class="vdj-deck-info">
-            <strong id="deck-a-title" class="vdj-deck-title">Ninguna pista cargada</strong>
-            <div class="vdj-deck-sub">
-              <span id="deck-a-type">📁 MP3 / YouTube</span>
-              <span>•</span>
-              <span id="deck-a-bpm" style="color: #38bdf8; font-weight: 800;">124.00 BPM</span>
-              <span>•</span>
-              <span id="deck-a-key" style="color: #facc15; font-weight: 800;">KEY: 08A</span>
-            </div>
-          </div>
-          <div class="vdj-deck-time-box">
-            <div id="deck-a-time" class="vdj-deck-time-main">00:00.0</div>
-            <div id="deck-a-remain" class="vdj-deck-time-rem">-00:00.0</div>
+    <main class="vdj-master-console">
+      <!-- Header del Plato Master -->
+      <div class="vdj-master-header">
+        <div class="vdj-master-title-box">
+          <span class="vdj-master-tag">PLATO PRINCIPAL</span>
+          <strong id="master-deck-title" class="vdj-master-title">Ninguna mezcla o pista cargada</strong>
+          <div class="vdj-master-sub">
+            <span id="master-deck-type">📁 MP3 / WAV / YouTube</span>
+            <span>•</span>
+            <span id="master-deck-bpm" style="color: #38bdf8; font-weight: 800;">126.00 BPM</span>
+            <span>•</span>
+            <span id="master-deck-status" style="color: #22c55e; font-weight: 800;">LISTO</span>
           </div>
         </div>
 
-        <!-- Scrubber de Progreso Deck A -->
-        <div id="deck-a-scrub" class="vdj-deck-scrub-bar" title="Haz clic para avanzar o retroceder la canción">
-          <div id="deck-a-scrub-fill" class="vdj-deck-scrub-fill"></div>
+        <div class="vdj-master-time-box">
+          <div id="master-deck-time" class="vdj-master-time-main">00:00.0</div>
+          <div id="master-deck-remain" class="vdj-master-time-rem">-00:00.0</div>
         </div>
+      </div>
 
-        <!-- Cuerpo Deck A: Jog Wheel + Pitch + Pads -->
-        <div class="vdj-deck-body">
-          <!-- Pads de Rendimiento Deck A -->
-          <div class="vdj-pads-container">
+      <!-- Scrubber / Barra de Progreso y Búsqueda -->
+      <div id="master-deck-scrub" class="vdj-deck-scrub-bar" style="height: 14px; cursor: pointer;" title="Haz clic o arrastra para saltar a cualquier punto de la mezcla">
+        <div id="master-deck-scrub-fill" class="vdj-deck-scrub-fill" style="background: linear-gradient(90deg, #0284c7, #00f0ff); box-shadow: 0 0 10px #00f0ff;"></div>
+      </div>
+
+      <!-- Cuerpo del Plato Master: Pitch/Pads + Tornamesa Central + Volumen/FX -->
+      <div class="vdj-master-body">
+        <!-- Columna 1: Pitch y Pads de Cue Rápido -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="vdj-pitch-box" style="width: 100%; box-sizing: border-box;">
+            <span class="vdj-pitch-label">PITCH / VELOCIDAD</span>
+            <input type="range" id="master-deck-pitch" class="vdj-pitch-slider" min="-8" max="8" step="0.1" value="0" title="Ajuste de velocidad y BPM (-8% a +8%)" />
+            <span id="master-deck-pitch-val" class="vdj-pitch-val">0.0%</span>
+          </div>
+
+          <div class="vdj-pads-container" style="width: 100%;">
             <div class="vdj-pads-row">
-              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="cue1">HOT CUE 1</button>
-              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="cue2">HOT CUE 2</button>
-            </div>
-            <div class="vdj-pads-row">
-              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="loop1">LOOP 2</button>
-              <button type="button" class="vdj-pad-btn" data-deck="A" data-pad="loop2">LOOP 4</button>
-            </div>
-          </div>
-
-          <!-- Tornamesa Jog Wheel Deck A -->
-          <div class="vdj-jog-container">
-            <div id="deck-a-jog" class="vdj-jog-wheel" title="Tornamesa Jog Wheel Deck A (Gira al compás de la música)">
-              <div class="vdj-jog-grooves"></div>
-              <div class="vdj-jog-center">DECK A</div>
-              <div class="vdj-jog-marker"></div>
-            </div>
-          </div>
-
-          <!-- Pitch / Tempo Fader Slider Deck A -->
-          <div class="vdj-pitch-box">
-            <span class="vdj-pitch-label">PITCH</span>
-            <input type="range" id="deck-a-pitch" class="vdj-pitch-slider" min="-8" max="8" step="0.1" value="0" title="Ajuste de velocidad y BPM (-8% a +8%)" />
-            <span id="deck-a-pitch-val" class="vdj-pitch-val">0.0%</span>
-          </div>
-        </div>
-
-        <!-- Botones de Transporte Deck A -->
-        <div class="vdj-transport-row">
-          <button type="button" id="btn-deck-a-cue" class="vdj-btn-cue" title="Regresar al inicio o punto CUE">CUE</button>
-          <button type="button" id="btn-deck-a-play" class="vdj-btn-play" title="Reproducir / Pausar Deck A">
-            <span id="deck-a-play-icon">▶</span>
-            <span id="deck-a-play-text">PLAY</span>
-          </button>
-          <button type="button" id="btn-deck-a-sync" class="vdj-btn-sync" title="Sincronizar BPM con Deck B">SYNC</button>
-          <button type="button" id="btn-deck-a-stop" class="vdj-btn-stop" title="Detener Deck A (0:00)">⏹</button>
-        </div>
-      </section>
-
-      <!-- ==============================================
-           MEZCLADOR CENTRAL PIONEER / VIRTUAL DJ MIXER
-           ============================================== -->
-      <section class="vdj-mixer">
-        <div class="vdj-mixer-header">
-          <span>CLUB MIXER PRO</span>
-        </div>
-
-        <!-- Perillas de Ecualización HI / MID / LOW -->
-        <div class="vdj-knobs-grid">
-          <!-- Columna EQ Deck A -->
-          <div class="vdj-knob-col">
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">GAIN A</span>
-              <input type="range" id="deck-a-gain" min="0" max="150" value="100" style="width: 70px; accent-color: #00f0ff;" />
-            </div>
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">HIGH</span>
-              <input type="range" id="deck-a-eq-high" min="0" max="100" value="50" style="width: 70px; accent-color: #00f0ff;" />
-            </div>
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">MID</span>
-              <input type="range" id="deck-a-eq-mid" min="0" max="100" value="50" style="width: 70px; accent-color: #00f0ff;" />
-            </div>
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">LOW (BASS)</span>
-              <input type="range" id="deck-a-eq-low" min="0" max="100" value="50" style="width: 70px; accent-color: #00f0ff;" />
-            </div>
-          </div>
-
-          <!-- Columna EQ Deck B -->
-          <div class="vdj-knob-col vdj-knob-col-b">
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">GAIN B</span>
-              <input type="range" id="deck-b-gain" min="0" max="150" value="100" style="width: 70px; accent-color: #f43f5e;" />
-            </div>
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">HIGH</span>
-              <input type="range" id="deck-b-eq-high" min="0" max="100" value="50" style="width: 70px; accent-color: #f43f5e;" />
-            </div>
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">MID</span>
-              <input type="range" id="deck-b-eq-mid" min="0" max="100" value="50" style="width: 70px; accent-color: #f43f5e;" />
-            </div>
-            <div class="vdj-knob-unit">
-              <span class="vdj-knob-label">LOW (BASS)</span>
-              <input type="range" id="deck-b-eq-low" min="0" max="100" value="50" style="width: 70px; accent-color: #f43f5e;" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Vúmetros LED Estéreo Dinámicos Centrales -->
-        <div class="vdj-vu-wrapper">
-          <div class="vdj-vu-column" id="vdj-vu-a">
-            <!-- 10 segmentos LED generados dinámicamente -->
-          </div>
-          <span style="font-size: 8px; font-weight: 900; color: #64748b; writing-mode: vertical-lr;">VU MASTER</span>
-          <div class="vdj-vu-column" id="vdj-vu-b">
-            <!-- 10 segmentos LED generados dinámicamente -->
-          </div>
-        </div>
-
-        <!-- Faders Verticales de Volumen de Canal (Deck A & Deck B) -->
-        <div class="vdj-faders-row">
-          <div class="vdj-ch-fader-box">
-            <span style="font-size: 9px; font-weight: 800; color: #00f0ff;">CH 1</span>
-            <input type="range" id="deck-a-fader" class="vdj-ch-fader vdj-ch-fader-a" min="0" max="100" value="85" title="Volumen Canal 1 (Deck A)" />
-            <span id="deck-a-fader-val" style="font-size: 9px; color: #94a3b8;">85%</span>
-          </div>
-
-          <div class="vdj-ch-fader-box">
-            <span style="font-size: 9px; font-weight: 800; color: #f43f5e;">CH 2</span>
-            <input type="range" id="deck-b-fader" class="vdj-ch-fader vdj-ch-fader-b" min="0" max="100" value="85" title="Volumen Canal 2 (Deck B)" />
-            <span id="deck-b-fader-val" style="font-size: 9px; color: #94a3b8;">85%</span>
-          </div>
-        </div>
-
-        <!-- Crossfader Horizontal A <=======> B -->
-        <div class="vdj-crossfader-container">
-          <div class="vdj-cf-labels">
-            <span class="vdj-cf-label-a">◀ DECK A</span>
-            <span style="font-size: 8.5px; color: #94a3b8;">CROSSFADER</span>
-            <span class="vdj-cf-label-b">DECK B ▶</span>
-          </div>
-          <input type="range" id="vdj-crossfader" class="vdj-crossfader-slider" min="-100" max="100" value="0" title="Desliza para mezclar o pasar de una canción a otra suavemente" />
-        </div>
-
-        <!-- Volumen Maestro General del Show -->
-        <div style="margin-top: 6px; padding: 4px 6px; background: #07090f; border-radius: 6px; border: 1px solid #1e2638;">
-          <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 800; color: #cbd5e1; margin-bottom: 2px;">
-            <span>VOLUMEN MAESTRO</span>
-            <span id="dj-volume-label" style="color: #38bdf8;">85%</span>
-          </div>
-          <input type="range" id="dj-master-volume" min="0" max="100" value="85" style="width: 100%; accent-color: #38bdf8; cursor: pointer;" />
-        </div>
-      </section>
-
-      <!-- ==============================================
-           CANAL 2: DECK B (RUBY / NEON RED)
-           ============================================== -->
-      <section class="vdj-deck vdj-deck-b">
-        <!-- Header Deck B -->
-        <div class="vdj-deck-header">
-          <span class="vdj-deck-tag">DECK B</span>
-          <div class="vdj-deck-info">
-            <strong id="deck-b-title" class="vdj-deck-title">Ninguna pista cargada</strong>
-            <div class="vdj-deck-sub">
-              <span id="deck-b-type">📁 MP3 / YouTube</span>
-              <span>•</span>
-              <span id="deck-b-bpm" style="color: #f43f5e; font-weight: 800;">128.00 BPM</span>
-              <span>•</span>
-              <span id="deck-b-key" style="color: #facc15; font-weight: 800;">KEY: 11B</span>
-            </div>
-          </div>
-          <div class="vdj-deck-time-box">
-            <div id="deck-b-time" class="vdj-deck-time-main">00:00.0</div>
-            <div id="deck-b-remain" class="vdj-deck-time-rem">-00:00.0</div>
-          </div>
-        </div>
-
-        <!-- Scrubber de Progreso Deck B -->
-        <div id="deck-b-scrub" class="vdj-deck-scrub-bar" title="Haz clic para avanzar o retroceder la canción">
-          <div id="deck-b-scrub-fill" class="vdj-deck-scrub-fill"></div>
-        </div>
-
-        <!-- Cuerpo Deck B: Jog Wheel + Pitch + Pads -->
-        <div class="vdj-deck-body">
-          <!-- Pads de Rendimiento Deck B -->
-          <div class="vdj-pads-container">
-            <div class="vdj-pads-row">
-              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="cue1">HOT CUE 1</button>
-              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="cue2">HOT CUE 2</button>
+              <button type="button" class="vdj-pad-btn" data-action="seek-zero">CUE 0:00</button>
+              <button type="button" class="vdj-pad-btn" data-action="seek-intro">DROP 1m</button>
             </div>
             <div class="vdj-pads-row">
-              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="loop1">LOOP 2</button>
-              <button type="button" class="vdj-pad-btn" data-deck="B" data-pad="loop2">LOOP 4</button>
+              <button type="button" class="vdj-pad-btn" data-action="loop-in">LOOP 4</button>
+              <button type="button" class="vdj-pad-btn" data-action="loop-out">LOOP 8</button>
             </div>
-          </div>
-
-          <!-- Tornamesa Jog Wheel Deck B -->
-          <div class="vdj-jog-container">
-            <div id="deck-b-jog" class="vdj-jog-wheel" title="Tornamesa Jog Wheel Deck B (Gira al compás de la música)">
-              <div class="vdj-jog-grooves"></div>
-              <div class="vdj-jog-center">DECK B</div>
-              <div class="vdj-jog-marker"></div>
-            </div>
-          </div>
-
-          <!-- Pitch / Tempo Fader Slider Deck B -->
-          <div class="vdj-pitch-box">
-            <span class="vdj-pitch-label">PITCH</span>
-            <input type="range" id="deck-b-pitch" class="vdj-pitch-slider" min="-8" max="8" step="0.1" value="0" title="Ajuste de velocidad y BPM (-8% a +8%)" />
-            <span id="deck-b-pitch-val" class="vdj-pitch-val">0.0%</span>
           </div>
         </div>
 
-        <!-- Botones de Transporte Deck B -->
-        <div class="vdj-transport-row">
-          <button type="button" id="btn-deck-b-cue" class="vdj-btn-cue" title="Regresar al inicio o punto CUE">CUE</button>
-          <button type="button" id="btn-deck-b-play" class="vdj-btn-play" title="Reproducir / Pausar Deck B">
-            <span id="deck-b-play-icon">▶</span>
-            <span id="deck-b-play-text">PLAY</span>
-          </button>
-          <button type="button" id="btn-deck-b-sync" class="vdj-btn-sync" title="Sincronizar BPM con Deck A">SYNC</button>
-          <button type="button" id="btn-deck-b-stop" class="vdj-btn-stop" title="Detener Deck B (0:00)">⏹</button>
+        <!-- Columna 2: Tornamesa Jog Wheel Gigante Central -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div id="master-deck-jog" class="vdj-jog-wheel" style="width: 200px; height: 200px;" title="Tornamesa Jog Wheel (Gira en vivo al compás del ritmo)">
+            <div class="vdj-jog-grooves"></div>
+            <div class="vdj-jog-center vdj-jog-center-master">
+              <div style="font-size: 16px;">🎧</div>
+              <div>DjAz</div>
+              <div style="font-size: 8px; color: #94a3b8;">PRO MASTER</div>
+            </div>
+            <div class="vdj-jog-marker" style="background: #00f0ff; box-shadow: 0 0 8px #00f0ff;"></div>
+          </div>
         </div>
-      </section>
+
+        <!-- Columna 3: Volumen Fader Maestro y FX Rápidos -->
+        <div style="display: flex; flex-direction: column; gap: 10px; background: #05070c; padding: 12px; border-radius: 10px; border: 1px solid #1a2334;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 10px; font-weight: 800; color: #cbd5e1;">VOLUMEN MAESTRO</span>
+            <span id="dj-volume-label" style="font-size: 12px; font-weight: 900; color: #00f0ff;">85%</span>
+          </div>
+          <input type="range" id="dj-master-volume" min="0" max="100" value="85" style="width: 100%; accent-color: #00f0ff; cursor: pointer; height: 8px;" />
+
+          <div style="font-size: 9px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; margin-top: 4px;">EFECTOS DE VOZ Y CLUB</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <button type="button" class="btn-action-small" data-sfx="airhorn" style="background: #1e293b; color: #facc15; font-size: 10px; font-weight: 800;">📢 Airhorn</button>
+            <button type="button" class="btn-action-small" data-sfx="drop" style="background: #1e293b; color: #38bdf8; font-size: 10px; font-weight: 800;">⚡ Drop Beat</button>
+            <button type="button" class="btn-action-small" data-sfx="laser" style="background: #1e293b; color: #ec4899; font-size: 10px; font-weight: 800;">🔫 Láser</button>
+            <button type="button" class="btn-action-small" data-sfx="applause" style="background: #1e293b; color: #4ade80; font-size: 10px; font-weight: 800;">👏 Aplausos</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Transporte Principal: CUE | PLAY GIGANTE | STOP | MONITOR -->
+      <div class="vdj-master-transport">
+        <button type="button" id="btn-master-cue" class="btn-master-cue" title="Regresar al inicio exacto (0:00)">
+          ⏮ CUE (0:00)
+        </button>
+
+        <button type="button" id="btn-master-play" class="btn-master-play-circle" title="Reproducir / Pausar la mezcla">
+          <span id="master-play-icon">▶</span>
+          <span id="master-play-text" style="font-size: 9px; font-weight: 900; margin-top: 2px;">PLAY</span>
+        </button>
+
+        <button type="button" id="btn-master-stop" class="btn-master-stop" title="Detener por completo y reiniciar a 0:00">
+          ⏹ STOP TOTAL
+        </button>
+
+        <button type="button" id="btn-toggle-admin-audio-mute" class="btn-action-small" style="background: #0f172a; color: #38bdf8; font-weight: 800; border: 1px solid #334155; padding: 8px 12px; font-size: 11px;" title="Silencia el monitor local de esta pestaña para evitar eco si tienes /show en la misma PC">
+          🎧 Monitor Admin: 🔊 ON
+        </button>
+      </div>
+
+      <!-- Elementos de Compatibilidad Ocultos -->
+      <div style="display: none;">
+        <strong id="deck-a-title"></strong>
+        <strong id="deck-b-title"></strong>
+        <div id="deck-a-time"></div>
+        <div id="deck-b-time"></div>
+        <div id="deck-a-remain"></div>
+        <div id="deck-b-remain"></div>
+        <div id="deck-a-scrub"><div id="deck-a-scrub-fill"></div></div>
+        <div id="deck-b-scrub"><div id="deck-b-scrub-fill"></div></div>
+        <div id="deck-a-jog"></div>
+        <div id="deck-b-jog"></div>
+        <button type="button" id="btn-deck-a-play"></button>
+        <button type="button" id="btn-deck-b-play"></button>
+        <button type="button" id="btn-deck-a-cue"></button>
+        <button type="button" id="btn-deck-b-cue"></button>
+        <button type="button" id="btn-deck-a-stop"></button>
+        <button type="button" id="btn-deck-b-stop"></button>
+        <input type="range" id="deck-a-fader" value="85" />
+        <input type="range" id="deck-b-fader" value="85" />
+        <input type="range" id="vdj-crossfader" value="0" />
+      </div>
     </main>
 
     <!-- ========================================================
@@ -363,9 +247,9 @@
               <thead>
                 <tr>
                   <th style="width: 32px;">#</th>
-                  <th>Título de la Canción</th>
+                  <th>Título de la Canción o Mezcla</th>
                   <th style="width: 70px;">Tamaño</th>
-                  <th style="width: 190px; text-align: center;">Cargar en Canal</th>
+                  <th style="width: 220px; text-align: center;">Reproducir en el Plato Master</th>
                   <th style="width: 40px; text-align: center;">🗑️</th>
                 </tr>
               </thead>
@@ -691,6 +575,7 @@
     </div>
 
     <!-- Elementos Ocultos de Compatibilidad de Audio Nativo & YouTube -->
+    <audio id="admin-master-audio" preload="auto" style="display: none;"></audio>
     <audio id="admin-audio-deck-a" preload="auto" style="display: none;"></audio>
     <audio id="admin-audio-deck-b" preload="auto" style="display: none;"></audio>
     <audio id="admin-native-audio" preload="auto" style="display: none;"></audio>

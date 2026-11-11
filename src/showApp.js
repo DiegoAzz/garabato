@@ -646,9 +646,9 @@ export function initShowApp() {
   syncBridge.on('DJ_SET_VOLUME', (payload) => {
     if (payload && payload.volume !== undefined) {
       audioEngine.setDjVolume(payload.volume);
-      if (showYTPlayer && showYTPlayer.setVolume) {
-        showYTPlayer.setVolume(Math.round(payload.volume * 100));
-      }
+      const vInt = Math.round(payload.volume * 100);
+      if (showYTPlayerA && showYTPlayerA.setVolume) showYTPlayerA.setVolume(vInt);
+      if (showYTPlayerB && showYTPlayerB.setVolume) showYTPlayerB.setVolume(vInt);
     }
   });
 
