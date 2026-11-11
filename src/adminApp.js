@@ -68,6 +68,106 @@ export function initAdminApp() {
   let currentLoadedVideoIdB = null;
 
   // ==========================================
+  // MEZCLADOR CENTRAL PIONEER & CROSSFADER
+  // (Declarado al inicio para evitar TDZ en llamadas inmediatas)
+  // ==========================================
+  const djMasterVolume = document.getElementById('dj-master-volume');
+  const djVolumeLabel = document.getElementById('dj-volume-label');
+  const deckAFader = document.getElementById('deck-a-fader');
+  const deckBFader = document.getElementById('deck-b-fader');
+  const deckAFaderVal = document.getElementById('deck-a-fader-val');
+  const deckBFaderVal = document.getElementById('deck-b-fader-val');
+  const vdjCrossfader = document.getElementById('vdj-crossfader');
+  const btnStopAllMusic = document.getElementById('btn-stop-all-music');
+
+  function calculateEffectiveVolumes() {
+    const master = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
+    const volA = deckAFader ? parseInt(deckAFader.value, 10) / 100 : 0.85;
+    const volB = deckBFader ? parseInt(deckBFader.value, 10) / 100 : 0.85;
+    const cf = vdjCrossfader ? parseInt(vdjCrossfader.value, 10) / 100 : 0; // -1.0 a +1.0
+
+    // Curva de Crossfader suave
+    const crossA = cf <= 0 ? 1.0 : Math.max(0, 1.0 - cf);
+    const crossB = cf >= 0 ? 1.0 : Math.max(0, 1.0 + cf);
+
+    const effA = Math.max(0, Math.min(1, master * volA * crossA));
+    const effB = Math.max(0, Math.min(1, master * volB * crossB));
+
+    return { effA, effB, cf, master };
+  }
+
+  function applyMixerVolumes() {
+    const { effA, effB, cf, master } = calculateEffectiveVolumes();
+    const vA = Math.max(0, Math.min(100, Math.round(effA * 100)));
+    const vB = Math.max(0, Math.min(100, Math.round(effB * 100)));
+
+    // Deck A aislado con try-catch
+    try {
+      if (deckA.type === 'youtube') {
+        if (adminYTPlayerA && typeof adminYTPlayerA.setVolume === 'function') {
+          adminYTPlayerA.setVolume(vA);
+          if (isAdminAudioMuted || vA <= 0) {
+            if (typeof adminYTPlayerA.mute === 'function') adminYTPlayerA.mute();
+          } else {
+            if (typeof adminYTPlayerA.unMute === 'function') adminYTPlayerA.unMute();
+          }
+        }
+      } else if (deckA.audioEl) {
+        deckA.audioEl.volume = effA;
+        deckA.audioEl.muted = isAdminAudioMuted || vA <= 0;
+      }
+    } catch (errA) {
+      console.warn('[Admin Mixer] Error en volumen Deck A:', errA);
+    }
+
+    // Deck B aislado con try-catch
+    try {
+      if (deckB.type === 'youtube') {
+        if (adminYTPlayerB && typeof adminYTPlayerB.setVolume === 'function') {
+          adminYTPlayerB.setVolume(vB);
+          if (isAdminAudioMuted || vB <= 0) {
+            if (typeof adminYTPlayerB.mute === 'function') adminYTPlayerB.mute();
+          } else {
+            if (typeof adminYTPlayerB.unMute === 'function') adminYTPlayerB.unMute();
+          }
+        }
+      } else if (deckB.audioEl) {
+        deckB.audioEl.volume = effB;
+        deckB.audioEl.muted = isAdminAudioMuted || vB <= 0;
+      }
+    } catch (errB) {
+      console.warn('[Admin Mixer] Error en volumen Deck B:', errB);
+    }
+
+    try {
+      if (djVolumeLabel && djMasterVolume) djVolumeLabel.textContent = `${djMasterVolume.value}%`;
+      if (deckAFaderVal && deckAFader) deckAFaderVal.textContent = `${deckAFader.value}%`;
+      if (deckBFaderVal && deckBFader) deckBFaderVal.textContent = `${deckBFader.value}%`;
+    } catch (_) {}
+
+    // Sincronizar mezcla con /show aislado con try-catch
+    try {
+      syncBridge.send('DJ_MIXER_UPDATE', {
+        volA: effA,
+        volB: effB,
+        vA: vA,
+        vB: vB,
+        crossfader: cf,
+        masterVolume: master
+      });
+    } catch (errSync) {
+      console.warn('[Admin Mixer] Error enviando DJ_MIXER_UPDATE:', errSync);
+    }
+  }
+
+  [djMasterVolume, deckAFader, deckBFader, vdjCrossfader].forEach(slider => {
+    if (slider) {
+      slider.addEventListener('input', applyMixerVolumes);
+      slider.addEventListener('change', applyMixerVolumes);
+    }
+  });
+
+  // ==========================================
   // ESTADO Y CONEXIÓN CON /SHOW
   // ==========================================
   const statusBadge = document.getElementById('status-show-connection');
@@ -306,105 +406,8 @@ export function initAdminApp() {
   }
 
   // ==========================================
-  // MEZCLADOR CENTRAL PIONEER & CROSSFADER
+  // VÚMETROS LED ESTÉREO DINÁMICOS CENTRALES
   // ==========================================
-  const djMasterVolume = document.getElementById('dj-master-volume');
-  const djVolumeLabel = document.getElementById('dj-volume-label');
-  const deckAFader = document.getElementById('deck-a-fader');
-  const deckBFader = document.getElementById('deck-b-fader');
-  const deckAFaderVal = document.getElementById('deck-a-fader-val');
-  const deckBFaderVal = document.getElementById('deck-b-fader-val');
-  const vdjCrossfader = document.getElementById('vdj-crossfader');
-  const btnStopAllMusic = document.getElementById('btn-stop-all-music');
-
-  function calculateEffectiveVolumes() {
-    const master = djMasterVolume ? parseInt(djMasterVolume.value, 10) / 100 : 0.85;
-    const volA = deckAFader ? parseInt(deckAFader.value, 10) / 100 : 0.85;
-    const volB = deckBFader ? parseInt(deckBFader.value, 10) / 100 : 0.85;
-    const cf = vdjCrossfader ? parseInt(vdjCrossfader.value, 10) / 100 : 0; // -1.0 a +1.0
-
-    // Curva de Crossfader suave
-    const crossA = cf <= 0 ? 1.0 : Math.max(0, 1.0 - cf);
-    const crossB = cf >= 0 ? 1.0 : Math.max(0, 1.0 + cf);
-
-    const effA = Math.max(0, Math.min(1, master * volA * crossA));
-    const effB = Math.max(0, Math.min(1, master * volB * crossB));
-
-    return { effA, effB, cf, master };
-  }
-
-  function applyMixerVolumes() {
-    const { effA, effB, cf, master } = calculateEffectiveVolumes();
-    const vA = Math.max(0, Math.min(100, Math.round(effA * 100)));
-    const vB = Math.max(0, Math.min(100, Math.round(effB * 100)));
-
-    // Deck A aislado con try-catch
-    try {
-      if (deckA.type === 'youtube') {
-        if (adminYTPlayerA && typeof adminYTPlayerA.setVolume === 'function') {
-          adminYTPlayerA.setVolume(vA);
-          if (isAdminAudioMuted || vA <= 0) {
-            if (typeof adminYTPlayerA.mute === 'function') adminYTPlayerA.mute();
-          } else {
-            if (typeof adminYTPlayerA.unMute === 'function') adminYTPlayerA.unMute();
-          }
-        }
-      } else if (deckA.audioEl) {
-        deckA.audioEl.volume = effA;
-        deckA.audioEl.muted = isAdminAudioMuted || vA <= 0;
-      }
-    } catch (errA) {
-      console.warn('[Admin Mixer] Error en volumen Deck A:', errA);
-    }
-
-    // Deck B aislado con try-catch
-    try {
-      if (deckB.type === 'youtube') {
-        if (adminYTPlayerB && typeof adminYTPlayerB.setVolume === 'function') {
-          adminYTPlayerB.setVolume(vB);
-          if (isAdminAudioMuted || vB <= 0) {
-            if (typeof adminYTPlayerB.mute === 'function') adminYTPlayerB.mute();
-          } else {
-            if (typeof adminYTPlayerB.unMute === 'function') adminYTPlayerB.unMute();
-          }
-        }
-      } else if (deckB.audioEl) {
-        deckB.audioEl.volume = effB;
-        deckB.audioEl.muted = isAdminAudioMuted || vB <= 0;
-      }
-    } catch (errB) {
-      console.warn('[Admin Mixer] Error en volumen Deck B:', errB);
-    }
-
-    try {
-      if (djVolumeLabel && djMasterVolume) djVolumeLabel.textContent = `${djMasterVolume.value}%`;
-      if (deckAFaderVal && deckAFader) deckAFaderVal.textContent = `${deckAFader.value}%`;
-      if (deckBFaderVal && deckBFader) deckBFaderVal.textContent = `${deckBFader.value}%`;
-    } catch (_) {}
-
-    // Sincronizar mezcla con /show aislado con try-catch
-    try {
-      syncBridge.send('DJ_MIXER_UPDATE', {
-        volA: effA,
-        volB: effB,
-        vA: vA,
-        vB: vB,
-        crossfader: cf,
-        masterVolume: master
-      });
-    } catch (errSync) {
-      console.warn('[Admin Mixer] Error enviando DJ_MIXER_UPDATE:', errSync);
-    }
-  }
-
-  [djMasterVolume, deckAFader, deckBFader, vdjCrossfader].forEach(slider => {
-    if (slider) {
-      slider.addEventListener('input', applyMixerVolumes);
-      slider.addEventListener('change', applyMixerVolumes);
-    }
-  });
-
-  // Vúmetros LED Estéreo Dinámicos Centrales
   const vdjVuA = document.getElementById('vdj-vu-a');
   const vdjVuB = document.getElementById('vdj-vu-b');
   const vuSegmentsA = [];
