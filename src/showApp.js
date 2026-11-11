@@ -1532,11 +1532,11 @@ export function initShowApp() {
     "¡A ver mi gente! ¿Dónde está el público de la discoteca? ¡Manden fuego y corazones al chat!",
     "¡Suelten esos likes mi gente que la fiesta está prendida! ¡A bailar todo el mundo!",
     "¡Qué energía tan brutal! ¡Escriban en el chat para ver su mensaje bailando en la pista!",
-    "¡DJ Garabato en vivo! ¡Manden sus reacciones para soltar el siguiente temazo!",
+    "¡DjAz en vivo! ¡Manden sus reacciones para soltar el siguiente temazo!",
     "¡Arriba las manos los que vinieron a rumbear hoy!",
     "¡Si llegamos a la meta de likes suelto el Bass Drop con todo el poder!",
     "¡Manda una Rosa para soltar confeti o manda fuego en el chat!",
-    "¡Bienvenidos al Garabato DJ Club 3D! ¡La mejor fiesta interactiva de TikTok LIVE!"
+    "¡Bienvenidos a DjAz Club 3D! ¡La mejor fiesta interactiva de TikTok LIVE!"
   ];
 
   let idleConfig = {
