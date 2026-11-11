@@ -189,8 +189,8 @@ export function initAdminApp() {
     }
   });
 
-  // Control de Silencio de Monitor Local en Admin
-  let isAdminAudioMuted = localStorage.getItem('garabato_admin_audio_muted') === 'true';
+  // Control de Silencio de Monitor Local en Admin (Activo por defecto para monitorear)
+  let isAdminAudioMuted = false;
   const btnToggleAdminAudioMute = document.getElementById('btn-toggle-admin-audio-mute');
 
   function updateAdminAudioMuteUI() {
@@ -209,7 +209,6 @@ export function initAdminApp() {
     updateAdminAudioMuteUI();
     btnToggleAdminAudioMute.addEventListener('click', () => {
       isAdminAudioMuted = !isAdminAudioMuted;
-      localStorage.setItem('garabato_admin_audio_muted', isAdminAudioMuted ? 'true' : 'false');
       updateAdminAudioMuteUI();
     });
   }
@@ -522,21 +521,12 @@ export function initAdminApp() {
   // ==========================================
   // OPERACIONES DE CARGA, PLAY, PAUSE Y STOP
   // ==========================================
-  function loadTrackToDeck(deck, track, autoPlay = false) {
+  function loadTrackToDeck(deck, track, autoPlay = true) {
     if (!deck || !track) return;
     const isA = deck.key === 'A';
 
     deck.isPlaying = false;
     deck.isPaused = false;
-
-    // 1. Limpiar completamente y pausar cualquier rastro anterior en este deck
-    if (deck.audioEl) {
-      try {
-        deck.audioEl.pause();
-        deck.audioEl.currentTime = 0;
-        deck.audioEl.removeAttribute('src');
-      } catch (_) {}
-    }
 
     const oldYTPlayer = isA ? adminYTPlayerA : adminYTPlayerB;
     if (oldYTPlayer) {
@@ -552,16 +542,22 @@ export function initAdminApp() {
     deck.videoId = track.videoId || null;
 
     if (deck.type === 'youtube') {
+      if (deck.audioEl) {
+        try { deck.audioEl.pause(); deck.audioEl.removeAttribute('src'); } catch (_) {}
+      }
       loadYouTubeToAdminDeck(deck, deck.videoId);
     } else {
       if (isA) currentLoadedVideoIdA = null;
       else currentLoadedVideoIdB = null;
 
       if (deck.audioEl && deck.url) {
-        deck.audioEl.src = deck.url;
-        deck.audioEl.currentTime = 0;
-        deck.audioEl.load();
-        deck.audioEl.pause();
+        try {
+          deck.audioEl.pause();
+          if (deck.audioEl.src !== deck.url && !deck.audioEl.src.endsWith(deck.url)) {
+            deck.audioEl.src = deck.url;
+          }
+          deck.audioEl.currentTime = 0;
+        } catch (_) {}
       }
     }
 
@@ -623,7 +619,21 @@ export function initAdminApp() {
         loadYouTubeToAdminDeck(deck, deck.videoId);
       }
     } else if (deck.audioEl && deck.url) {
-      deck.audioEl.play().catch(e => console.warn(`[Deck ${deck.key}] Play:`, e.message));
+      const isA = deck.key === 'A';
+      const { effA, effB } = calculateEffectiveVolumes();
+      deck.audioEl.muted = isAdminAudioMuted;
+      deck.audioEl.volume = isA ? effA : effB;
+      const playPromise = deck.audioEl.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.warn(`[Deck ${deck.key}] Play:`, e.message);
+          const onCanPlay = () => {
+            deck.audioEl.removeEventListener('canplay', onCanPlay);
+            deck.audioEl.play().catch(() => {});
+          };
+          deck.audioEl.addEventListener('canplay', onCanPlay, { once: true });
+        });
+      }
     }
 
     updateDeckUI(deck);
@@ -893,11 +903,11 @@ export function initAdminApp() {
       `;
 
       row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
-        loadTrackToDeck(deckA, track, false);
+        loadTrackToDeck(deckA, track, true);
       });
 
       row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
-        loadTrackToDeck(deckB, track, false);
+        loadTrackToDeck(deckB, track, true);
       });
 
       row.querySelector('[data-action="delete"]')?.addEventListener('click', () => {
@@ -985,9 +995,9 @@ export function initAdminApp() {
           if (data.success && data.track) {
             successCount++;
             if (!deckA.url && !deckA.videoId) {
-              loadTrackToDeck(deckA, data.track, false);
+              loadTrackToDeck(deckA, data.track, true);
             } else if (!deckB.url && !deckB.videoId) {
-              loadTrackToDeck(deckB, data.track, false);
+              loadTrackToDeck(deckB, data.track, true);
             }
           }
         } catch (fileErr) {
@@ -1058,11 +1068,11 @@ export function initAdminApp() {
         `;
 
         row.querySelector('[data-action="load-a"]')?.addEventListener('click', () => {
-          loadTrackToDeck(deckA, { name: item.title, videoId: item.id }, false);
+          loadTrackToDeck(deckA, { name: item.title, videoId: item.id }, true);
         });
 
         row.querySelector('[data-action="load-b"]')?.addEventListener('click', () => {
-          loadTrackToDeck(deckB, { name: item.title, videoId: item.id }, false);
+          loadTrackToDeck(deckB, { name: item.title, videoId: item.id }, true);
         });
 
         ytSearchResults.appendChild(row);
@@ -1116,13 +1126,13 @@ export function initAdminApp() {
         showUploadStatus(`¡Pista importada: "${data.track.name}"!`, false);
         await fetchMusicPlaylist();
         if (!deckA.url && !deckA.videoId) {
-          loadTrackToDeck(deckA, data.track, false);
+          loadTrackToDeck(deckA, data.track, true);
         } else if (!deckB.url && !deckB.videoId) {
-          loadTrackToDeck(deckB, data.track, false);
+          loadTrackToDeck(deckB, data.track, true);
         } else if (!deckA.isPlaying) {
-          loadTrackToDeck(deckA, data.track, false);
+          loadTrackToDeck(deckA, data.track, true);
         } else {
-          loadTrackToDeck(deckB, data.track, false);
+          loadTrackToDeck(deckB, data.track, true);
         }
       } else {
         showUploadStatus(data.error || 'Error al importar pista.', true);

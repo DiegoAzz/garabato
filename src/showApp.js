@@ -926,9 +926,10 @@ export function initShowApp() {
         currentShowVideoIdB = null;
         if (!showDeckAIsPlaying || !currentShowVideoIdA) audioEngine.isYTPlaying = false;
         if (showYTPlayerB && showYTPlayerB.stopVideo) try { showYTPlayerB.stopVideo(); } catch (_) {}
-        deckBAudio.src = payload.url;
-        deckBAudio.currentTime = 0;
-        deckBAudio.load();
+        if (deckBAudio.src !== payload.url && !deckBAudio.src.endsWith(payload.url)) {
+          deckBAudio.src = payload.url;
+        }
+        try { deckBAudio.currentTime = 0; } catch (_) {}
       }
     }
   });
@@ -984,16 +985,25 @@ export function initShowApp() {
         currentShowVideoIdB = null;
         if (!showDeckAIsPlaying || !currentShowVideoIdA) audioEngine.isYTPlaying = false;
         if (showYTPlayerB && showYTPlayerB.stopVideo) try { showYTPlayerB.stopVideo(); } catch (_) {}
-        if (!deckBAudio.src.endsWith(payload.url)) {
+        if (deckBAudio.src !== payload.url && !deckBAudio.src.endsWith(payload.url)) {
           deckBAudio.src = payload.url;
-          deckBAudio.load();
+          try { deckBAudio.currentTime = 0; } catch (_) {}
+        } else if (!payload.resume) {
+          try { deckBAudio.currentTime = 0; } catch (_) {}
         }
         deckBAudio.volume = Math.max(0, Math.min(1, deckBVolume));
         deckBAudio.muted = isMasterMuted;
-        if (!payload.resume) {
-          try { deckBAudio.currentTime = 0; } catch (_) {}
+        const playPromise = deckBAudio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => {
+            console.warn('[Show Deck B Play]:', e.message);
+            const onCanPlay = () => {
+              deckBAudio.removeEventListener('canplay', onCanPlay);
+              deckBAudio.play().catch(() => {});
+            };
+            deckBAudio.addEventListener('canplay', onCanPlay, { once: true });
+          });
         }
-        deckBAudio.play().catch(e => console.warn('[Show Deck B Play]:', e.message));
       }
     }
 

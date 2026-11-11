@@ -1989,9 +1989,9 @@ export class AudioEngine {
 
     if (!isSameSource) {
       this.audioElement.src = srcUrl;
-      try { this.audioElement.load(); } catch (e) {}
+      try { this.audioElement.currentTime = 0; } catch (_) {}
     } else if (!resume) {
-      try { this.audioElement.currentTime = 0; } catch (e) {}
+      try { this.audioElement.currentTime = 0; } catch (_) {}
     }
 
     this.audioElement.loop = true;
@@ -2006,8 +2006,18 @@ export class AudioEngine {
         this.pendingCustomTrack = null;
         console.info(`[AudioEngine] Reproduciendo audio (${resume && isSameSource ? 'Reanudado' : 'Desde 0:00'}): ${title}`);
       }).catch(err => {
-        console.warn('[AudioEngine] Autoplay bloqueado por el navegador (requiere toque de pantalla):', err.message);
-        // Despachar evento para mostrar botón visible de desbloqueo en pantalla
+        console.warn('[AudioEngine] Autoplay bloqueado o cargando:', err.message);
+        // Si el buffer aún no estaba listo, reproducir en cuanto dispare canplay
+        const onCanPlay = () => {
+          this.audioElement.removeEventListener('canplay', onCanPlay);
+          this.audioElement.play().then(() => {
+            this.isPlayingImported = true;
+            this.isPlayingBeat = true;
+            this.pendingCustomTrack = null;
+          }).catch(() => {});
+        };
+        this.audioElement.addEventListener('canplay', onCanPlay, { once: true });
+
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('AUDIO_AUTOPLAY_BLOCKED', { detail: { title } }));
         }
