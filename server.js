@@ -461,8 +461,24 @@ function broadcastTikTokStatus() {
 }
 
 async function connectToTikTok(rawUsername, sessionId = null) {
-  const username = (rawUsername || '').replace(/^@+/, '').trim();
-  if (!username) {
+  let cleanUsername = (rawUsername || '').trim();
+  let directRoomId = null;
+
+  // Si ingresó directamente un número de Room ID (15 a 22 dígitos)
+  if (/^\d{15,22}$/.test(cleanUsername)) {
+    directRoomId = cleanUsername;
+    cleanUsername = 'Room_' + directRoomId.slice(-4);
+  } else {
+    // Si pegó una URL completa tipo https://www.tiktok.com/@usuario/live
+    const urlMatch = cleanUsername.match(/(?:@|tiktok\.com\/@)([\w.-]+)/i);
+    if (urlMatch && urlMatch[1]) {
+      cleanUsername = urlMatch[1];
+    } else {
+      cleanUsername = cleanUsername.replace(/^@+/, '').replace(/\/.*$/, '').trim();
+    }
+  }
+
+  if (!cleanUsername && !directRoomId) {
     connectionStatus = 'error';
     statusMessage = 'El nombre de usuario de TikTok no puede estar vacío.';
     broadcastTikTokStatus();
@@ -479,14 +495,18 @@ async function connectToTikTok(rawUsername, sessionId = null) {
     tiktokConnection = null;
   }
 
-  currentTikTokUser = username;
+  currentTikTokUser = cleanUsername;
   connectionStatus = 'connecting';
-  statusMessage = `Conectando al LIVE de @${username}...`;
+  statusMessage = `Conectando al LIVE de @${cleanUsername}...`;
   broadcastTikTokStatus();
 
   function formatTikTokError(err, user) {
     const raw = String(err?.message || err || '');
     console.warn(`[TikTok] Detalle de error para @${user}:`, raw);
+
+    if (raw.includes("Business plan") || raw.includes("eulerstream.com/pricing")) {
+      return `⚠️ TikTok requiere conexión por Webhook o TikFinity (100% Gratis y sin bloqueos). Mira la sección "Conectar con TikFinity" abajo para conectar en 1 minuto.`;
+    }
 
     if (
       raw.includes("Failed to retrieve Room ID") ||
@@ -497,20 +517,43 @@ async function connectToTikTok(rawUsername, sessionId = null) {
       raw.includes("offline") ||
       raw.includes("Room not found")
     ) {
-      return `⚠️ El usuario @${user} no está transmitiendo en vivo en TikTok en este momento. Abre TikTok en tu celular o TikTok LIVE Studio, inicia tu transmisión LIVE y vuelve a pulsar Conectar.`;
+      return `⚠️ No se detectó transmisión en vivo en @${user}. Asegúrate de que el LIVE esté activo en TikTok y que tu @usuario sea exacto. (O puedes usar TikFinity por Webhook en 1 clic).`;
     }
 
     if (raw.includes("Euler") || raw.includes("403") || raw.includes("permission") || raw.includes("Sign server")) {
-      return `⚠️ TikTok solicitó verificación para conectar al LIVE de @${user}. Si tu LIVE ya está prendido, ingresa tu Session ID de TikTok en el panel o inicia tu directo con TikTok LIVE Studio.`;
+      return `⚠️ TikTok solicitó verificación para conectar al LIVE de @${user}. Puedes pegar tu Session ID en el panel o conectar con TikFinity Webhook (gratis).`;
     }
 
-    return `⚠️ No se pudo conectar a @${user} (${raw.slice(0, 90)}). Verifica que la transmisión esté activa en TikTok.`;
+    return `⚠️ Error al conectar a @${user}: ${raw.slice(0, 95)}.`;
   }
 
   try {
+    // 1. Si no tenemos directRoomId, intentar resolverlo del HTML oficial de TikTok
+    if (!directRoomId) {
+      try {
+        const livePageRes = await fetch(`https://www.tiktok.com/@${cleanUsername}/live`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+          }
+        });
+        if (livePageRes.ok) {
+          const html = await livePageRes.text();
+          const m = html.match(/"roomId":"(\d+)"/) || html.match(/room_id=(\d+)/) || html.match(/"liveRoom":\{"roomId":"(\d+)"/);
+          if (m && m[1]) {
+            directRoomId = m[1];
+            console.log(`[TikTok] RoomId extraído con éxito de la web para @${cleanUsername}: ${directRoomId}`);
+          }
+        }
+      } catch (scrapeErr) {
+        console.warn(`[TikTok] Pre-scrape warning:`, scrapeErr.message);
+      }
+    }
+
     const connOptions = {
       processInitialData: true,
-      fetchRoomInfoOnConnect: true,
+      fetchRoomInfoOnConnect: false, // Desactivar para evitar que la API bloqueada rechace la conexión
       enableExtendedGiftInfo: true,
       requestOptions: {
         timeout: 10000
@@ -533,11 +576,11 @@ async function connectToTikTok(rawUsername, sessionId = null) {
       console.log(`[TikTok] Usando SessionID personalizado para autenticación`);
     }
 
-    tiktokConnection = new TikTokLiveConnection(username, connOptions);
+    tiktokConnection = new TikTokLiveConnection(cleanUsername, connOptions);
 
     tiktokConnection.on('error', (err) => {
       connectionStatus = 'error';
-      statusMessage = formatTikTokError(err, username);
+      statusMessage = formatTikTokError(err, cleanUsername);
       broadcastTikTokStatus();
     });
 
@@ -658,22 +701,22 @@ async function connectToTikTok(rawUsername, sessionId = null) {
     });
 
     tiktokConnection.on('streamEnd', () => {
-      console.info(`[TikTok] El LIVE de @${username} ha finalizado`);
+      console.info(`[TikTok] El LIVE de @${cleanUsername} ha finalizado`);
       connectionStatus = 'disconnected';
       statusMessage = 'El Live ha finalizado.';
       broadcastTikTokStatus();
     });
 
-    const state = await tiktokConnection.connect();
+    const state = await tiktokConnection.connect(directRoomId);
     connectionStatus = 'connected';
-    statusMessage = `¡Conectado exitosamente al LIVE de @${username}! (Room ID: ${state?.roomId || 'activo'})`;
-    console.info(`[TikTok] Conectado exitosamente a @${username}`);
+    statusMessage = `¡Conectado exitosamente al LIVE de @${cleanUsername}! (Room ID: ${state?.roomId || directRoomId || 'activo'})`;
+    console.info(`[TikTok] Conectado exitosamente a @${cleanUsername}`);
     broadcastTikTokStatus();
 
     return { success: true, message: statusMessage };
   } catch (err) {
     connectionStatus = 'error';
-    statusMessage = formatTikTokError(err, username);
+    statusMessage = formatTikTokError(err, cleanUsername);
     broadcastTikTokStatus();
     return { success: false, message: statusMessage };
   }
@@ -712,6 +755,105 @@ app.post('/api/tiktok/connect', async (req, res) => {
 app.post('/api/tiktok/disconnect', (_req, res) => {
   const result = disconnectFromTikTok();
   res.json(result);
+});
+
+// ==========================================
+// WEBHOOK UNIVERSAL TIKTOK LIVE (TIKFINITY & STREAM TOOLS)
+// Recibe eventos directamente de TikFinity o bots de streaming con 0 ms de retraso
+// ==========================================
+app.post('/api/tiktok/webhook', (req, res) => {
+  try {
+    const body = req.body || {};
+    const eventType = (body.event || body.type || body.action || '').toLowerCase();
+    const data = body.data || body;
+
+    const user = data.nickname || data.uniqueId || data.user || data.username || 'Espectador';
+    console.log(`[TikTok Webhook] Evento recibido: ${eventType} de @${user}`);
+
+    if (eventType === 'gift' || eventType === 'regalo') {
+      const giftName = data.giftName || data.gift || 'Regalo TikTok';
+      const diamondCount = data.diamondCount || data.diamonds || 1;
+
+      io.emit('SYNC_EVENT', {
+        id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        type: 'TIKTOK_EVENT',
+        payload: {
+          action: 'GIFT',
+          gift: giftName,
+          giftId: data.giftId,
+          diamondCount,
+          user
+        },
+        sender: 'tiktok_webhook',
+        timestamp: Date.now()
+      });
+    } else if (eventType === 'chat' || eventType === 'comment' || eventType === 'mensaje') {
+      const comment = (data.comment || data.text || data.message || '').trim();
+
+      // Detección de comandos de acción directa en el comentario
+      const upper = comment.toUpperCase();
+      let detectedAction = null;
+      if (upper.includes('BAILA') || upper.includes('BAILAR')) detectedAction = 'BAILAR';
+      else if (upper.includes('LLORA') || upper.includes('LLORAR')) detectedAction = 'LLORAR';
+      else if (upper.includes('RABIA') || upper.includes('ENOJATE')) detectedAction = 'RABIA';
+      else if (upper.includes('FLEXIONES') || upper.includes('PECHADAS')) detectedAction = 'FLEXIONES';
+      else if (upper.includes('ESTATUA') || upper.includes('CONGELATE')) detectedAction = 'ESTATUA';
+      else if (upper.includes('TOMATE') || upper.includes('TOMATAZO')) detectedAction = 'TOMATE';
+
+      if (detectedAction) {
+        io.emit('SYNC_EVENT', {
+          id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          type: 'TIKTOK_EVENT',
+          payload: { action: detectedAction, user },
+          sender: 'tiktok_webhook',
+          timestamp: Date.now()
+        });
+      }
+
+      io.emit('SYNC_EVENT', {
+        id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        type: 'TIKTOK_EVENT',
+        payload: { action: 'CHAT', comment, user },
+        sender: 'tiktok_webhook',
+        timestamp: Date.now()
+      });
+
+      io.emit('SYNC_EVENT', {
+        id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        type: 'CHAT_MESSAGE',
+        payload: { user, text: comment, comment, isVip: Boolean(data.isVip) },
+        sender: 'tiktok_webhook',
+        timestamp: Date.now()
+      });
+    } else if (eventType === 'like' || eventType === 'tap') {
+      const count = data.likeCount || data.count || 1;
+      io.emit('SYNC_EVENT', {
+        id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        type: 'TIKTOK_EVENT',
+        payload: {
+          action: 'LIKE',
+          count,
+          totalLikes: data.totalLikes,
+          user
+        },
+        sender: 'tiktok_webhook',
+        timestamp: Date.now()
+      });
+    } else if (eventType === 'member' || eventType === 'join' || eventType === 'unirse') {
+      io.emit('SYNC_EVENT', {
+        id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        type: 'TIKTOK_EVENT',
+        payload: { action: 'JOIN', user },
+        sender: 'tiktok_webhook',
+        timestamp: Date.now()
+      });
+    }
+
+    res.json({ success: true, received: eventType });
+  } catch (err) {
+    console.error('[TikTok Webhook Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Comunicación en Tiempo Real por WebSockets

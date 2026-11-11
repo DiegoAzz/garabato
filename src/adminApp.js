@@ -29,6 +29,26 @@ export function initAdminApp() {
   const connMsgIcon = document.getElementById('tt-conn-msg-icon');
   const connMsgText = document.getElementById('tt-conn-msg-text');
   const btnToggleClean = document.getElementById('btn-toggle-clean-mode');
+  const webhookUrlInput = document.getElementById('tt-webhook-url');
+  const btnCopyWebhook = document.getElementById('btn-copy-webhook');
+
+  if (webhookUrlInput && typeof window !== 'undefined') {
+    webhookUrlInput.value = `${window.location.origin}/api/tiktok/webhook`;
+  }
+
+  if (btnCopyWebhook && webhookUrlInput) {
+    btnCopyWebhook.addEventListener('click', () => {
+      navigator.clipboard.writeText(webhookUrlInput.value).then(() => {
+        btnCopyWebhook.textContent = '✅ ¡Copiado!';
+        setTimeout(() => {
+          btnCopyWebhook.textContent = '📋 Copiar URL';
+        }, 2000);
+      }).catch(() => {
+        webhookUrlInput.select();
+        document.execCommand('copy');
+      });
+    });
+  }
 
   // Elementos DOM de Métricas
   const metricViewersEl = document.getElementById('metric-viewers');
