@@ -393,9 +393,10 @@ export class AudienceManager {
       spec.speechBubble = null;
     }
 
-    // 3. Crear nueva viñeta de diálogo 3D gigante y contrastada sobre su cabeza
+    // 3. Crear nueva viñeta de diálogo 3D gigante y contrastada directamente sobre su cabeza
+    if (spec.nameLabel) spec.nameLabel.visible = false;
     const bubbleSprite = this.createChatBubbleSprite(cleanUser, cleanText, isVip);
-    bubbleSprite.position.set(0, 0.72, 0);
+    bubbleSprite.position.set(0, 0.74, 0);
     bubbleSprite.frustumCulled = false;
     spec.mesh.add(bubbleSprite);
     spec.chatBubble = bubbleSprite;
@@ -410,7 +411,7 @@ export class AudienceManager {
     // 5. Destacar con anillo de luz en sus pies
     this.highlightSpectator(cleanUser, 5500);
 
-    // 6. Temporizador para ocultar la burbuja a los 6.5 segundos
+    // 6. Temporizador para ocultar la burbuja a los 6.5 segundos y restaurar nombre
     spec.chatBubbleTimer = setTimeout(() => {
       if (spec.chatBubble === bubbleSprite) {
         spec.mesh.remove(bubbleSprite);
@@ -418,6 +419,7 @@ export class AudienceManager {
         bubbleSprite.material.dispose();
         spec.chatBubble = null;
         spec.speechBubble = null;
+        if (spec.nameLabel) spec.nameLabel.visible = true;
         spec.mesh.animController.gesture = 'none';
         spec.mesh.animController.speedMultiplier = 1.0;
         spec.mesh.animController.danceMove = this.danceMoves[Math.floor(Math.random() * this.danceMoves.length)];

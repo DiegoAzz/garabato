@@ -523,6 +523,7 @@ export function initAdminApp() {
   // OPERACIONES DE CARGA, PLAY, PAUSE Y STOP
   // ==========================================
   function loadTrackToDeck(deck, track, autoPlay = false) {
+    if (!deck || !track) return;
     const isA = deck.key === 'A';
 
     deck.isPlaying = false;
@@ -533,7 +534,7 @@ export function initAdminApp() {
       try {
         deck.audioEl.pause();
         deck.audioEl.currentTime = 0;
-        if (!track.url) deck.audioEl.removeAttribute('src');
+        deck.audioEl.removeAttribute('src');
       } catch (_) {}
     }
 
@@ -553,8 +554,12 @@ export function initAdminApp() {
     if (deck.type === 'youtube') {
       loadYouTubeToAdminDeck(deck, deck.videoId);
     } else {
+      if (isA) currentLoadedVideoIdA = null;
+      else currentLoadedVideoIdB = null;
+
       if (deck.audioEl && deck.url) {
         deck.audioEl.src = deck.url;
+        deck.audioEl.currentTime = 0;
         deck.audioEl.load();
         deck.audioEl.pause();
       }
@@ -562,6 +567,7 @@ export function initAdminApp() {
 
     updateDeckUI(deck);
     updateDeckTimeDisplay(deck);
+    applyMixerVolumes();
 
     try {
       syncBridge.send('DJ_DECK_LOAD', {
@@ -958,19 +964,38 @@ export function initAdminApp() {
 
   async function uploadFiles(files) {
     if (!files || files.length === 0) return;
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append('audio', files[i]);
-    }
     showUploadStatus(`Subiendo ${files.length} canciones...`, false);
+    let successCount = 0;
     try {
-      const res = await fetch('/api/music/upload', { method: 'POST', body: formData });
-      if (res.ok) {
-        showUploadStatus(`¡${files.length} canciones subidas con éxito!`, false);
-        await fetchMusicPlaylist();
-      } else {
-        showUploadStatus('Error al subir archivos.', true);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        try {
+          const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          const res = await fetch('/api/music/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, base64Data })
+          });
+          const data = await res.json();
+          if (data.success && data.track) {
+            successCount++;
+            if (!deckA.url && !deckA.videoId) {
+              loadTrackToDeck(deckA, data.track, false);
+            } else if (!deckB.url && !deckB.videoId) {
+              loadTrackToDeck(deckB, data.track, false);
+            }
+          }
+        } catch (fileErr) {
+          console.warn('[Upload File Error]:', file.name, fileErr);
+        }
       }
+      await fetchMusicPlaylist();
+      showUploadStatus(`¡${successCount} de ${files.length} canciones subidas con éxito!`, successCount === 0);
     } catch (e) {
       showUploadStatus(`Error: ${e.message}`, true);
     }
@@ -1081,7 +1106,7 @@ export function initAdminApp() {
     if (!url) return;
     showUploadStatus('Descargando pista desde Google Drive...', false);
     try {
-      const res = await fetch('/api/music/google-drive', {
+      const res = await fetch('/api/music/import-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url })
@@ -1090,8 +1115,15 @@ export function initAdminApp() {
       if (data.success && data.track) {
         showUploadStatus(`¡Pista importada: "${data.track.name}"!`, false);
         await fetchMusicPlaylist();
-        if (!deckA.isPlaying) loadTrackToDeck(deckA, data.track, false);
-        else loadTrackToDeck(deckB, data.track, false);
+        if (!deckA.url && !deckA.videoId) {
+          loadTrackToDeck(deckA, data.track, false);
+        } else if (!deckB.url && !deckB.videoId) {
+          loadTrackToDeck(deckB, data.track, false);
+        } else if (!deckA.isPlaying) {
+          loadTrackToDeck(deckA, data.track, false);
+        } else {
+          loadTrackToDeck(deckB, data.track, false);
+        }
       } else {
         showUploadStatus(data.error || 'Error al importar pista.', true);
       }
@@ -1265,6 +1297,7 @@ export function initAdminApp() {
     } catch (_) {}
   }
 
+  let lastMicLevelSendTime = 0;
   function monitorMicLevels() {
     if (!isHumanMicActive || !micAnalyser) return;
     const data = new Uint8Array(micAnalyser.frequencyBinCount);
@@ -1278,9 +1311,13 @@ export function initAdminApp() {
     if (micVuFill) micVuFill.style.width = `${Math.round(normalized * 100)}%`;
     if (micDbLabel) micDbLabel.textContent = `${Math.round(normalized * 100)}%`;
 
-    try {
-      syncBridge.send('HUMAN_MIC_LEVEL', { active: true, level: normalized });
-    } catch (_) {}
+    const now = performance.now();
+    if (now - lastMicLevelSendTime > 90) {
+      lastMicLevelSendTime = now;
+      try {
+        syncBridge.send('HUMAN_MIC_LEVEL', { active: true, level: normalized });
+      } catch (_) {}
+    }
     micAnimFrame = requestAnimationFrame(monitorMicLevels);
   }
 

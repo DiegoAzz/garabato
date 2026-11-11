@@ -897,10 +897,13 @@ export function initShowApp() {
 
       if (payload.type === 'youtube' && payload.videoId) {
         currentShowVideoIdA = payload.videoId;
+        audioEngine.isYTPlaying = true;
         initOrLoadShowYTPlayer('A', payload.videoId, (p) => {
           if (p && p.pauseVideo) try { p.pauseVideo(); } catch (_) {}
         });
       } else if (payload.url) {
+        currentShowVideoIdA = null;
+        if (!showDeckBIsPlaying || !currentShowVideoIdB) audioEngine.isYTPlaying = false;
         if (showYTPlayerA && showYTPlayerA.stopVideo) try { showYTPlayerA.stopVideo(); } catch (_) {}
       }
     } else if (payload.deck === 'B') {
@@ -915,15 +918,17 @@ export function initShowApp() {
 
       if (payload.type === 'youtube' && payload.videoId) {
         currentShowVideoIdB = payload.videoId;
+        audioEngine.isYTPlaying = true;
         initOrLoadShowYTPlayer('B', payload.videoId, (p) => {
           if (p && p.pauseVideo) try { p.pauseVideo(); } catch (_) {}
         });
       } else if (payload.url) {
+        currentShowVideoIdB = null;
+        if (!showDeckAIsPlaying || !currentShowVideoIdA) audioEngine.isYTPlaying = false;
         if (showYTPlayerB && showYTPlayerB.stopVideo) try { showYTPlayerB.stopVideo(); } catch (_) {}
-        if (!deckBAudio.src.endsWith(payload.url)) {
-          deckBAudio.src = payload.url;
-          deckBAudio.load();
-        }
+        deckBAudio.src = payload.url;
+        deckBAudio.currentTime = 0;
+        deckBAudio.load();
       }
     }
   });
@@ -931,7 +936,7 @@ export function initShowApp() {
   syncBridge.on('DJ_DECK_PLAY', (payload) => {
     markActivity();
     unlockAudio();
-    if (!payload) return;
+    if (!payload || !payload.deck) return;
 
     if (payload.deck === 'A') {
       showDeckAIsPlaying = true;
@@ -952,7 +957,9 @@ export function initShowApp() {
           });
         }
       } else if (payload.url) {
-        if (showYTPlayerA && showYTPlayerA.stopVideo) showYTPlayerA.stopVideo();
+        currentShowVideoIdA = null;
+        if (!showDeckBIsPlaying || !currentShowVideoIdB) audioEngine.isYTPlaying = false;
+        if (showYTPlayerA && showYTPlayerA.stopVideo) try { showYTPlayerA.stopVideo(); } catch (_) {}
         audioEngine.playCustomAudioTrack(payload.url, payload.title || 'Deck A', payload.resume || false);
       }
     } else if (payload.deck === 'B') {
@@ -974,10 +981,17 @@ export function initShowApp() {
           });
         }
       } else if (payload.url) {
-        if (showYTPlayerB && showYTPlayerB.stopVideo) showYTPlayerB.stopVideo();
+        currentShowVideoIdB = null;
+        if (!showDeckAIsPlaying || !currentShowVideoIdA) audioEngine.isYTPlaying = false;
+        if (showYTPlayerB && showYTPlayerB.stopVideo) try { showYTPlayerB.stopVideo(); } catch (_) {}
         if (!deckBAudio.src.endsWith(payload.url)) {
           deckBAudio.src = payload.url;
           deckBAudio.load();
+        }
+        deckBAudio.volume = Math.max(0, Math.min(1, deckBVolume));
+        deckBAudio.muted = isMasterMuted;
+        if (!payload.resume) {
+          try { deckBAudio.currentTime = 0; } catch (_) {}
         }
         deckBAudio.play().catch(e => console.warn('[Show Deck B Play]:', e.message));
       }
@@ -1323,9 +1337,39 @@ export function initShowApp() {
 
   // RECEPTOR DE AUDIO EN VIVO DEL STREAMER (MICRÓFONO DESDE /admin)
   let streamerAudioCtx = null;
+  let streamerFilter = null;
+  let streamerCompressor = null;
   let nextAudioTime = 0;
   let micActiveTimer = null;
   const streamerMicBadge = document.getElementById('streamer-mic-badge');
+
+  function getStreamerAudioInput(sampleRate) {
+    if (!streamerAudioCtx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      try {
+        streamerAudioCtx = new AudioCtx({ sampleRate: sampleRate || 48000 });
+      } catch (_) {
+        streamerAudioCtx = new AudioCtx();
+      }
+
+      // Filtro pasa-altos suave (80Hz) para eliminar retumbes graves de mesa o aire
+      streamerFilter = streamerAudioCtx.createBiquadFilter();
+      streamerFilter.type = 'highpass';
+      streamerFilter.frequency.setValueAtTime(80, streamerAudioCtx.currentTime);
+
+      // Compresor de estudio profesional para nivelar la voz y que suene limpia y fina ("finito")
+      streamerCompressor = streamerAudioCtx.createDynamicsCompressor();
+      streamerCompressor.threshold.setValueAtTime(-18, streamerAudioCtx.currentTime);
+      streamerCompressor.knee.setValueAtTime(8, streamerAudioCtx.currentTime);
+      streamerCompressor.ratio.setValueAtTime(3.2, streamerAudioCtx.currentTime);
+      streamerCompressor.attack.setValueAtTime(0.003, streamerAudioCtx.currentTime);
+      streamerCompressor.release.setValueAtTime(0.12, streamerAudioCtx.currentTime);
+
+      streamerFilter.connect(streamerCompressor);
+      streamerCompressor.connect(streamerAudioCtx.destination);
+    }
+    return { ctx: streamerAudioCtx, input: streamerFilter };
+  }
 
   syncBridge.on('STREAMER_MIC_STATUS', (payload) => {
     if (!payload) return;
@@ -1341,16 +1385,9 @@ export function initShowApp() {
   syncBridge.on('STREAMER_MIC_PCM', (data) => {
     if (!data || (!data.pcm && !data.b64)) return;
     try {
-      if (!streamerAudioCtx) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        try {
-          streamerAudioCtx = new AudioCtx({ sampleRate: data.sampleRate || 48000 });
-        } catch (_) {
-          streamerAudioCtx = new AudioCtx();
-        }
-      }
-      if (streamerAudioCtx.state === 'suspended') {
-        streamerAudioCtx.resume();
+      const { ctx, input } = getStreamerAudioInput(data.sampleRate);
+      if (ctx.state === 'suspended') {
+        ctx.resume();
       }
 
       // Decodificar Base64 o array normal
@@ -1372,29 +1409,21 @@ export function initShowApp() {
         float32[i] = pcm16[i] / (pcm16[i] < 0 ? 0x8000 : 0x7FFF);
       }
 
-      // Micro fade-in / fade-out en los extremos para eliminar cualquier 'pop' o 'click' y sonar finito
-      const fadeSamples = Math.min(32, Math.floor(float32.length / 8));
-      for (let i = 0; i < fadeSamples; i++) {
-        const factor = i / fadeSamples;
-        float32[i] *= factor;
-        float32[float32.length - 1 - i] *= factor;
-      }
-
-      const bufferRate = data.sampleRate || streamerAudioCtx.sampleRate || 48000;
-      const buffer = streamerAudioCtx.createBuffer(1, float32.length, bufferRate);
+      const bufferRate = data.sampleRate || ctx.sampleRate || 48000;
+      const buffer = ctx.createBuffer(1, float32.length, bufferRate);
       buffer.getChannelData(0).set(float32);
 
-      const src = streamerAudioCtx.createBufferSource();
+      const src = ctx.createBufferSource();
       src.buffer = buffer;
-      src.connect(streamerAudioCtx.destination);
+      src.connect(input);
 
-      const curTime = streamerAudioCtx.currentTime;
-      // Colchón elástico anti-cortes de 70ms:
+      const curTime = ctx.currentTime;
+      // Colchón elástico anti-cortes de bajísima latencia (15ms a 25ms):
       if (nextAudioTime < curTime) {
-        nextAudioTime = curTime + 0.070;
-      } else if (nextAudioTime > curTime + 0.30) {
-        // Si hay retardo de red excesivo, sincronizar de inmediato
-        nextAudioTime = curTime + 0.070;
+        nextAudioTime = curTime + 0.015;
+      } else if (nextAudioTime > curTime + 0.18) {
+        // Si hay desfase de red, re-enganchar suavemente
+        nextAudioTime = curTime + 0.025;
       }
       src.start(nextAudioTime);
       nextAudioTime += buffer.duration;

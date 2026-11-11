@@ -131,7 +131,7 @@ app.post('/api/music/upload', (req, res) => {
   }
 });
 
-app.post('/api/music/import-url', async (req, res) => {
+app.post(['/api/music/import-url', '/api/music/google-drive'], async (req, res) => {
   try {
     const rawUrl = (req.body.url || '').trim();
     if (!rawUrl) {
@@ -584,6 +584,19 @@ async function connectToTikTok(rawUsername, sessionId = null) {
           action: 'CHAT',
           comment: text,
           user
+        },
+        sender: 'tiktok_server',
+        timestamp: Date.now()
+      });
+
+      io.emit('SYNC_EVENT', {
+        id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        type: 'CHAT_MESSAGE',
+        payload: {
+          user,
+          text,
+          comment: text,
+          isVip: false
         },
         sender: 'tiktok_server',
         timestamp: Date.now()

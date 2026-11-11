@@ -2015,8 +2015,9 @@ export class AudioEngine {
     }
   }
 
-  setDjVolume(volumePercent) {
-    const vol = Math.max(0, Math.min(1.0, volumePercent / 100));
+  setDjVolume(volumeValue) {
+    // Acepta número decimal normalizado (0.0 a 1.0) o porcentaje (0 a 100)
+    const vol = (volumeValue > 1.0) ? Math.max(0, Math.min(1.0, volumeValue / 100)) : Math.max(0, Math.min(1.0, volumeValue));
     this.djCustomVolume = vol;
     if (this.musicGain && this.ctx) {
       try {
